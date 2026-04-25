@@ -17,6 +17,10 @@
     "contentSettings"
   ],
 
+  "optional_host_permissions": [
+    "<all_urls>"
+  ],
+
   "background": {
     "service_worker": "background/index.js",
     "type": "module"
@@ -39,6 +43,6 @@
   },
 
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; connect-src 'self' https://api.anthropic.com https://api.openai.com http://localhost:11434"
+    "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; connect-src 'self' https: http://localhost:11434"
   }
 }

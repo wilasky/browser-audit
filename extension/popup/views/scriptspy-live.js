@@ -145,7 +145,8 @@ function renderScript(s, idx) {
     : '';
 
   const viewBtn = !isInline
-    ? `<button class="view-script-btn" data-script-idx="${idx}">Ver código fuente ↗</button>`
+    ? `<button class="view-script-btn" data-script-idx="${idx}">Ver código fuente ↗</button>
+       <button class="analyze-script-btn" data-script-idx="${idx}">🔬 Análisis profundo</button>`
     : '';
 
   const lookups = buildLookupLinks(s.url);
@@ -271,6 +272,20 @@ export async function renderScriptSpyLive(container) {
           e.preventDefault();
           const href = a.dataset.href;
           if (href) { chrome.tabs.create({ url: href }); }
+        });
+      });
+
+      // Deep analysis button — fires event for popup.js to switch view
+      list.querySelectorAll('.analyze-script-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          stopAutoRefresh();
+          const s = currentScripts[parseInt(btn.dataset.scriptIdx, 10)];
+          if (s?.url && s.url !== 'inline') {
+            container.dispatchEvent(new CustomEvent('open-script-detail', {
+              bubbles: true,
+              detail: s,
+            }));
+          }
         });
       });
     } else {

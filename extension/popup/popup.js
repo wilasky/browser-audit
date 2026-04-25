@@ -4,6 +4,7 @@ import { renderCompliance } from './views/compliance.js';
 import { renderSettings } from './views/settings.js';
 import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
 import { renderFingerprintDetail } from './views/fingerprint-detail.js';
+import { renderScriptDetail } from './views/script-detail.js';
 
 const root = document.getElementById('view-root');
 const tabs = document.querySelectorAll('.tab-btn');
@@ -69,6 +70,11 @@ function setView(view) {
     loadHealthView().catch(console.error);
   } else if (view === 'scriptspy') {
     renderScriptSpyLive(root).catch(console.error);
+    // Listen for "open detail" events from scripts list
+    root.addEventListener('open-script-detail', (e) => {
+      renderScriptDetail(root, e.detail).catch(console.error);
+      root.addEventListener('sd-back', () => setView('scriptspy'), { once: true });
+    }, { once: true });
   } else if (view === 'compliance') {
     renderCompliance(root).catch(console.error);
   } else if (view === 'settings') {

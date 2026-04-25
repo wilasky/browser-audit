@@ -258,6 +258,19 @@ function renderDataSection() {
     </section>
 
     <section class="settings-section">
+      <h3 class="settings-heading">Análisis profundo de scripts</h3>
+      <p class="settings-hint">
+        Para descargar y analizar el código fuente de scripts (hash SHA256, detección de obfuscación,
+        APIs sospechosas, URLs hardcoded), la extensión necesita acceso a las URLs de los scripts.
+      </p>
+      <div class="settings-row">
+        <button id="btn-grant-hosts" class="btn-secondary btn-grant">+ Permitir descarga de scripts</button>
+        <button id="btn-revoke-hosts" class="btn-secondary">Revocar</button>
+      </div>
+      <p id="hosts-status" class="settings-hint"></p>
+    </section>
+
+    <section class="settings-section">
       <h3 class="settings-heading">Datos y privacidad</h3>
       <div class="settings-row">
         <button id="btn-clear-cache" class="btn-secondary">Limpiar caché TI</button>
@@ -408,6 +421,24 @@ export async function renderSettings(container) {
       status.style.color = '#ef4444';
     }
     fileInput.value = '';
+  });
+
+  container.querySelector('#btn-grant-hosts').addEventListener('click', () => {
+    chrome.permissions.request({ origins: ['<all_urls>'] }, (granted) => {
+      void chrome.runtime.lastError;
+      const status = container.querySelector('#hosts-status');
+      status.textContent = granted ? '✓ Permiso concedido. Ya puedes analizar scripts en profundidad.' : 'Permiso denegado.';
+      status.style.color = granted ? '#22c55e' : '#ef4444';
+    });
+  });
+
+  container.querySelector('#btn-revoke-hosts').addEventListener('click', () => {
+    chrome.permissions.remove({ origins: ['<all_urls>'] }, (removed) => {
+      void chrome.runtime.lastError;
+      const status = container.querySelector('#hosts-status');
+      status.textContent = removed ? 'Permiso revocado.' : 'No se pudo revocar.';
+      status.style.color = '#888';
+    });
   });
 
   container.querySelector('#btn-clear-cache').addEventListener('click', async () => {
