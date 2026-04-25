@@ -186,11 +186,31 @@ export async function renderScriptDetail(container, script) {
     });
   } catch (err) {
     const errMsg = String(err.message || err);
+    const isPermIssue = /permiso|permission/i.test(errMsg);
+    const isCorsIssue = /CORS|fetch|HTTP/i.test(errMsg);
+
     body.innerHTML = `
       <p class="error">Error: ${esc(errMsg)}</p>
-      <p class="settings-hint" style="margin-top:8px">
-        Algunos scripts requieren CORS o están bloqueados. La extensión necesita el permiso
-        de host para descargarlos. Puedes activarlo desde el botón "Permitir descarga de scripts" en Settings.
-      </p>`;
+      ${isPermIssue ? `
+        <p class="settings-hint" style="margin-top:8px">
+          ⚙ Ve a Settings → "Análisis profundo de scripts" → "Permitir descarga de scripts"
+          y concede el permiso a Chrome cuando lo pida.
+        </p>
+        <button id="btn-grant-now" class="btn-primary" style="margin-top:8px">Pedir permiso ahora</button>
+      ` : ''}
+      ${isCorsIssue && !isPermIssue ? `
+        <p class="settings-hint" style="margin-top:8px">
+          El servidor del script puede haber respondido con error (404/timeout) o estar bloqueando
+          peticiones desde extensiones. Prueba abriendo la URL en una pestaña nueva
+          para ver el código directamente.
+        </p>
+      ` : ''}`;
+
+    body.querySelector('#btn-grant-now')?.addEventListener('click', () => {
+      chrome.permissions.request({ origins: ['<all_urls>'] }, (granted) => {
+        void chrome.runtime.lastError;
+        if (granted) { renderScriptDetail(container, script); }
+      });
+    });
   }
 }

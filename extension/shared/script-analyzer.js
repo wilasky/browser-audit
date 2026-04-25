@@ -139,13 +139,17 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
 
 // --- Network helper ---
 
+// Fetch is delegated to the background service worker — it has reliable
+// access to URLs covered by host_permissions even when popup CSP blocks them.
 export async function fetchScriptSource(url) {
   if (!url || url === 'inline') { return null; }
-  try {
-    const res = await fetch(url, { credentials: 'omit', cache: 'force-cache' });
-    if (!res.ok) { throw new Error(`HTTP ${res.status}`); }
-    return await res.text();
-  } catch (err) {
-    throw new Error(`No se pudo descargar: ${err.message}`);
-  }
+
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: 'fetch_script_source', url }, (res) => {
+      void chrome.runtime.lastError;
+      if (!res) { reject(new Error('Sin respuesta del background')); return; }
+      if (!res.ok) { reject(new Error(res.reason ?? 'Descarga fallida')); return; }
+      resolve(res.text);
+    });
+  });
 }

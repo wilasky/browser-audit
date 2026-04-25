@@ -93,6 +93,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'fetch_script_source') {
+    const url = msg.url;
+    if (!url) { sendResponse({ ok: false, reason: 'No URL' }); return; }
+
+    // Verify we have host permission for this URL
+    chrome.permissions.contains({ origins: [url] }, (hasPermission) => {
+      if (!hasPermission) {
+        sendResponse({
+          ok: false,
+          reason: 'Sin permiso de host. Activa "Permitir descarga de scripts" en Settings.',
+        });
+        return;
+      }
+      fetch(url, { credentials: 'omit', cache: 'force-cache' })
+        .then(async (res) => {
+          if (!res.ok) {
+            sendResponse({ ok: false, reason: `HTTP ${res.status} ${res.statusText}` });
+            return;
+          }
+          const text = await res.text();
+          sendResponse({ ok: true, text, contentType: res.headers.get('content-type') });
+        })
+        .catch((err) => sendResponse({ ok: false, reason: err.message }));
+    });
+    return true;
+  }
+
   if (msg.type === 'extract_page_text') {
     const tabId = msg.tabId;
     if (!tabId) { sendResponse({ ok: false, reason: 'No active tab.' }); return; }
