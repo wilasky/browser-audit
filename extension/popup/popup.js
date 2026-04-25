@@ -1,6 +1,6 @@
 import { renderHealthOverview } from './views/health-overview.js';
 import { renderScriptSpyLive } from './views/scriptspy-live.js';
-import { renderUpgrade } from './views/upgrade.js';
+import { renderCompliance } from './views/compliance.js';
 import { renderSettings } from './views/settings.js';
 import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
 import { renderFingerprintDetail } from './views/fingerprint-detail.js';
@@ -69,8 +69,8 @@ function setView(view) {
     loadHealthView().catch(console.error);
   } else if (view === 'scriptspy') {
     renderScriptSpyLive(root).catch(console.error);
-  } else if (view === 'pro') {
-    renderUpgrade(root).catch(console.error);
+  } else if (view === 'compliance') {
+    renderCompliance(root).catch(console.error);
   } else if (view === 'settings') {
     renderSettings(root).catch(console.error);
   }

@@ -5,12 +5,13 @@ const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unk
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
 
 const PROFILES = {
-  all:      { label: 'Estándar',      filter: (r) => !r.advanced },
-  advanced: { label: 'Avanzado',      filter: () => true },
-  basic:    { label: 'Básico',        filter: (r) => ['critical', 'high'].includes(r.severity) && !r.advanced },
-  privacy:  { label: 'Privacidad',    filter: (r) => r.category === 'privacy' || r.category === 'leaks' || r.category === 'fingerprint' },
-  security: { label: 'Seguridad',     filter: (r) => r.category === 'security' || r.category === 'updates' },
-  failed:   { label: 'Solo fallos',   filter: (r) => r.status === 'fail' || r.status === 'warn' },
+  all:      { label: 'Estándar',  filter: (r) => !r.advanced },
+  advanced: { label: 'Avanzado',  filter: () => true },
+  basic:    { label: 'Básico',    filter: (r) => ['critical', 'high'].includes(r.severity) && !r.advanced },
+  failed:   { label: 'Fallos',    filter: (r) => r.status === 'fail' || r.status === 'warn' },
+  CIS:      { label: 'CIS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CIS')) },
+  CCN:      { label: 'ENS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CCN')) },
+  NIST:     { label: 'NIST',      filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('NIST')) },
 };
 
 function sendMsg(msg) {
@@ -54,6 +55,16 @@ function severityLabel(severity) {
   return `<span class="sev-badge ${cls[severity] ?? ''}">${labels[severity] ?? severity}</span>`;
 }
 
+function frameworkBadges(frameworks) {
+  if (!frameworks || frameworks.length === 0) { return ''; }
+  return frameworks
+    .map((f) => {
+      const family = f.split('-')[0];
+      return `<span class="fw-badge fw-${family}" title="${esc(f)}">${esc(family)}</span>`;
+    })
+    .join('');
+}
+
 function renderCheck(r, fixMap) {
   const cls = STATUS_CLASS[r.status] ?? 'skip';
   const icon = STATUS_ICON[r.status] ?? '?';
@@ -87,6 +98,7 @@ function renderCheck(r, fixMap) {
           <div class="check-title-row">
             <span class="check-title">${esc(r.title)}</span>
             ${severityLabel(r.severity)}
+            ${frameworkBadges(r.frameworks)}
           </div>
           <span class="check-detail">${esc(r.detail ?? '')}</span>
         </div>
@@ -213,6 +225,7 @@ export function renderHealthOverview(audit, container) {
           <div class="header-actions">
             <button id="btn-refresh" class="btn-secondary">↺ Actualizar</button>
             <button id="btn-grant-permissions" class="btn-secondary">+ Activar chequeos</button>
+            <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="Restaura todos los settings que aplicaste con ⚡ Aplicar a sus valores por defecto">↶ Restablecer</button>
             <div class="export-row">
               <button id="btn-export-json" class="btn-export">↓ JSON</button>
               <button id="btn-export-pdf" class="btn-export">↓ PDF</button>
@@ -236,7 +249,7 @@ export function renderHealthOverview(audit, container) {
     });
 
     container.querySelector('#btn-grant-permissions').addEventListener('click', () => {
-      chrome.permissions.request({ permissions: ['management', 'privacy'] }, async (granted) => {
+      chrome.permissions.request({ permissions: ['management', 'privacy', 'contentSettings'] }, async (granted) => {
         void chrome.runtime.lastError;
         if (granted) {
           container.innerHTML = '<p class="loading">Auditando con todos los permisos…</p>';
@@ -248,6 +261,23 @@ export function renderHealthOverview(audit, container) {
 
     container.querySelector('#btn-export-json').addEventListener('click', () => exportAuditJSON(audit));
     container.querySelector('#btn-export-pdf').addEventListener('click', () => exportAuditPDF(audit));
+
+    container.querySelector('#btn-reset-fixes').addEventListener('click', async () => {
+      const applied = await sendMsg({ type: 'get_applied_fixes' });
+      if (!applied || applied.length === 0) {
+        alert('No hay ningún cambio aplicado para restablecer.');
+        return;
+      }
+      if (!confirm(`Esto restablecerá ${applied.length} ajuste(s) de Chrome a sus valores por defecto. ¿Continuar?`)) { return; }
+      const res = await sendMsg({ type: 'reset_applied_fixes' });
+      if (res?.ok) {
+        container.innerHTML = '<p class="loading">Reauditando…</p>';
+        const fresh = await sendMsg({ type: 'run_audit' });
+        if (fresh) { renderHealthOverview(fresh, container); }
+      } else {
+        alert(`Error al restablecer: ${res?.errors?.join(', ') ?? 'desconocido'}`);
+      }
+    });
 
     // Profile filter buttons
     container.querySelectorAll('.profile-btn').forEach((btn) => {

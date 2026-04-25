@@ -311,8 +311,60 @@ function runSiteIsolationCheck() {
 }
 
 async function runPermissionCheck() {
-  // Basic check — just inform
   return { status: 'pass', detail: 'Revisa manualmente en chrome://settings/content' };
+}
+
+async function runPrivateNetworkCheck() {
+  // No public API to check this flag — return informational
+  return {
+    status: 'unknown',
+    detail: 'Verifica manualmente en chrome://flags#private-network-access-respect-preflight-results',
+  };
+}
+
+async function runManagementPolicyCheck() {
+  // chrome.management lists installed extensions; managed extensions have installType==='admin'
+  try {
+    const installed = await chrome.management.getAll();
+    const managed = installed.filter((e) => e.installType === 'admin');
+    if (managed.length === 0) {
+      return { status: 'pass', detail: 'Sin extensiones gestionadas por política' };
+    }
+    return {
+      status: 'warn',
+      detail: `${managed.length} extensión(es) gestionada(s) por política — verifica que sean tuyas`,
+      extensions: managed.map((e) => ({ id: e.id, name: e.name })),
+    };
+  } catch {
+    return { status: 'unknown', detail: 'Permiso management no concedido' };
+  }
+}
+
+async function runDownloadPromptCheck() {
+  return {
+    status: 'unknown',
+    detail: 'Verifica en chrome://settings/downloads que esté activado "Preguntar dónde guardar"',
+  };
+}
+
+async function runContentSettingCheck(check) {
+  const setting = check.method.setting;
+  if (!chrome.contentSettings?.[setting]) {
+    return { status: 'unknown', detail: 'API contentSettings no disponible' };
+  }
+  return new Promise((resolve) => {
+    chrome.contentSettings[setting].get({ primaryUrl: 'https://example.com' }, (details) => {
+      if (chrome.runtime.lastError) {
+        resolve({ status: 'unknown', detail: chrome.runtime.lastError.message });
+        return;
+      }
+      const isBlocked = details.setting === 'block' || details.setting === 'ask';
+      resolve({
+        status: isBlocked ? 'pass' : 'warn',
+        detail: `Default: ${details.setting}`,
+      });
+    });
+  });
 }
 
 // --- Handler dispatch ---
@@ -332,6 +384,10 @@ const HANDLERS = {
   webrtcStrictCheck: runWebrtcStrictCheck,
   siteIsolationCheck: runSiteIsolationCheck,
   permissionCheck: runPermissionCheck,
+  privateNetworkCheck: runPrivateNetworkCheck,
+  managementPolicyCheck: runManagementPolicyCheck,
+  downloadPromptCheck: runDownloadPromptCheck,
+  contentSettingCheck: runContentSettingCheck,
 };
 
 // --- Main audit runner ---
@@ -356,6 +412,7 @@ export async function runAudit() {
               expected: check.method.expected ?? null,
               canApply: check.method.canApply ?? false,
               advanced: check.advanced ?? false,
+          frameworks: check.frameworks ?? [],
               status: 'skipped',
               detail: `Requiere permiso "${check.requiresPermission}"`,
             };
@@ -389,6 +446,7 @@ export async function runAudit() {
           expected: check.method.expected ?? null,
           canApply: check.method.canApply ?? false,
           advanced: check.advanced ?? false,
+          frameworks: check.frameworks ?? [],
           ...result,
         };
       } catch (err) {

@@ -56,7 +56,12 @@
         "url": "chrome://settings/help",
         "instructions": "Ve a 'Acerca de Chrome' y permite la actualización si está disponible."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-1.1",
+        "CCN-1.1",
+        "NIST-SI-2"
+      ]
     },
     {
       "id": "third-party-cookies",
@@ -76,7 +81,12 @@
         "url": "chrome://settings/cookies",
         "instructions": "Selecciona 'Bloquear cookies de terceros'."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-2.1.1",
+        "CCN-2.1",
+        "OWASP-PRIVACY"
+      ]
     },
     {
       "id": "do-not-track",
@@ -95,7 +105,10 @@
         "type": "showInstructions",
         "instructions": "Chrome 120+: Configuracion > Privacidad y Seguridad > Controles de publicidad > desplazate hasta la opcion 'Enviar solicitud Do Not Track'. Si no aparece, esta opcion ha sido eliminada de tu version de Chrome."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
     {
       "id": "doh-enabled",
@@ -115,7 +128,11 @@
         "url": "chrome://settings/security",
         "instructions": "En 'Usar DNS seguro' activa la opcion y elige Cloudflare (1.1.1.1) o Google (8.8.8.8)."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-3.2",
+        "CCN-3.4"
+      ]
     },
     {
       "id": "https-only-mode",
@@ -135,7 +152,12 @@
         "url": "chrome://settings/security",
         "instructions": "Busca 'Usar siempre conexiones seguras' y activalo. Chrome intentara HTTPS antes de HTTP en cada conexion."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-3.1",
+        "CCN-3.1",
+        "NIST-SC-8"
+      ]
     },
     {
       "id": "safe-browsing-enhanced",
@@ -155,7 +177,11 @@
         "url": "chrome://settings/security",
         "instructions": "En 'Navegacion segura' selecciona 'Proteccion mejorada' (la primera opcion, con el icono de escudo)."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-2.4.2",
+        "CCN-2.5"
+      ]
     },
     {
       "id": "autofill-credit-cards",
@@ -175,7 +201,12 @@
         "url": "chrome://settings/payments",
         "instructions": "Desactiva 'Guardar e introducir métodos de pago'."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-2.3.2",
+        "CCN-2.3",
+        "PCI-DSS"
+      ]
     },
     {
       "id": "extensions-blacklist",
@@ -187,14 +218,21 @@
       "method": {
         "type": "extensionsCheck",
         "againstList": "extensions-blacklist.json",
-        "matchBy": ["id", "name"]
+        "matchBy": [
+          "id",
+          "name"
+        ]
       },
       "rationale": "Existen extensiones identificadas como maliciosas que roban credenciales o exfiltran datos personales.",
       "fix": {
         "type": "showInstructions",
         "instructions": "Desinstala inmediatamente las extensiones marcadas y cambia contraseñas de servicios importantes."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-1.4",
+        "CCN-1.6"
+      ]
     },
     {
       "id": "extensions-permissions",
@@ -206,9 +244,16 @@
       "method": {
         "type": "extensionsPermissionsAudit",
         "flagPermissions": [
-          "<all_urls>", "tabs", "history", "cookies",
-          "webRequest", "webRequestBlocking", "downloads",
-          "management", "debugger", "proxy"
+          "<all_urls>",
+          "tabs",
+          "history",
+          "cookies",
+          "webRequest",
+          "webRequestBlocking",
+          "downloads",
+          "management",
+          "debugger",
+          "proxy"
         ],
         "tolerance": 2
       },
@@ -217,7 +262,12 @@
         "type": "showInstructions",
         "instructions": "Revisa si las extensiones marcadas realmente necesitan esos permisos. Si dudas, desinstálalas."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-1.4",
+        "CCN-1.6",
+        "OWASP-A05"
+      ]
     },
     {
       "id": "extensions-from-cws",
@@ -234,7 +284,11 @@
         "type": "showInstructions",
         "instructions": "Desinstala extensiones que no provengan de Chrome Web Store salvo que sean tuyas para desarrollo."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-1.4.1",
+        "CCN-1.6"
+      ]
     },
     {
       "id": "extensions-mv2-deprecated",
@@ -251,7 +305,10 @@
         "type": "showInstructions",
         "instructions": "Busca alternativas MV3 para las extensiones marcadas o contacta al desarrollador."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-1.5"
+      ]
     },
     {
       "id": "fingerprint-entropy",
@@ -272,7 +329,10 @@
         "url": "https://coveryourtracks.eff.org/",
         "instructions": "Visita Cover Your Tracks de la EFF para una evaluación más completa."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "OWASP-PRIVACY"
+      ]
     },
     {
       "id": "webrtc-leak",
@@ -284,14 +344,20 @@
       "method": {
         "type": "webrtcLeakTest",
         "api": "network.webRTCIPHandlingPolicy",
-        "safeValues": ["disable_non_proxied_udp", "default_public_interface_only"]
+        "safeValues": [
+          "disable_non_proxied_udp",
+          "default_public_interface_only"
+        ]
       },
       "rationale": "WebRTC puede revelar tu IP real incluso a través de una VPN.",
       "fix": {
         "type": "showInstructions",
         "instructions": "Chrome no expone esta opcion en la UI. Para mitigarlo instala la extension 'WebRTC Leak Prevent' desde Chrome Web Store, o si usas VPN consulta si tu cliente VPN incluye proteccion WebRTC."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-3.5"
+      ]
     },
     {
       "id": "popups-blocked",
@@ -311,7 +377,11 @@
         "url": "chrome://settings/content/popups",
         "instructions": "Asegúrate de que los popups están bloqueados por defecto."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-2.2",
+        "CCN-2.4"
+      ]
     },
     {
       "id": "safe-browsing-enabled",
@@ -331,7 +401,12 @@
         "url": "chrome://settings/security",
         "instructions": "En 'Navegacion segura' selecciona al menos 'Proteccion estandar'. No desactives esta opcion."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-2.4.1",
+        "CCN-2.5",
+        "NIST-SI-3"
+      ]
     },
     {
       "id": "password-leak-detection",
@@ -351,7 +426,11 @@
         "url": "chrome://settings/security",
         "instructions": "Busca 'Aviso de contrasena hackeada' o 'Proteccion de Contrasena' y activalo."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-2.4.3",
+        "CCN-2.7"
+      ]
     },
     {
       "id": "hyperlink-auditing",
@@ -371,7 +450,10 @@
         "type": "apply",
         "instructions": "Desactiva el envío de pings de auditoría de hipervínculos."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
     {
       "id": "network-prediction",
@@ -391,7 +473,10 @@
         "type": "apply",
         "instructions": "Desactiva el prefetch y preconnect de Chrome."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
     {
       "id": "referrer-headers",
@@ -411,7 +496,10 @@
         "type": "apply",
         "instructions": "Desactiva el envío de cabeceras Referer."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
     {
       "id": "autofill-addresses",
@@ -431,7 +519,10 @@
         "type": "apply",
         "instructions": "Desactiva el autocompletado de direcciones."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-2.3.1"
+      ]
     },
     {
       "id": "translation-service",
@@ -451,7 +542,10 @@
         "type": "apply",
         "instructions": "Desactiva el servicio de traducción automática."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
     {
       "id": "spelling-service",
@@ -471,7 +565,10 @@
         "type": "apply",
         "instructions": "Desactiva el corrector ortográfico en la nube. El corrector local sigue funcionando."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
     {
       "id": "search-suggestions",
@@ -491,9 +588,11 @@
         "type": "apply",
         "instructions": "Desactiva el envío de texto en tiempo real al buscador."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
-
     {
       "id": "url-keyed-suggestions",
       "category": "privacy",
@@ -513,7 +612,10 @@
         "type": "apply",
         "instructions": "Desactiva las páginas de error mejoradas."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
     {
       "id": "safe-browsing-extended-reporting",
@@ -534,7 +636,10 @@
         "type": "apply",
         "instructions": "Desactiva el envío de datos adicionales a Google para Safe Browsing."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.6"
+      ]
     },
     {
       "id": "metrics-reporting",
@@ -555,7 +660,10 @@
         "type": "apply",
         "instructions": "Desactiva el envío de estadísticas y datos de diagnóstico."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-2.8"
+      ]
     },
     {
       "id": "data-saver",
@@ -576,7 +684,10 @@
         "type": "apply",
         "instructions": "Activa la política WebRTC más restrictiva para evitar fugas de IP."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-3.5"
+      ]
     },
     {
       "id": "extensions-count",
@@ -595,7 +706,11 @@
         "type": "showInstructions",
         "instructions": "Revisa tus extensiones y desinstala las que no uses activamente. Menos extensiones = menos riesgo."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-1.4",
+        "CCN-1.6"
+      ]
     },
     {
       "id": "extensions-dev-mode",
@@ -614,7 +729,11 @@
         "url": "chrome://extensions",
         "instructions": "Desactiva el 'Modo desarrollador' si no estás desarrollando extensiones activamente."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-1.4.2",
+        "CCN-1.6"
+      ]
     },
     {
       "id": "fingerprint-canvas-protection",
@@ -631,7 +750,10 @@
         "type": "showInstructions",
         "instructions": "Considera usar Brave (bloqueo nativo) o una extensión como 'Canvas Fingerprint Defender'. En Chrome puro no hay forma nativa de bloquearlo."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "OWASP-PRIVACY"
+      ]
     },
     {
       "id": "webrtc-protection",
@@ -644,14 +766,19 @@
       "method": {
         "type": "webrtcStrictCheck",
         "api": "network.webRTCIPHandlingPolicy",
-        "strictValues": ["disable_non_proxied_udp"]
+        "strictValues": [
+          "disable_non_proxied_udp"
+        ]
       },
       "rationale": "Solo 'disable_non_proxied_udp' garantiza que no haya fugas de IP con VPN. 'default_public_interface_only' sigue siendo vulnerable en algunas configuraciones.",
       "fix": {
         "type": "apply",
         "instructions": "Activa la política WebRTC más restrictiva."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CCN-3.5"
+      ]
     },
     {
       "id": "https-upgrade-mode",
@@ -673,7 +800,11 @@
         "url": "chrome://settings/security",
         "instructions": "Asegúrate de que 'Usar siempre conexiones seguras' está activado (no solo la versión parcial)."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-3.1",
+        "CCN-3.1"
+      ]
     },
     {
       "id": "site-isolation",
@@ -691,7 +822,11 @@
         "url": "chrome://flags/#site-isolation-trial-opt-out",
         "instructions": "Verifica que el aislamiento de sitios no esté desactivado en chrome://flags."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "CIS-2.5",
+        "NIST-SC-39"
+      ]
     },
     {
       "id": "idle-detection-blocked",
@@ -710,7 +845,197 @@
         "url": "chrome://settings/content",
         "instructions": "Revisa los permisos de 'Detección de inactividad' y revócalos de sitios que no necesiten este acceso."
       },
-      "introducedIn": "1.0.0"
+      "introducedIn": "1.0.0",
+      "frameworks": [
+        "OWASP-PRIVACY"
+      ]
+    },
+    {
+      "id": "background-mode",
+      "category": "security",
+      "title": "Sin ejecución en segundo plano",
+      "severity": "low",
+      "weight": 3,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.backgroundModeEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "El modo en segundo plano mantiene Chrome ejecutándose tras cerrar la ventana. Aumenta la superficie de ataque y consumo.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva la ejecución en segundo plano de Chrome."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CIS-1.2", "CCN-1.5"]
+    },
+    {
+      "id": "ad-blocking-default",
+      "category": "security",
+      "title": "Bloqueo de anuncios intrusivos activo",
+      "severity": "medium",
+      "weight": 4,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.adMeasurementEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "La API de medición de anuncios envía datos de tu actividad publicitaria a redes de ads. Parte de Privacy Sandbox de Google.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva la medición de anuncios (Privacy Sandbox)."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CCN-2.1", "OWASP-PRIVACY"]
+    },
+    {
+      "id": "topics-api-disabled",
+      "category": "privacy",
+      "title": "Topics API desactivada",
+      "severity": "medium",
+      "weight": 5,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.topicsEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Topics API permite a sitios deducir tus intereses para publicidad sin cookies de terceros. Reemplazo de Google al FLoC.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva Topics API. Tus intereses no serán inferidos por Chrome."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CCN-2.1", "CIS-2.1.2", "OWASP-PRIVACY"]
+    },
+    {
+      "id": "fledge-api-disabled",
+      "category": "privacy",
+      "title": "Protected Audience (FLEDGE) desactivada",
+      "severity": "medium",
+      "weight": 4,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.fledgeEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Protected Audience permite remarketing y subastas de anuncios en el navegador sin cookies de terceros.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva la API Protected Audience (FLEDGE)."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CCN-2.1", "OWASP-PRIVACY"]
+    },
+    {
+      "id": "private-network-access",
+      "category": "security",
+      "title": "Private Network Access protegido",
+      "severity": "high",
+      "weight": 7,
+      "advanced": true,
+      "method": {
+        "type": "privateNetworkCheck"
+      },
+      "rationale": "Private Network Access bloquea que webs públicas accedan a tu red local (router, NAS, IoT) sin permiso explícito. Protege contra ataques DNS rebinding.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://flags/#private-network-access-respect-preflight-results",
+        "instructions": "Activa 'Block insecure private network requests' en chrome://flags."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CIS-3.4", "NIST-SC-7", "CCN-3.6"]
+    },
+    {
+      "id": "chrome-management-policy",
+      "category": "security",
+      "title": "Sin políticas de gestión inesperadas",
+      "severity": "high",
+      "weight": 6,
+      "advanced": true,
+      "method": {
+        "type": "managementPolicyCheck"
+      },
+      "rationale": "Las políticas de gestión empresarial pueden añadir extensiones, certificados o servidores sin tu conocimiento. En entornos personales, indica posible compromiso.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://policy",
+        "instructions": "Revisa todas las políticas listadas. Si no las has configurado tú o tu empresa, podría ser malware."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CIS-1.6", "NIST-CM-7", "CCN-1.7"]
+    },
+    {
+      "id": "downloads-prompt",
+      "category": "security",
+      "title": "Confirmar antes de descargar",
+      "severity": "medium",
+      "weight": 4,
+      "advanced": true,
+      "method": {
+        "type": "downloadPromptCheck"
+      },
+      "rationale": "Que Chrome pregunte la ubicación antes de cada descarga previene drive-by downloads de malware.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/downloads",
+        "instructions": "Activa 'Preguntar dónde guardar cada archivo antes de descargarlo'."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CIS-3.5", "CCN-3.7"]
+    },
+    {
+      "id": "geolocation-blocked",
+      "category": "privacy",
+      "title": "Geolocalización por defecto bloqueada",
+      "severity": "medium",
+      "weight": 4,
+      "advanced": true,
+      "method": {
+        "type": "contentSettingCheck",
+        "setting": "geolocation"
+      },
+      "rationale": "Que la geolocalización sea opt-in por sitio evita que webs accedan a tu ubicación sin avisar.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/content/location",
+        "instructions": "Selecciona 'No permitir que los sitios consulten tu ubicación' o 'Preguntar antes'."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CIS-2.6", "CCN-2.9"]
     }
-  ]
+  ],
+  "frameworks": {
+    "CIS": {
+      "name": "CIS Benchmark for Chrome",
+      "desc": "Center for Internet Security"
+    },
+    "CCN": {
+      "name": "CCN-STIC-885B",
+      "desc": "Esquema Nacional de Seguridad (España)"
+    },
+    "NIST": {
+      "name": "NIST SP 800-53",
+      "desc": "Controles de seguridad federales (USA)"
+    },
+    "OWASP": {
+      "name": "OWASP Browser Security",
+      "desc": "Open Web Application Security Project"
+    },
+    "PCI-DSS": {
+      "name": "PCI-DSS",
+      "desc": "Payment Card Industry"
+    }
+  }
 }

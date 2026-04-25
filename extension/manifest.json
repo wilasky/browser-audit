@@ -13,7 +13,8 @@
 
   "optional_permissions": [
     "management",
-    "privacy"
+    "privacy",
+    "contentSettings"
   ],
 
   "background": {

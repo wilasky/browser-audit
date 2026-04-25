@@ -48,7 +48,7 @@ export function renderOnboarding(container, onDone) {
     if (step === STEPS.length - 1) {
       // Last step: request permissions before leaving onboarding
       await new Promise((resolve) => {
-        chrome.permissions.request({ permissions: ['management', 'privacy'] }, () => {
+        chrome.permissions.request({ permissions: ['management', 'privacy', 'contentSettings'] }, () => {
           void chrome.runtime.lastError;
           resolve();
         });

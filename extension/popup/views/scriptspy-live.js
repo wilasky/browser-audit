@@ -97,18 +97,19 @@ function buildLookupLinks(url) {
   let domain;
   try { domain = new URL(url).hostname; } catch { return ''; }
 
-  const vt = `https://www.virustotal.com/gui/search/${encodeURIComponent(url)}`;
-  const us = `https://urlscan.io/search/#${encodeURIComponent('domain:' + domain)}`;
+  // All endpoints search by domain — VT search by URL fails for script paths
+  const vt = `https://www.virustotal.com/gui/domain/${encodeURIComponent(domain)}`;
+  const us = `https://urlscan.io/domain/${encodeURIComponent(domain)}`;
   const uh = `https://urlhaus.abuse.ch/browse.php?search=${encodeURIComponent(domain)}`;
   const sb = `https://transparencyreport.google.com/safe-browsing/search?url=${encodeURIComponent(domain)}`;
 
   return `
     <div class="script-lookup">
-      <span class="lookup-label">Buscar en:</span>
-      <a class="lookup-link" data-href="${esc(vt)}" title="VirusTotal — análisis multi-engine">VirusTotal</a>
-      <a class="lookup-link" data-href="${esc(us)}" title="urlscan.io — escaneos públicos">urlscan</a>
+      <span class="lookup-label">${esc(domain)}:</span>
+      <a class="lookup-link" data-href="${esc(vt)}" title="VirusTotal — análisis multi-engine del dominio">VirusTotal</a>
+      <a class="lookup-link" data-href="${esc(us)}" title="urlscan.io — historial de escaneos del dominio">urlscan</a>
       <a class="lookup-link" data-href="${esc(uh)}" title="URLhaus — base de datos de malware (abuse.ch)">URLhaus</a>
-      <a class="lookup-link" data-href="${esc(sb)}" title="Google Safe Browsing">Safe Browsing</a>
+      <a class="lookup-link" data-href="${esc(sb)}" title="Google Safe Browsing — estado del dominio">Safe Browsing</a>
     </div>`;
 }
 

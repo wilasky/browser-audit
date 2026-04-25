@@ -9,6 +9,7 @@ const entryPoints = [
   `${SRC}/background/index.js`,
   `${SRC}/content/instrumentation.js`,
   `${SRC}/content/bridge.js`,
+  `${SRC}/content/compliance-probe.js`,
   `${SRC}/popup/popup.js`,
 ];
 

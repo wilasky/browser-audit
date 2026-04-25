@@ -93,6 +93,29 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'run_compliance_probe') {
+    const tabId = msg.tabId;
+    if (!tabId) { sendResponse({ ok: false, reason: 'No active tab.' }); return; }
+    chrome.tabs.get(tabId).then((tab) => {
+      const url = tab.url ?? '';
+      if (!url || url.startsWith('chrome://') || url.startsWith('chrome-extension://')) {
+        sendResponse({ ok: false, reason: 'No se puede analizar páginas del sistema.' });
+        return;
+      }
+      chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content/compliance-probe.js'],
+        world: 'MAIN',
+      }).then((results) => {
+        const result = results?.[0]?.result ?? null;
+        sendResponse({ ok: true, result });
+      }).catch((err) => {
+        sendResponse({ ok: false, reason: err.message });
+      });
+    }).catch(() => sendResponse({ ok: false, reason: 'Pestaña no accesible.' }));
+    return true;
+  }
+
   if (msg.type === 'inject_scriptspy') {
     const tabId = msg.tabId;
     if (tabId) {
@@ -119,13 +142,51 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const [namespace, key] = api.split('.');
     const setting = chrome.privacy?.[namespace]?.[key];
     if (!setting) { sendResponse({ ok: false, reason: 'API no disponible' }); return; }
-    setting.set({ value }, () => {
+    setting.set({ value }, async () => {
       if (chrome.runtime.lastError) {
         sendResponse({ ok: false, reason: chrome.runtime.lastError.message });
       } else {
+        // Track which keys were modified so we can revert with reset_applied_fixes
+        const stored = await chrome.storage.local.get('appliedFixes');
+        const applied = stored.appliedFixes ?? [];
+        if (!applied.includes(api)) {
+          applied.push(api);
+          await chrome.storage.local.set({ appliedFixes: applied });
+        }
         sendResponse({ ok: true });
       }
     });
+    return true;
+  }
+
+  if (msg.type === 'reset_applied_fixes') {
+    // Revert all chrome.privacy settings touched via apply_fix back to user default
+    chrome.storage.local.get('appliedFixes').then(async (stored) => {
+      const applied = stored.appliedFixes ?? [];
+      const errors = [];
+      for (const api of applied) {
+        const [namespace, key] = api.split('.');
+        const setting = chrome.privacy?.[namespace]?.[key];
+        if (!setting) { continue; }
+        try {
+          await new Promise((resolve) => {
+            setting.clear({}, () => {
+              if (chrome.runtime.lastError) { errors.push(chrome.runtime.lastError.message); }
+              resolve();
+            });
+          });
+        } catch (e) {
+          errors.push(e.message);
+        }
+      }
+      await chrome.storage.local.set({ appliedFixes: [] });
+      sendResponse({ ok: errors.length === 0, count: applied.length, errors });
+    });
+    return true;
+  }
+
+  if (msg.type === 'get_applied_fixes') {
+    chrome.storage.local.get('appliedFixes').then((s) => sendResponse(s.appliedFixes ?? []));
     return true;
   }
 
