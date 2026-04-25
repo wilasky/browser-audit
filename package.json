@@ -10,8 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint extension/ tests/ scripts/ --ext .js",
-    "lint:fix": "eslint extension/ tests/ scripts/ --ext .js --fix",
+    "lint": "eslint extension/ tests/ scripts/ --ext .js --no-error-on-unmatched-pattern",
+    "lint:fix": "eslint extension/ tests/ scripts/ --ext .js --fix --no-error-on-unmatched-pattern",
     "format": "prettier --write extension/ tests/ scripts/",
     "package": "node scripts/package.js"
   },

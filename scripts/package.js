@@ -1,22 +1,7 @@
 import { createWriteStream } from 'node:fs';
-import { readdir, stat } from 'node:fs/promises';
-import { join } from 'node:path';
-import { createGzip } from 'node:zlib';
 
 const SRC = 'extension/dist';
 const OUT_FILE = `browser-audit-${new Date().toISOString().slice(0, 10)}.zip`;
-
-async function* walk(dir) {
-  for (const entry of await readdir(dir)) {
-    const full = join(dir, entry);
-    const s = await stat(full);
-    if (s.isDirectory()) {
-      yield* walk(full);
-    } else {
-      yield full;
-    }
-  }
-}
 
 async function pkg() {
   const { default: archiver } = await import('archiver').catch(() => {
