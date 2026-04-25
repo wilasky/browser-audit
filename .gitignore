@@ -1,5 +1,5 @@
-cat > .gitignore << 'EOF'
 node_modules/
+extension/dist/
 dist/
 build/
 .env
@@ -10,4 +10,3 @@ build/
 .idea/
 coverage/
 *.zip
-EOF

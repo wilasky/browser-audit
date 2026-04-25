@@ -1,0 +1,25 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  width: 380px;
+  min-height: 500px;
+  background: #0f0f11;
+  color: #e8e8ea;
+}
+
+header {
+  padding: 16px;
+  border-bottom: 1px solid #2a2a2e;
+}
+
+h1 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+main {
+  padding: 16px;
+}

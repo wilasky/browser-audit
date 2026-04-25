@@ -7,8 +7,8 @@
 ## Estado actual
 
 **Fase actual:** FASE 0 — Fundamentos del proyecto
-**Última actualización:** [pendiente de primera sesión]
-**Próxima tarea:** Inicializar repo git con la estructura de carpetas de la sección 3 del documento maestro
+**Última actualización:** 2026-04-25
+**Próxima tarea:** Setup CI básico en GitHub Actions (lint + tests)
 
 ---
 
@@ -31,7 +31,7 @@ Antes de empezar cualquier tarea, leer:
 - **Backend:** Node.js + Fastify + SQLite (solo si se llega a la fase 4)
 - **Pagos:** ExtensionPay
 - **Privacidad:** el cliente nunca envía URLs ni datos personales al backend; solo hashes SHA256
-
+- **Permisos mínimos:** la extensión debe usar `activeTab` y `optional_permissions` siempre que sea posible; cualquier permiso sensible requiere justificación antes de implementarse.
 ---
 
 ## Decisiones pendientes de discutir
@@ -46,17 +46,18 @@ Antes de empezar cualquier tarea, leer:
 
 ### FASE 0 — Fundamentos del proyecto
 
-- [ ] Inicializar repo git con la estructura de carpetas de Architecture sección 3
-- [ ] Crear `STATUS.md` (este archivo) y actualizar
-- [ ] Setup `package.json` con scripts: `dev`, `build`, `test`, `lint`, `package`
-- [ ] Configurar esbuild
-- [ ] Configurar ESLint con reglas estrictas para extensiones MV3
-- [ ] Configurar Prettier
-- [ ] Configurar Vitest
-- [ ] Crear `manifest.json` mínimo con permisos justos
-- [ ] Migrar el código del POC actual de ScriptSpy a `extension/content/`
-- [ ] Verificar que la extensión carga sin errores
-- [ ] Setup de CI básico en GitHub Actions
+- [x] Inicializar repo git con la estructura de carpetas de Architecture sección 3
+- [x] Crear `STATUS.md` (este archivo) y actualizar
+- [x] Setup `package.json` con scripts: `dev`, `build`, `test`, `lint`, `package`
+- [x] Configurar esbuild (scripts/build.js, scripts/dev.js, scripts/package.js)
+- [x] Configurar ESLint con reglas estrictas para extensiones MV3 (eslint.config.js flat config)
+- [x] Configurar Prettier (.prettierrc)
+- [x] Configurar Vitest (vitest.config.js, umbral de cobertura 40%)
+- [x] Crear `manifest.json` mínimo con permisos justos (storage, activeTab, scripting core; management+privacy opcionales)
+- [x] Crear stubs de código: background/index.js, content/bridge.js, content/instrumentation.js, popup/popup.html+js+css
+- [x] Build pasa sin errores (`npm run build` → extension/dist/)
+- [ ] Verificar que la extensión carga en chrome://extensions sin errores (MANUAL — cargar extension/dist/ en Chrome)
+- [ ] Setup de CI básico en GitHub Actions (lint + tests)
 
 ### FASE 1 — Browser Health Check
 

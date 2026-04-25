@@ -1,0 +1,27 @@
+{
+  "name": "browser-audit",
+  "version": "0.1.0",
+  "description": "Chrome extension: Browser Health Check + ScriptSpy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "node scripts/build.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint extension/ tests/ scripts/ --ext .js",
+    "lint:fix": "eslint extension/ tests/ scripts/ --ext .js --fix",
+    "format": "prettier --write extension/ tests/ scripts/",
+    "package": "node scripts/package.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@vitest/coverage-v8": "^2.1.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.13.0",
+    "globals": "^17.5.0",
+    "prettier": "^3.3.0",
+    "vitest": "^2.1.0"
+  }
+}
