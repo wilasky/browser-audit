@@ -180,24 +180,47 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'apply_fix') {
-    // Directly set a chrome.privacy setting without opening Chrome settings
     const { api, value } = msg;
     const [namespace, key] = api.split('.');
     const setting = chrome.privacy?.[namespace]?.[key];
     if (!setting) { sendResponse({ ok: false, reason: 'API no disponible' }); return; }
+
     setting.set({ value }, async () => {
       if (chrome.runtime.lastError) {
         sendResponse({ ok: false, reason: chrome.runtime.lastError.message });
-      } else {
-        // Track which keys were modified so we can revert with reset_applied_fixes
-        const stored = await chrome.storage.local.get('appliedFixes');
-        const applied = stored.appliedFixes ?? [];
-        if (!applied.includes(api)) {
-          applied.push(api);
-          await chrome.storage.local.set({ appliedFixes: applied });
-        }
-        sendResponse({ ok: true });
+        return;
       }
+
+      // Verify the change actually took effect — chrome.privacy.set can fail silently
+      // if another extension or policy controls the setting
+      setting.get({}, async (details) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ ok: false, reason: 'No se pudo verificar el cambio' });
+          return;
+        }
+        const currentValue = (details.value && typeof details.value === 'object' && 'mode' in details.value)
+          ? details.value.mode
+          : details.value;
+        const success = currentValue === value;
+
+        if (success) {
+          const stored = await chrome.storage.local.get('appliedFixes');
+          const applied = stored.appliedFixes ?? [];
+          if (!applied.includes(api)) {
+            applied.push(api);
+            await chrome.storage.local.set({ appliedFixes: applied });
+          }
+          sendResponse({ ok: true, verified: true });
+        } else {
+          // Setting controlled by other software / extension / policy
+          const reason = details.levelOfControl === 'controlled_by_other_extensions'
+            ? 'Otra extensión controla este ajuste — desactívala o revoca su acceso'
+            : details.levelOfControl === 'not_controllable'
+            ? 'Política corporativa o sistema bloquea este cambio'
+            : `Cambio aplicado pero el valor sigue siendo "${currentValue}". El navegador puede no soportar este valor.`;
+          sendResponse({ ok: false, reason });
+        }
+      });
     });
     return true;
   }
