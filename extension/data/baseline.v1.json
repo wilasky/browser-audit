@@ -492,6 +492,225 @@
         "instructions": "Desactiva el envío de texto en tiempo real al buscador."
       },
       "introducedIn": "1.0.0"
+    },
+
+    {
+      "id": "url-keyed-suggestions",
+      "category": "privacy",
+      "title": "Mejoras basadas en URL desactivadas",
+      "severity": "medium",
+      "weight": 4,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.alternateErrorPagesEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Chrome envía URLs de páginas de error a Google para ofrecer sugerencias. Esto filtra información de navegación.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva las páginas de error mejoradas."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "safe-browsing-extended-reporting",
+      "category": "privacy",
+      "title": "Informes ampliados de Safe Browsing desactivados",
+      "severity": "medium",
+      "weight": 4,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.safeBrowsingExtendedReportingEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "El informe ampliado envía a Google datos de páginas sospechosas que visitas, incluyendo las URLs.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el envío de datos adicionales a Google para Safe Browsing."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "metrics-reporting",
+      "category": "privacy",
+      "title": "Métricas de uso desactivadas",
+      "severity": "medium",
+      "weight": 3,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.metricsReportingEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Chrome envía estadísticas de uso, crashes y datos de rendimiento a Google de forma continua.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el envío de estadísticas y datos de diagnóstico."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "data-saver",
+      "category": "privacy",
+      "title": "Sin proxy de compresión activo",
+      "severity": "high",
+      "weight": 6,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "network.webRTCIPHandlingPolicy",
+        "expected": "disable_non_proxied_udp",
+        "canApply": true
+      },
+      "rationale": "La política WebRTC controla qué IPs se exponen. 'disable_non_proxied_udp' es la más segura — evita fugas de IP incluso con VPN.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Activa la política WebRTC más restrictiva para evitar fugas de IP."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "extensions-count",
+      "category": "extensions",
+      "title": "Número de extensiones razonable",
+      "severity": "medium",
+      "weight": 4,
+      "advanced": true,
+      "requiresPermission": "management",
+      "method": {
+        "type": "extensionsCountCheck",
+        "maxRecommended": 10
+      },
+      "rationale": "Cada extensión es código de terceros con acceso al navegador. Más de 10 extensiones activas aumenta significativamente la superficie de ataque.",
+      "fix": {
+        "type": "showInstructions",
+        "instructions": "Revisa tus extensiones y desinstala las que no uses activamente. Menos extensiones = menos riesgo."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "extensions-dev-mode",
+      "category": "extensions",
+      "title": "Modo desarrollador desactivado",
+      "severity": "high",
+      "weight": 7,
+      "advanced": true,
+      "requiresPermission": "management",
+      "method": {
+        "type": "devModeCheck"
+      },
+      "rationale": "El modo desarrollador permite cargar extensiones sin revisión de Google. Es un vector común de malware en usuarios no técnicos.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://extensions",
+        "instructions": "Desactiva el 'Modo desarrollador' si no estás desarrollando extensiones activamente."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "fingerprint-canvas-protection",
+      "category": "fingerprint",
+      "title": "Canvas fingerprint protegido",
+      "severity": "high",
+      "weight": 8,
+      "advanced": true,
+      "method": {
+        "type": "canvasFingerprintCheck"
+      },
+      "rationale": "El canvas fingerprint es el identificador más preciso disponible para trackers. Brave y Firefox Strict lo bloquean por defecto. Chrome no ofrece esta protección.",
+      "fix": {
+        "type": "showInstructions",
+        "instructions": "Considera usar Brave (bloqueo nativo) o una extensión como 'Canvas Fingerprint Defender'. En Chrome puro no hay forma nativa de bloquearlo."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "webrtc-protection",
+      "category": "leaks",
+      "title": "Protección WebRTC estricta",
+      "severity": "high",
+      "weight": 6,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "webrtcStrictCheck",
+        "api": "network.webRTCIPHandlingPolicy",
+        "strictValues": ["disable_non_proxied_udp"]
+      },
+      "rationale": "Solo 'disable_non_proxied_udp' garantiza que no haya fugas de IP con VPN. 'default_public_interface_only' sigue siendo vulnerable en algunas configuraciones.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Activa la política WebRTC más restrictiva."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "https-upgrade-mode",
+      "category": "security",
+      "title": "HTTPS-Only Mode completo",
+      "severity": "medium",
+      "weight": 5,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.httpsOnlyModeEnabled",
+        "expected": true,
+        "canApply": true
+      },
+      "rationale": "Este check evalúa si el modo HTTPS-Only está activo correctamente, distinguiéndolo del modo HTTPS-First.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/security",
+        "instructions": "Asegúrate de que 'Usar siempre conexiones seguras' está activado (no solo la versión parcial)."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "site-isolation",
+      "category": "security",
+      "title": "Aislamiento de sitios activo",
+      "severity": "high",
+      "weight": 7,
+      "advanced": true,
+      "method": {
+        "type": "siteIsolationCheck"
+      },
+      "rationale": "El aislamiento de sitios protege contra ataques Spectre y similares que pueden extraer datos entre pestañas. Chrome lo activa por defecto pero algunas configuraciones lo deshabilitan.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://flags/#site-isolation-trial-opt-out",
+        "instructions": "Verifica que el aislamiento de sitios no esté desactivado en chrome://flags."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "idle-detection-blocked",
+      "category": "privacy",
+      "title": "API de detección de inactividad bloqueada",
+      "severity": "low",
+      "weight": 2,
+      "advanced": true,
+      "method": {
+        "type": "permissionCheck",
+        "permission": "idle-detection"
+      },
+      "rationale": "La API de detección de inactividad permite a sitios web saber cuándo no estás usando el ordenador. Es una señal de seguimiento de comportamiento.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/content",
+        "instructions": "Revisa los permisos de 'Detección de inactividad' y revócalos de sitios que no necesiten este acceso."
+      },
+      "introducedIn": "1.0.0"
     }
   ]
 }

@@ -5,11 +5,12 @@ const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unk
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
 
 const PROFILES = {
-  all:     { label: 'Todo',           filter: () => true },
-  basic:   { label: 'Básico',         filter: (r) => ['critical', 'high'].includes(r.severity) },
-  privacy: { label: 'Privacidad',     filter: (r) => r.category === 'privacy' || r.category === 'leaks' || r.category === 'fingerprint' },
-  security:{ label: 'Seguridad',      filter: (r) => r.category === 'security' || r.category === 'updates' },
-  failed:  { label: 'Solo fallos',    filter: (r) => r.status === 'fail' || r.status === 'warn' },
+  all:      { label: 'Estándar',      filter: (r) => !r.advanced },
+  advanced: { label: 'Avanzado',      filter: () => true },
+  basic:    { label: 'Básico',        filter: (r) => ['critical', 'high'].includes(r.severity) && !r.advanced },
+  privacy:  { label: 'Privacidad',    filter: (r) => r.category === 'privacy' || r.category === 'leaks' || r.category === 'fingerprint' },
+  security: { label: 'Seguridad',     filter: (r) => r.category === 'security' || r.category === 'updates' },
+  failed:   { label: 'Solo fallos',   filter: (r) => r.status === 'fail' || r.status === 'warn' },
 };
 
 function sendMsg(msg) {

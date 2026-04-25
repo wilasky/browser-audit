@@ -1,81 +1,96 @@
 import { calculateFingerprintDetail } from '../../shared/fingerprint.js';
 import { esc } from '../../shared/sanitize.js';
 
-const UNIQUENESS_LABEL = {
-  common: { text: 'Común', cls: 'fp-common', icon: '🟢' },
-  rare:   { text: 'Único',  cls: 'fp-rare',   icon: '🔴' },
+const UNIQ = {
+  common: { text: 'Común',  cls: 'fp-common', icon: '●' },
+  rare:   { text: 'Único',  cls: 'fp-rare',   icon: '◆' },
 };
 
 function renderSignal(s) {
-  const u = UNIQUENESS_LABEL[s.uniqueness] ?? UNIQUENESS_LABEL.common;
+  const u = UNIQ[s.uniqueness] ?? UNIQ.common;
   const bits = s.entropyBits.toFixed(1);
-  const barWidth = Math.min(100, (s.entropyBits / 10) * 100);
+  const barPct = Math.min(100, (s.entropyBits / 10) * 100);
   const barColor = s.uniqueness === 'rare' ? '#ef4444' : '#22c55e';
 
   return `
     <div class="fp-signal ${s.highlight ? 'fp-highlight' : ''}">
       <div class="fp-signal-header">
         <span class="fp-signal-name">${esc(s.name)}</span>
-        <span class="fp-uniq ${u.cls}">${esc(u.icon)} ${esc(u.text)}</span>
         <span class="fp-bits">${esc(bits)} bits</span>
+        <span class="fp-uniq ${u.cls}">${esc(u.icon)} ${esc(u.text)}</span>
       </div>
-      <div class="fp-value">${esc(s.value)}</div>
-      <div class="fp-bar-wrap">
-        <div class="fp-bar" style="width:${barWidth}%;background:${barColor}"></div>
-      </div>
-      <div class="fp-tip">${esc(s.tip)}</div>
+      <div class="fp-value" title="${esc(s.value)}">${esc(s.value)}</div>
+      <div class="fp-bar-wrap"><div class="fp-bar" style="width:${barPct}%;background:${barColor}"></div></div>
+      <div class="fp-tip">${esc(s.detail)}</div>
     </div>`;
 }
 
 export async function renderFingerprintDetail(container) {
-  container.innerHTML = '<p class="loading">Calculando huella digital detallada…</p>';
+  container.innerHTML = '<p class="loading">Calculando huella digital…</p>';
 
   try {
-    const detail = await calculateFingerprintDetail();
-    const color = detail.level === 'green' ? '#22c55e' : detail.level === 'amber' ? '#f59e0b' : '#ef4444';
-    const rare = detail.signals.filter((s) => s.uniqueness === 'rare').length;
+    const d = await calculateFingerprintDetail();
+    const color = d.level === 'green' ? '#22c55e' : d.level === 'amber' ? '#f59e0b' : '#ef4444';
+    const rare = d.signals.filter((s) => s.uniqueness === 'rare').length;
+    const barPct = Math.min(100, (d.totalEntropy / 40) * 100);
 
     container.innerHTML = `
       <div class="fp-wrap">
         <div class="fp-header">
-          <button class="fp-back link-btn" id="btn-fp-back">← Volver</button>
-          <h2 class="fp-title">Huella digital del navegador</h2>
+          <button id="btn-fp-back" class="link-btn">← Volver</button>
+          <span class="fp-title">Análisis de huella digital</span>
         </div>
 
         <div class="fp-score-row">
-          <div class="fp-total" style="color:${color}">${detail.totalEntropy} bits</div>
-          <div class="fp-score-meta">
-            <div class="fp-level-text" style="color:${color}">${esc(detail.levelText)}</div>
-            <div class="fp-stats">${rare} señal${rare !== 1 ? 'es' : ''} única${rare !== 1 ? 's' : ''} de ${detail.signals.length}</div>
+          <div class="fp-total" style="color:${color}">${d.totalEntropy}</div>
+          <div>
+            <div class="fp-bits-label">bits de entropía</div>
+            <div class="fp-level-text" style="color:${color}">${esc(d.levelText)}</div>
+            <div class="fp-stats">${rare} señal${rare !== 1 ? 'es únicas' : ' única'} de ${d.signals.length}</div>
           </div>
         </div>
 
         <div class="fp-entropy-bar-wrap">
-          <div class="fp-entropy-bar" style="width:${Math.min(100, (detail.totalEntropy / 40) * 100)}%;background:${color}"></div>
-          <div class="fp-entropy-scale">
-            <span>0</span><span>20 bits<br><small>común</small></span>
-            <span>30 bits<br><small>único</small></span><span>40+</span>
-          </div>
+          <div class="fp-entropy-bar" style="width:${barPct}%;background:${color}"></div>
+        </div>
+        <div class="fp-entropy-scale">
+          <span>0</span><span style="margin-left:50%">22 · moderado</span><span style="margin-left:auto">40+ bits</span>
+        </div>
+
+        <div class="fp-hash-row">
+          <span class="fp-hash-label">ID de tu navegador:</span>
+          <span class="fp-hash-val" id="fp-hash">${esc(d.fingerprintHash)}</span>
+          <button id="btn-copy-hash" class="btn-export" title="Copiar hash">⎘</button>
         </div>
 
         <div class="fp-signals">
-          ${detail.signals.map(renderSignal).join('')}
+          ${d.signals.map(renderSignal).join('')}
         </div>
 
         <div class="fp-footer">
-          <p>Para reducir tu huella: usa Firefox + uBlock Origin, o el modo Turbo de Brave.
-          Chrome ofrece poca protección contra fingerprinting por diseño.</p>
-          <a href="#" id="btn-fp-eff" class="link-btn">Ver análisis completo en Cover Your Tracks (EFF) ↗</a>
+          <p><strong>¿Qué es esto?</strong> Cada señal de arriba es un dato que tu navegador
+          revela a los sitios que visitas. Combinadas forman un identificador casi único
+          aunque borres las cookies. El hash de arriba representa tu "huella" actual.</p>
+          <p style="margin-top:6px">
+            Para protegerte: <strong>Brave</strong> bloquea canvas/WebGL por defecto.
+            <strong>Firefox</strong> con "Strict" protection también reduce la entropía.
+            En Chrome hay poco que hacer sin extensiones de protección.
+          </p>
+          ${d.canvasBlocked
+            ? '<p style="color:#22c55e;margin-top:6px">✓ Tu navegador está bloqueando el canvas fingerprint.</p>'
+            : ''}
         </div>
       </div>`;
 
     container.querySelector('#btn-fp-back').addEventListener('click', () => {
-      container.dispatchEvent(new CustomEvent('fp-back'));
+      container.dispatchEvent(new CustomEvent('fp-back', { bubbles: true }));
     });
 
-    container.querySelector('#btn-fp-eff').addEventListener('click', (e) => {
-      e.preventDefault();
-      chrome.tabs.create({ url: 'https://coveryourtracks.eff.org/' });
+    container.querySelector('#btn-copy-hash').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(d.fingerprintHash).catch(() => {});
+      const btn = container.querySelector('#btn-copy-hash');
+      btn.textContent = '✓';
+      setTimeout(() => { btn.textContent = '⎘'; }, 1500);
     });
   } catch (err) {
     const p = document.createElement('p');

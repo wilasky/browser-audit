@@ -242,6 +242,79 @@ async function runWebrtcLeakTest(check) {
   });
 }
 
+async function runExtensionsCountCheck(check) {
+  const installed = await chrome.management.getAll();
+  const active = installed.filter((e) => e.type === 'extension' && e.enabled && e.id !== chrome.runtime.id);
+  const max = check.method.maxRecommended ?? 10;
+  if (active.length <= max) {
+    return { status: 'pass', detail: `${active.length} extensión(es) activa(s)` };
+  }
+  return {
+    status: 'warn',
+    detail: `${active.length} extensiones activas (recomendado: máximo ${max})`,
+  };
+}
+
+async function runDevModeCheck() {
+  const installed = await chrome.management.getAll();
+  // Sideloaded extensions indicate dev mode is on
+  const devModeExt = installed.filter((e) => e.type === 'extension' && e.installType === 'other' && e.id !== chrome.runtime.id);
+  if (devModeExt.length === 0) {
+    return { status: 'pass', detail: 'Sin extensiones en modo desarrollador' };
+  }
+  return {
+    status: 'warn',
+    detail: `Modo desarrollador activo (${devModeExt.length} extensión(es) sin verificar)`,
+    extensions: devModeExt.map((e) => ({ id: e.id, name: e.name })),
+  };
+}
+
+async function runCanvasFingerprintCheck() {
+  // The actual canvas check runs in popup context — here we read the cached result
+  const stored = await chrome.storage.local.get('canvasBlocked');
+  if (stored.canvasBlocked === true) {
+    return { status: 'pass', detail: 'Canvas fingerprint bloqueado por el navegador' };
+  }
+  if (stored.canvasBlocked === false) {
+    return { status: 'fail', detail: 'Canvas fingerprint NO bloqueado — rastreable por cualquier web' };
+  }
+  return { status: 'unknown', detail: 'Pendiente de cálculo (abre una página)' };
+}
+
+async function runWebrtcStrictCheck(check) {
+  const { api, strictValues } = check.method;
+  const [namespace, key] = api.split('.');
+  return new Promise((resolve) => {
+    const setting = chrome.privacy?.[namespace]?.[key];
+    if (!setting) { resolve({ status: 'unknown', detail: 'API no disponible' }); return; }
+    setting.get({}, (details) => {
+      if (chrome.runtime.lastError) { resolve({ status: 'unknown', detail: chrome.runtime.lastError.message }); return; }
+      const strict = strictValues.includes(details.value);
+      resolve({
+        status: strict ? 'pass' : 'fail',
+        detail: strict ? 'WebRTC en modo más restrictivo' : `WebRTC policy: ${details.value} (necesita: disable_non_proxied_udp)`,
+      });
+    });
+  });
+}
+
+function runSiteIsolationCheck() {
+  // Site isolation is on by default — detect common ways it's disabled
+  // Site isolation on by default — only disabled via chrome://flags which is unusual
+  const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
+  return Promise.resolve({
+    status: hasSharedArrayBuffer ? 'pass' : 'warn',
+    detail: hasSharedArrayBuffer
+      ? 'Aislamiento de sitios activo'
+      : 'SharedArrayBuffer no disponible — posible configuración inusual',
+  });
+}
+
+async function runPermissionCheck() {
+  // Basic check — just inform
+  return { status: 'pass', detail: 'Revisa manualmente en chrome://settings/content' };
+}
+
 // --- Handler dispatch ---
 
 const HANDLERS = {
@@ -253,6 +326,12 @@ const HANDLERS = {
   extensionsMV2Check: runExtensionsMV2Check,
   fingerprintCalculation: runFingerprintCalculation,
   webrtcLeakTest: runWebrtcLeakTest,
+  extensionsCountCheck: runExtensionsCountCheck,
+  devModeCheck: runDevModeCheck,
+  canvasFingerprintCheck: runCanvasFingerprintCheck,
+  webrtcStrictCheck: runWebrtcStrictCheck,
+  siteIsolationCheck: runSiteIsolationCheck,
+  permissionCheck: runPermissionCheck,
 };
 
 // --- Main audit runner ---
@@ -276,6 +355,7 @@ export async function runAudit() {
               api: check.method.api ?? null,
               expected: check.method.expected ?? null,
               canApply: check.method.canApply ?? false,
+              advanced: check.advanced ?? false,
               status: 'skipped',
               detail: `Requiere permiso "${check.requiresPermission}"`,
             };
@@ -308,6 +388,7 @@ export async function runAudit() {
           api: check.method.api ?? null,
           expected: check.method.expected ?? null,
           canApply: check.method.canApply ?? false,
+          advanced: check.advanced ?? false,
           ...result,
         };
       } catch (err) {

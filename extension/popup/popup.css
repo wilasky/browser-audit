@@ -380,6 +380,19 @@ main { padding: 0 0 16px; }
 
 .fp-tip { font-size: 10px; color: #444; line-height: 1.4; }
 
+.fp-bits-label { font-size: 10px; color: #555; }
+
+.fp-hash-row {
+  display: flex; align-items: center; gap: 6px;
+  background: #0f0f15; border: 1px solid #2a2a2e; border-radius: 5px;
+  padding: 6px 10px; margin: 4px 0;
+}
+.fp-hash-label { font-size: 10px; color: #555; white-space: nowrap; }
+.fp-hash-val {
+  flex: 1; font-family: monospace; font-size: 10px; color: #4f8ef7;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 .fp-footer { border-top: 1px solid #2a2a2e; padding-top: 8px; }
 .fp-footer p { font-size: 10px; color: #444; line-height: 1.5; margin-bottom: 6px; }
 

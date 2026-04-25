@@ -4,7 +4,6 @@ import { renderUpgrade } from './views/upgrade.js';
 import { renderSettings } from './views/settings.js';
 import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
 import { renderFingerprintDetail } from './views/fingerprint-detail.js';
-import { calculateFingerprintEntropy } from '../shared/fingerprint.js';
 
 const root = document.getElementById('view-root');
 const tabs = document.querySelectorAll('.tab-btn');
@@ -33,8 +32,12 @@ async function loadHealthView() {
   root.innerHTML = '<p class="loading">Calculando huella digital…</p>';
 
   try {
-    const bits = await calculateFingerprintEntropy();
-    await chrome.storage.local.set({ fingerprintEntropy: bits });
+    const { calculateFingerprintDetail } = await import('../shared/fingerprint.js');
+    const detail = await calculateFingerprintDetail();
+    await chrome.storage.local.set({
+      fingerprintEntropy: detail.totalEntropy,
+      canvasBlocked: detail.canvasBlocked,
+    });
   } catch {
     // Non-fatal
   }
