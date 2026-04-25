@@ -31,9 +31,9 @@ function renderCheck(r) {
   const cls = STATUS_CLASS[r.status] ?? 'skip';
   const icon = STATUS_ICON[r.status] ?? '?';
   const showFix = r.fix && r.status !== 'pass' && r.status !== 'skipped';
-  // Use data-check-id only — fix data stays in JS, never in HTML attributes
+  const fixLabel = r.fix?.type === 'showInstructions' ? 'Ver opciones' : 'Arreglar';
   const fixBtn = showFix
-    ? `<button class="fix-btn" data-check-id="${r.id}">Arreglar</button>`
+    ? `<button class="fix-btn" data-check-id="${r.id}">${fixLabel}</button>`
     : '';
 
   return `
@@ -54,11 +54,19 @@ function renderCategory(cat) {
     </section>`;
 }
 
-function applyFix(fix) {
+function applyFix(fix, btn) {
   if ((fix.type === 'navigate' || fix.type === 'externalLink') && fix.url) {
     chrome.tabs.create({ url: fix.url });
-  } else if (fix.type === 'showInstructions' && fix.instructions) {
-    alert(fix.instructions);
+    return;
+  }
+  if (fix.type === 'showInstructions' && fix.instructions) {
+    // Show inline panel below the button instead of alert()
+    const existing = btn.parentElement.querySelector('.fix-instructions');
+    if (existing) { existing.remove(); return; }
+    const panel = document.createElement('div');
+    panel.className = 'fix-instructions';
+    panel.textContent = fix.instructions;
+    btn.parentElement.appendChild(panel);
   }
 }
 
@@ -113,7 +121,7 @@ export function renderHealthOverview(audit, container) {
   container.querySelectorAll('.fix-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const fix = fixMap[btn.dataset.checkId];
-      if (fix) { applyFix(fix); }
+      if (fix) { applyFix(fix, btn); }
     });
   });
 }

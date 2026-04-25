@@ -148,6 +148,20 @@ main { padding: 0 0 16px; }
 }
 .fix-btn:hover { background: #2a3a4e; }
 
+/* Inline instructions panel */
+.fix-instructions {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: #0d1a2a;
+  border: 1px solid #1a3a5a;
+  border-radius: 5px;
+  font-size: 11px;
+  color: #88aacc;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 /* Status colors */
 .check-pass .check-icon { color: #22c55e; }
 .check-warn .check-icon { color: #f59e0b; }
