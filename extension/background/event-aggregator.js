@@ -1,13 +1,5 @@
 import { lookupHashes } from './threat-intel-client.js';
 import { sha256 } from '../shared/hash.js';
-import { getPlanState } from './plan-manager.js';
-
-// Known-bad domains used in demo mode (real entries from URLhaus/OpenPhish)
-const DEMO_TI_DOMAINS = new Set([
-  'doubleclick.net', 'googleadservices.com', 'googlesyndication.com',
-  'adnxs.com', 'rubiconproject.com', 'pubmatic.com', 'openx.net',
-  'criteo.com', 'outbrain.com', 'taboola.com', 'scorecardresearch.com',
-]);
 
 // Per-tab state: Map<tabId, { scripts: Map<scriptUrl, ScriptData>, pageUrl: string }>
 const tabState = new Map();
@@ -94,35 +86,6 @@ export async function enrichWithThreatIntel(tabId) {
       hashToScript.set(th, script);
       hashes.push(th);
     }
-  }
-
-  const planState = await getPlanState();
-
-  if (planState.devMode && planState.isPro) {
-    // Demo mode: always mark 3rd-party scripts with any network or FP activity.
-    // Guaranteed to show something so the user sees the feature working.
-    const thirdParties = scripts.filter((s) => s.isThirdParty);
-    for (const script of thirdParties) {
-      const totalEvents = Object.values(script.eventCounts).reduce((a, b) => a + b, 0);
-      const contactsKnown = [...script.targetsContacted].some((t) => {
-        const d = t.replace(/^https?:\/\//, '').replace(/\/.*/, '');
-        return DEMO_TI_DOMAINS.has(d);
-      });
-      // Mark if: contacts a known ad domain, OR has significant event activity
-      if (contactsKnown || totalEvents >= 5) {
-        script.threatIntelMatch = true;
-        script.threatIntelSource = 'demo';
-      }
-    }
-    // Guarantee at least 1 match if there are any 3rd-party scripts
-    if (thirdParties.length > 0 && !thirdParties.some((s) => s.threatIntelMatch)) {
-      thirdParties.sort((a, b) =>
-        Object.values(b.eventCounts).reduce((x, y) => x + y, 0) -
-        Object.values(a.eventCounts).reduce((x, y) => x + y, 0)
-      )[0].threatIntelMatch = true;
-      thirdParties[0].threatIntelSource = 'demo';
-    }
-    return;
   }
 
   const results = await lookupHashes(hashes);

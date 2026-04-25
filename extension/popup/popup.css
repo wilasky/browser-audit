@@ -194,16 +194,13 @@ main { padding: 0 0 16px; }
 .sev-medium   { background: #1a1800; color: #f59e0b; }
 .sev-low      { background: #1a1a1a; color: #666; }
 
-/* Framework compliance badges */
+/* Framework compliance badge — single consolidated badge */
 .fw-badge {
-  font-size: 8px; padding: 1px 4px; border-radius: 2px;
+  font-size: 8px; padding: 1px 5px; border-radius: 2px;
   font-weight: 700; flex-shrink: 0; letter-spacing: 0.04em;
+  background: #0d1a2a; color: #6699cc; border: 1px solid #1a2a3a;
+  cursor: help;
 }
-.fw-CIS     { background: #0d1a2a; color: #4f8ef7; border: 1px solid #1a3a5a; }
-.fw-CCN     { background: #1a0a1a; color: #cc55cc; border: 1px solid #3a1a3a; }
-.fw-NIST    { background: #0a1a0a; color: #44aa44; border: 1px solid #1a3a1a; }
-.fw-OWASP   { background: #2a1a08; color: #f59e0b; border: 1px solid #3a2a08; }
-.fw-PCI-DSS { background: #1a1a0a; color: #aaaa44; border: 1px solid #2a2a14; }
 
 /* Reset button */
 .btn-reset { color: #ef6666; }

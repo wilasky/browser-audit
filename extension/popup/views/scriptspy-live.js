@@ -120,14 +120,10 @@ function renderScript(s, idx) {
     ? '<span class="badge badge-3p">3rd party</span>'
     : '<span class="badge badge-1p">1st party</span>';
 
-  let tieBadge = '';
-  if (s.threatIntelMatch) {
-    const label = s.threatIntelSource === 'demo'
-      ? '⚠ TRACKER (demo TI)'
-      : `⚠ THREAT · ${s.threatIntelSource ?? 'TI'}`;
-    const cls = s.threatIntelSource === 'demo' ? 'badge-threat-demo' : 'badge-threat';
-    tieBadge = `<span class="badge ${cls}">${label}</span>`;
-  }
+  // Threat Intel badge (only shown when real backend confirms a match)
+  const tieBadge = s.threatIntelMatch && s.threatIntelSource !== 'demo'
+    ? `<span class="badge badge-threat">⚠ THREAT · ${esc(s.threatIntelSource ?? 'TI')}</span>`
+    : '';
 
   const netEvents = Object.entries(s.eventCounts)
     .filter(([t, n]) => NET_TYPES.has(t) && n > 0)
@@ -197,26 +193,8 @@ async function getActiveTabId() {
   return tab?.id ?? null;
 }
 
-async function getPlan() {
-  return new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: 'get_plan' }, (r) => { void chrome.runtime.lastError; resolve(r ?? {}); });
-  });
-}
-
 export async function renderScriptSpyLive(container) {
-  const [tabId, plan] = await Promise.all([getActiveTabId(), getPlan()]);
-  const isPro = plan?.isPro ?? false;
-  const isDevMode = plan?.devMode ?? false;
-
-  const proBanner = isPro
-    ? `<div class="spy-pro-banner ${isDevMode ? 'spy-pro-demo' : ''}">
-        ✦ Threat Intelligence ${isDevMode ? 'activa (modo demo — backend no conectado)' : 'activa'}
-        <span class="spy-pro-sources">URLhaus · MalwareBazaar · OpenPhish</span>
-       </div>`
-    : `<div class="spy-locked-banner">
-        🔒 Threat Intelligence requiere Pro ✦ —
-        <button class="link-btn" id="btn-go-pro">Ver plan</button>
-       </div>`;
+  const tabId = await getActiveTabId();
 
   container.innerHTML = `
     <div class="spy-toolbar">
@@ -224,7 +202,6 @@ export async function renderScriptSpyLive(container) {
       <button id="btn-spy-refresh" class="btn-secondary">Actualizar</button>
       <button id="btn-spy-inject" class="btn-primary">Activar ScriptSpy</button>
     </div>
-    ${proBanner}
     <div id="spy-summary-area"></div>
     ${renderLegend()}
     <ul class="script-list"></ul>`;
@@ -297,11 +274,6 @@ export async function renderScriptSpyLive(container) {
 
   // Stop auto-refresh when popup is closed
   window.addEventListener('unload', stopAutoRefresh);
-
-  container.querySelector('#btn-go-pro')?.addEventListener('click', () => {
-    // Switch to Pro tab
-    document.querySelector('[data-view="pro"]')?.click();
-  });
 
   container.querySelector('#btn-spy-refresh').addEventListener('click', refresh);
 

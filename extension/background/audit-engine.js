@@ -60,7 +60,7 @@ async function runChromePrivacy(check) {
   return new Promise((resolve) => {
     const setting = chrome.privacy?.[namespace]?.[key];
     if (!setting) {
-      resolve({ status: 'unknown', detail: 'API no disponible' });
+      resolve({ status: 'unknown', detail: `API chrome.privacy.${api} no disponible en esta versión de Chrome` });
       return;
     }
 

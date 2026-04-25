@@ -160,27 +160,30 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'reset_applied_fixes') {
-    // Revert all chrome.privacy settings touched via apply_fix back to user default
-    chrome.storage.local.get('appliedFixes').then(async (stored) => {
-      const applied = stored.appliedFixes ?? [];
-      const errors = [];
-      for (const api of applied) {
+    // Reset ALL applicable chrome.privacy settings — user expects "leave it as it was"
+    // even if some changes were made before the tracking was implemented.
+    // Caller passes the list of all (api, value) pairs to reset.
+    const apis = msg.apis ?? [];
+    const errors = [];
+    let cleared = 0;
+
+    Promise.all(apis.map((api) =>
+      new Promise((resolve) => {
         const [namespace, key] = api.split('.');
         const setting = chrome.privacy?.[namespace]?.[key];
-        if (!setting) { continue; }
-        try {
-          await new Promise((resolve) => {
-            setting.clear({}, () => {
-              if (chrome.runtime.lastError) { errors.push(chrome.runtime.lastError.message); }
-              resolve();
-            });
-          });
-        } catch (e) {
-          errors.push(e.message);
-        }
-      }
+        if (!setting) { resolve(); return; }
+        setting.clear({}, () => {
+          if (chrome.runtime.lastError) {
+            errors.push(`${api}: ${chrome.runtime.lastError.message}`);
+          } else {
+            cleared++;
+          }
+          resolve();
+        });
+      })
+    )).then(async () => {
       await chrome.storage.local.set({ appliedFixes: [] });
-      sendResponse({ ok: errors.length === 0, count: applied.length, errors });
+      sendResponse({ ok: errors.length === 0, count: cleared, errors });
     });
     return true;
   }

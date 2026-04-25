@@ -57,12 +57,10 @@ function severityLabel(severity) {
 
 function frameworkBadges(frameworks) {
   if (!frameworks || frameworks.length === 0) { return ''; }
-  return frameworks
-    .map((f) => {
-      const family = f.split('-')[0];
-      return `<span class="fw-badge fw-${family}" title="${esc(f)}">${esc(family)}</span>`;
-    })
-    .join('');
+  // Show one consolidated badge: families joined, full IDs in tooltip
+  const families = [...new Set(frameworks.map((f) => f.split('-')[0]))];
+  const tooltip = frameworks.join(' · ');
+  return `<span class="fw-badge" title="${esc(tooltip)}">${esc(families.join(' '))}</span>`;
 }
 
 function renderCheck(r, fixMap) {
@@ -263,19 +261,23 @@ export function renderHealthOverview(audit, container) {
     container.querySelector('#btn-export-pdf').addEventListener('click', () => exportAuditPDF(audit));
 
     container.querySelector('#btn-reset-fixes').addEventListener('click', async () => {
-      const applied = await sendMsg({ type: 'get_applied_fixes' });
-      if (!applied || applied.length === 0) {
-        alert('No hay ningún cambio aplicado para restablecer.');
+      // Send ALL applicable APIs from the audit to reset — works even for changes
+      // made before tracking was implemented
+      const apis = audit.results
+        .filter((r) => r.canApply && r.api)
+        .map((r) => r.api);
+      if (apis.length === 0) {
+        alert('No hay ajustes restablecibles en esta auditoría.');
         return;
       }
-      if (!confirm(`Esto restablecerá ${applied.length} ajuste(s) de Chrome a sus valores por defecto. ¿Continuar?`)) { return; }
-      const res = await sendMsg({ type: 'reset_applied_fixes' });
-      if (res?.ok) {
-        container.innerHTML = '<p class="loading">Reauditando…</p>';
+      if (!confirm(`Esto restablecerá ${apis.length} ajustes de Chrome a sus valores por defecto del navegador. ¿Continuar?`)) { return; }
+      const res = await sendMsg({ type: 'reset_applied_fixes', apis });
+      if (res) {
+        container.innerHTML = `<p class="loading">${res.count} ajustes restablecidos. Reauditando…</p>`;
         const fresh = await sendMsg({ type: 'run_audit' });
         if (fresh) { renderHealthOverview(fresh, container); }
       } else {
-        alert(`Error al restablecer: ${res?.errors?.join(', ') ?? 'desconocido'}`);
+        alert('Error al restablecer.');
       }
     });
 

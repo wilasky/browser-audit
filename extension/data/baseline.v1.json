@@ -1014,6 +1014,110 @@
       },
       "introducedIn": "1.0.0",
       "frameworks": ["CIS-2.6", "CCN-2.9"]
+    },
+    {
+      "id": "password-saving",
+      "category": "security",
+      "title": "Sin guardado de contraseñas en Chrome",
+      "severity": "medium",
+      "weight": 4,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.passwordSavingEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "El gestor de contraseñas de Chrome es accesible si tu sesión queda comprometida. Mejor usar un gestor dedicado (Bitwarden, 1Password, KeePass).",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el guardado de contraseñas en Chrome. Considera Bitwarden o KeePass."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CIS-2.4.4", "CCN-2.7"]
+    },
+    {
+      "id": "drm-disabled",
+      "category": "privacy",
+      "title": "Contenido protegido (DRM) desactivado",
+      "severity": "low",
+      "weight": 2,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.protectedContentEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "DRM (Widevine en Chrome) puede usarse para fingerprinting de dispositivos. Solo necesario para Netflix/Spotify Web.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el contenido protegido si no lo necesitas."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CCN-2.6", "OWASP-PRIVACY"]
+    },
+    {
+      "id": "camera-default-blocked",
+      "category": "privacy",
+      "title": "Cámara bloqueada por defecto",
+      "severity": "high",
+      "weight": 5,
+      "advanced": true,
+      "method": {
+        "type": "contentSettingCheck",
+        "setting": "camera"
+      },
+      "rationale": "Permitir cámara por defecto a cualquier sitio es un riesgo grave de privacidad y seguridad.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/content/camera",
+        "instructions": "Asegúrate de que la opción es 'No permitir' o 'Preguntar antes'."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CIS-2.7", "CCN-2.9", "NIST-AC-3"]
+    },
+    {
+      "id": "microphone-default-blocked",
+      "category": "privacy",
+      "title": "Micrófono bloqueado por defecto",
+      "severity": "high",
+      "weight": 5,
+      "advanced": true,
+      "method": {
+        "type": "contentSettingCheck",
+        "setting": "microphone"
+      },
+      "rationale": "Permitir micrófono por defecto a cualquier sitio es un riesgo grave de privacidad y seguridad.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/content/microphone",
+        "instructions": "Asegúrate de que la opción es 'No permitir' o 'Preguntar antes'."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CIS-2.7", "CCN-2.9", "NIST-AC-3"]
+    },
+    {
+      "id": "notifications-default-blocked",
+      "category": "privacy",
+      "title": "Notificaciones bloqueadas por defecto",
+      "severity": "low",
+      "weight": 2,
+      "advanced": true,
+      "method": {
+        "type": "contentSettingCheck",
+        "setting": "notifications"
+      },
+      "rationale": "Las notificaciones son vector de phishing y abuso publicitario. Mejor opt-in caso a caso.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/content/notifications",
+        "instructions": "Selecciona 'No permitir' o 'Preguntar antes'."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CCN-2.9"]
     }
   ],
   "frameworks": {
