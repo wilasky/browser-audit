@@ -74,6 +74,13 @@ main { padding: 0 0 16px; }
 
 .score-meta { display: flex; flex-direction: column; gap: 6px; }
 
+.export-row { display: flex; gap: 4px; margin-top: 2px; }
+.btn-export {
+  background: #1e1e22; border: 1px solid #3a3a3e; color: #666;
+  padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px;
+}
+.btn-export:hover { color: #4f8ef7; border-color: #4f8ef7; }
+
 .score-label { font-size: 18px; font-weight: 700; color: #fff; }
 
 .score-sub { font-size: 11px; color: #666; }
@@ -213,6 +220,29 @@ main { padding: 0 0 16px; }
 .btn-dev:hover { border-color: #666; color: #888; }
 
 .plan-note { font-size: 10px; color: #444; line-height: 1.5; border-top: 1px solid #1e1e22; padding-top: 8px; }
+
+/* ---- Settings view ---- */
+.settings-wrap { padding: 8px 16px; display: flex; flex-direction: column; gap: 16px; }
+.settings-section { display: flex; flex-direction: column; gap: 6px; }
+.settings-heading { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+.settings-hint { font-size: 11px; color: #555; line-height: 1.5; }
+.settings-hint strong { color: #aaa; }
+
+.api-key-row { display: flex; gap: 6px; }
+.api-key-input {
+  flex: 1; background: #16161a; border: 1px solid #2a2a2e; color: #ccc;
+  padding: 4px 8px; border-radius: 4px; font-size: 11px; font-family: monospace;
+}
+.api-key-input:focus { outline: none; border-color: #4f8ef7; }
+
+/* History chart */
+.hist-chart {
+  display: flex; gap: 4px; align-items: flex-end; height: 60px;
+  padding: 4px 0; border-bottom: 1px solid #2a2a2e;
+}
+.hist-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%; justify-content: flex-end; }
+.hist-bar { width: 100%; min-height: 2px; border-radius: 2px 2px 0 0; transition: height 0.3s; }
+.hist-score { font-size: 9px; color: #666; }
 
 /* Status colors */
 .check-pass .check-icon { color: #22c55e; }

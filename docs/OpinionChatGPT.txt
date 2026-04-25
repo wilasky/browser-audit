@@ -1,0 +1,68 @@
+Quiza sea irrelevante, pero te pongo una opinión básica de Chat GPT sobre el proyecto :D
+
+
+
+tNombre ambicioso, típico. Luego el 90% de proyectos así acaban siendo un console.log con esteroides. Vamos a ver si este no.
+
+La función principal que sí tiene sentido real para algo como ScriptSpy es:
+
+→ Visibilidad en tiempo real del comportamiento dinámico del JavaScript en el navegador
+
+Dicho sin marketing vacío: ver qué hace el código cuando se ejecuta, no lo que “parece que hace” leyendo el source.
+
+Qué implica eso de verdad (lo útil, no humo)
+
+Un buen ScriptSpy debería permitir:
+
+Interceptar funciones críticas (fetch, XMLHttpRequest, eval, Function)
+Ver:
+llamadas
+argumentos
+respuestas
+Detectar modificaciones del DOM en caliente
+Observar ejecución de scripts cargados dinámicamente
+Hookear eventos sospechosos (click hijacking, listeners raros)
+La función estrella (la que le da valor real)
+
+Si tuviera que quedarme con una sola, sería:
+
+👉 Hooking + logging de APIs críticas del navegador en tiempo real
+
+Porque eso te da:
+
+detección de comportamiento malicioso (exfiltración, tracking agresivo)
+debugging avanzado sin tocar el código original
+análisis tipo “mini sandbox” en el cliente
+
+Esto parece una tontería… pero ya te está enseñando:
+
+endpoints ocultos
+llamadas internas
+comportamiento runtime
+Casos de uso reales (los que importan en tu perfil)
+
+Dado que vienes de ciberseguridad:
+
+detectar exfiltración de datos vía JS
+analizar malware web / skimmers
+auditar aplicaciones SPA (React, Angular, etc.)
+ver tracking invasivo (analytics, fingerprinting)
+debugging de apps que cargan todo dinámicamente
+Lo que NO debería ser (pero muchos hacen)
+visor bonito de logs sin contexto
+parser estático de JS (eso ya existe mil veces)
+extensión que solo lista scripts cargados (irrelevante)
+Resumen
+
+Función principal clara:
+
+Observar y registrar el comportamiento real del JavaScript en ejecución sin modificar la aplicación original
+
+Si no hace eso, el nombre “ScriptSpy” es puro teatro.
+
+Si lo llevas bien, esto puede evolucionar fácil a algo más serio:
+
+tipo mini Burp pero para frontend
+o un “EDR del navegador”
+
+Si lo haces mal… será otro proyecto abandonado en un repo privado con 3 commits y buenas intenciones.

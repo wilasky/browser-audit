@@ -111,6 +111,88 @@ El producto los sirve a los dos sin patronizar a ninguno.
 5. **Manifest V3 estricto.** Nada de hacks que puedan romper en próximas versiones de Chrome.
 
 ---
+## Chrome Permissions Strategy
+
+The extension follows a strict least-privilege approach.
+
+### Core permissions (MVP)
+- `storage`: persist audit results and settings
+- `activeTab`: run ScriptSpy only on the active tab when the user opens the popup
+- `scripting`: inject instrumentation code on demand
+
+### Optional permissions (requested only if user enables feature)
+- `management`: required for extension audit (Browser Health Check)
+- `privacy`: required to read Chrome security/privacy settings
+
+### Not allowed in MVP
+- `<all_urls>` (avoid unless strictly necessary)
+- broad host permissions
+- persistent background access to browsing data
+
+### Principles
+- Permissions are requested only when the user uses the feature
+- No background monitoring of browsing activity
+- No data leaves the browser without explicit user action
+---
+
+## Chrome Permissions Strategy
+
+The extension follows a strict least-privilege approach.
+
+### Core permissions (MVP)
+
+- `storage`: persist audit results and settings
+- `activeTab`: run ScriptSpy only on the active tab when the user opens the popup
+- `scripting`: inject instrumentation code on demand
+
+### Optional permissions
+
+Requested only if the user enables the feature:
+
+- `management`: required for extension audit in Browser Health Check
+- `privacy`: required to read Chrome security/privacy settings
+
+### Not allowed in MVP
+
+- `<all_urls>`, unless strictly justified
+- broad host permissions
+- persistent background access to browsing data
+- background monitoring of browsing activity
+
+### Principles
+
+- Permissions are requested only when the user uses the feature
+- No permissions are added for future functionality
+- No background monitoring of browsing activity
+- No data leaves the browser without explicit user action
+- Pro threat intelligence lookups may only send normalized hashes such as `SHA256(domain)` or `SHA256(script)`, never raw URLs or user data
+
+---
+
+## Security & Privacy Design Constraints
+
+This project follows a strict least-privilege model.
+
+The extension must only request permissions that are required by implemented features. Permissions must not be added "just in case" for future functionality.
+
+High-risk permissions such as `management`, `privacy`, `scripting`, `webRequest`, host permissions, or access to all URLs must be justified in code comments, documentation, and the Chrome Web Store listing.
+
+Whenever possible:
+
+- use `activeTab` instead of broad host permissions;
+- use `optional_permissions` for advanced or Pro-only features;
+- request permissions only when the user enables the feature;
+- keep all analysis local by default;
+- never send full URLs, cookies, form contents, browsing history, or page content to the backend.
+
+Any new feature must answer these questions before implementation:
+
+1. What permission does it require?
+2. Why is that permission strictly necessary?
+3. Can it be optional?
+4. What data is processed locally?
+5. What data, if any, leaves the browser?
+6. How is this explained to the user?
 
 ## 3. Estructura del proyecto
 

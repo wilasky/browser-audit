@@ -221,6 +221,21 @@ export async function renderScriptSpyLive(container) {
     }
   }
 
+  let autoRefreshTimer = null;
+
+  function startAutoRefresh() {
+    if (autoRefreshTimer) { return; }
+    autoRefreshTimer = setInterval(refresh, 3000);
+  }
+
+  function stopAutoRefresh() {
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+  }
+
+  // Stop auto-refresh when popup is closed
+  window.addEventListener('unload', stopAutoRefresh);
+
   container.querySelector('#btn-spy-refresh').addEventListener('click', refresh);
 
   container.querySelector('#btn-spy-inject').addEventListener('click', async () => {
@@ -231,7 +246,7 @@ export async function renderScriptSpyLive(container) {
     const res = await sendMsg({ type: 'inject_scriptspy', tabId });
     if (res?.ok) {
       btn.textContent = 'ScriptSpy activo ✓';
-      setTimeout(refresh, 600);
+      setTimeout(() => { refresh(); startAutoRefresh(); }, 600);
     } else {
       btn.disabled = false;
       btn.textContent = 'Activar ScriptSpy';

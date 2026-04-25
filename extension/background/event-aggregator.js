@@ -1,3 +1,6 @@
+import { lookupHashes } from './threat-intel-client.js';
+import { sha256 } from '../shared/hash.js';
+
 // Per-tab state: Map<tabId, { scripts: Map<scriptUrl, ScriptData>, pageUrl: string }>
 const tabState = new Map();
 
@@ -59,6 +62,38 @@ export function computeScriptRisk(script) {
   if (script.threatIntelMatch) { score += 30; }
 
   return Math.min(100, score);
+}
+
+// Enrich scripts with threat intel (Pro only, called async after ingest)
+export async function enrichWithThreatIntel(tabId) {
+  const state = tabState.get(tabId);
+  if (!state) { return; }
+
+  const scripts = Array.from(state.scripts.values()).filter((s) => s.url !== 'inline');
+  if (!scripts.length) { return; }
+
+  // Hash script URLs and their contacted domains
+  const hashToScript = new Map();
+  const hashes = [];
+
+  for (const script of scripts) {
+    const h = await sha256(script.url);
+    hashToScript.set(h, script);
+    hashes.push(h);
+
+    for (const target of script.targetsContacted) {
+      const th = await sha256(target.replace(/^https?:\/\//, ''));
+      hashToScript.set(th, script);
+      hashes.push(th);
+    }
+  }
+
+  const results = await lookupHashes(hashes);
+  for (const [hash, match] of results) {
+    if (match && hashToScript.has(hash)) {
+      hashToScript.get(hash).threatIntelMatch = true;
+    }
+  }
 }
 
 export function ingestEvent(tabId, event) {

@@ -1,5 +1,5 @@
 import { runAudit } from './audit-engine.js';
-import { ingestEvent, getAggregatedData, resetTab } from './event-aggregator.js';
+import { ingestEvent, getAggregatedData, resetTab, enrichWithThreatIntel } from './event-aggregator.js';
 import { getPlanState, devTogglePro, resetPlan } from './plan-manager.js';
 
 const AUDIT_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -8,6 +8,13 @@ async function doAudit() {
   try {
     const audit = await runAudit();
     await chrome.storage.local.set({ lastAudit: audit });
+
+    // Keep rolling history of last 10 audits
+    const { auditHistory = [] } = await chrome.storage.local.get('auditHistory');
+    const snapshot = { score: audit.score, label: audit.label, level: audit.level, completedAt: audit.completedAt };
+    const updated = [snapshot, ...auditHistory].slice(0, 10);
+    await chrome.storage.local.set({ auditHistory: updated });
+
     return audit;
   } catch (err) {
     console.error('[BrowserAudit] Audit failed:', err);
@@ -84,7 +91,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.type === 'get_scriptspy') {
     const tabId = msg.tabId;
-    sendResponse(tabId ? getAggregatedData(tabId) : { scripts: [], pageUrl: '' });
+    if (!tabId) { sendResponse({ scripts: [], pageUrl: '' }); return; }
+    // Enrich with TI then respond (non-blocking if TI fails)
+    enrichWithThreatIntel(tabId)
+      .catch(() => {})
+      .finally(() => sendResponse(getAggregatedData(tabId)));
+    return true;
+  }
+
+  if (msg.type === 'get_history') {
+    chrome.storage.local.get('auditHistory').then((s) => sendResponse(s.auditHistory ?? []));
+    return true;
   }
 
   if (msg.type === 'get_plan') {

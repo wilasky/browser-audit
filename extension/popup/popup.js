@@ -1,6 +1,7 @@
 import { renderHealthOverview } from './views/health-overview.js';
 import { renderScriptSpyLive } from './views/scriptspy-live.js';
 import { renderUpgrade } from './views/upgrade.js';
+import { renderSettings } from './views/settings.js';
 import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
 import { calculateFingerprintEntropy } from '../shared/fingerprint.js';
 
@@ -61,6 +62,8 @@ function setView(view) {
     renderScriptSpyLive(root).catch(console.error);
   } else if (view === 'pro') {
     renderUpgrade(root).catch(console.error);
+  } else if (view === 'settings') {
+    renderSettings(root).catch(console.error);
   }
 }
 

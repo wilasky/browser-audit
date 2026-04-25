@@ -1,3 +1,5 @@
+import { exportAuditJSON, exportAuditPDF } from '../export.js';
+
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
 
@@ -97,6 +99,10 @@ export function renderHealthOverview(audit, container) {
         <div class="score-sub">Auditado ${new Date(audit.completedAt).toLocaleTimeString()}</div>
         <button id="btn-refresh" class="btn-secondary">Actualizar</button>
         <button id="btn-grant-permissions" class="btn-secondary">Activar chequeos</button>
+        <div class="export-row">
+          <button id="btn-export-json" class="btn-export">↓ JSON</button>
+          <button id="btn-export-pdf" class="btn-export">↓ PDF</button>
+        </div>
       </div>
     </div>
     <div class="categories">${groups.map(renderCategory).join('')}</div>`;
@@ -117,6 +123,9 @@ export function renderHealthOverview(audit, container) {
       }
     });
   });
+
+  container.querySelector('#btn-export-json').addEventListener('click', () => exportAuditJSON(audit));
+  container.querySelector('#btn-export-pdf').addEventListener('click', () => exportAuditPDF(audit));
 
   container.querySelectorAll('.fix-btn').forEach((btn) => {
     btn.addEventListener('click', () => {

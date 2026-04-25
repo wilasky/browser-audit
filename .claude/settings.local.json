@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx eslint *)",
+      "Bash(npx vitest *)",
+      "Bash(node scripts/build.js)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npm run *)",
+      "Bash(git commit *)",
+      "Bash(node scripts/generate-icons.js)",
+      "Bash(grep -o \"Acerca de Chrome.\\\\{0,50\\\\}\" extension/dist/background/index.js)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s \"https://unpkg.com/extpay@3.0.7/dist/ExtPay.js\" -o extension/background/extpay.js)"
+    ]
+  }
+}
