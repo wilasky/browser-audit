@@ -6,9 +6,9 @@
 
 ## Estado actual
 
-**Fase actual:** FASE 1 — Browser Health Check
+**Fase actual:** FASE 1 — Browser Health Check (completada, pendiente verificación manual)
 **Última actualización:** 2026-04-25
-**Próxima tarea:** Crear extension/data/baseline.v1.json con los 16 chequeos de BASELINE_SPEC.md
+**Próxima tarea:** Verificar UI en Chrome → si OK, iniciar Fase 2 (ScriptSpy)
 
 ---
 
@@ -61,16 +61,17 @@ Antes de empezar cualquier tarea, leer:
 
 ### FASE 1 — Browser Health Check
 
-- [ ] Crear `extension/data/baseline.v1.json` con al menos 15 chequeos
-- [ ] Implementar `audit-engine.js`
-- [ ] Handlers para los 6 tipos de método
-- [ ] Vista "Health Overview"
-- [ ] Vista "Health Detail"
-- [ ] Vista "Extensions"
-- [ ] Botón Fix → abre URL correspondiente
-- [ ] Persistencia en chrome.storage.local
-- [ ] Re-auditoría automática cada 24h
-- [ ] Tests unitarios
+- [x] Crear `extension/data/baseline.v1.json` — 16 chequeos en 6 categorías
+- [x] Implementar `audit-engine.js` — 8 handlers, score ponderado, gestión permisos opcionales
+- [x] Handlers: userAgent, chromePrivacy, extensionsCheck, extensionsPermissionsAudit, extensionsSourceCheck, extensionsMV2Check, fingerprintCalculation, webrtcLeakTest
+- [x] Vista "Health Overview" — score circular SVG + checks agrupados por categoría + botones Fix
+- [ ] Vista "Health Detail" — detalle por check individual (pendiente Fase 1.5)
+- [ ] Vista "Extensions" — lista de extensiones instaladas (pendiente Fase 1.5)
+- [x] Botón Fix → abre URL o muestra instrucciones
+- [x] Persistencia en chrome.storage.local
+- [x] Re-auditoría automática cada 24h (via onStartup)
+- [x] Tests unitarios — 13 tests, calculateScore y scoreLabel
+- [ ] Verificación manual en Chrome (PENDIENTE)
 
 ### FASE 2 — ScriptSpy reactivado
 
