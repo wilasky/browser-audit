@@ -18,7 +18,7 @@ function setView(view) {
   tabs.forEach((t) => t.classList.toggle('active', t.dataset.view === view));
 
   if (view === 'health') {
-    loadHealthView();
+    loadHealthView().catch(console.error);
   } else {
     renderScriptSpyLive(root).catch(console.error);
   }
