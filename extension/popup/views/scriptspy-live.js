@@ -62,32 +62,39 @@ export async function renderScriptSpyLive(container) {
     </div>
     <ul class="script-list"></ul>`;
 
-  function refresh() {
-    if (!tabId) { return; }
-    chrome.runtime.sendMessage({ type: 'get_scriptspy', tabId }, (data) => {
-      if (!data) { return; }
-      const pageHost = data.pageUrl
-        ? (() => { try { return new URL(data.pageUrl).hostname; } catch { return data.pageUrl; } })()
-        : '—';
-      container.querySelector('.spy-page').textContent = pageHost;
-      const list = container.querySelector('.script-list');
-      list.innerHTML = data.scripts.length
-        ? data.scripts.map(renderScript).join('')
-        : '<li><p class="loading">Sin datos. Pulsa Activar ScriptSpy y luego Actualizar.</p></li>';
+  function sendMsg(msg) {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(msg, (result) => {
+        void chrome.runtime.lastError;
+        resolve(result ?? null);
+      });
     });
+  }
+
+  async function refresh() {
+    if (!tabId) { return; }
+    const data = await sendMsg({ type: 'get_scriptspy', tabId });
+    if (!data) { return; }
+    const pageHost = data.pageUrl
+      ? (() => { try { return new URL(data.pageUrl).hostname; } catch { return data.pageUrl; } })()
+      : '—';
+    container.querySelector('.spy-page').textContent = pageHost;
+    const list = container.querySelector('.script-list');
+    list.innerHTML = data.scripts.length
+      ? data.scripts.map(renderScript).join('')
+      : '<li><p class="loading">Sin datos. Pulsa Activar ScriptSpy y luego Actualizar.</p></li>';
   }
 
   container.querySelector('#btn-spy-refresh').addEventListener('click', refresh);
 
-  container.querySelector('#btn-spy-inject').addEventListener('click', () => {
+  container.querySelector('#btn-spy-inject').addEventListener('click', async () => {
     if (!tabId) { return; }
     const btn = container.querySelector('#btn-spy-inject');
     btn.disabled = true;
     btn.textContent = 'Inyectando…';
-    chrome.runtime.sendMessage({ type: 'inject_scriptspy', tabId }, (res) => {
-      btn.textContent = res?.ok ? 'ScriptSpy activo' : 'Error al inyectar';
-      if (res?.ok) { setTimeout(refresh, 600); }
-    });
+    const res = await sendMsg({ type: 'inject_scriptspy', tabId });
+    btn.textContent = res?.ok ? 'ScriptSpy activo' : 'Error al inyectar';
+    if (res?.ok) { setTimeout(refresh, 600); }
   });
 
   refresh();

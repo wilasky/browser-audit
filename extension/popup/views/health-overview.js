@@ -62,6 +62,15 @@ function applyFix(fix) {
   }
 }
 
+function sendMsg(msg) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(msg, (result) => {
+      void chrome.runtime.lastError;
+      resolve(result ?? null);
+    });
+  });
+}
+
 export function renderHealthOverview(audit, container) {
   const { label, level } = audit;
   const groups = groupByCategory(audit.results, audit.categories);
@@ -84,20 +93,19 @@ export function renderHealthOverview(audit, container) {
     </div>
     <div class="categories">${groups.map(renderCategory).join('')}</div>`;
 
-  container.querySelector('#btn-refresh').addEventListener('click', () => {
+  container.querySelector('#btn-refresh').addEventListener('click', async () => {
     container.innerHTML = '<p class="loading">Auditando…</p>';
-    chrome.runtime.sendMessage({ type: 'run_audit' }, (freshAudit) => {
-      if (freshAudit) { renderHealthOverview(freshAudit, container); }
-    });
+    const freshAudit = await sendMsg({ type: 'run_audit' });
+    if (freshAudit) { renderHealthOverview(freshAudit, container); }
   });
 
   container.querySelector('#btn-grant-permissions').addEventListener('click', () => {
-    chrome.permissions.request({ permissions: ['management', 'privacy'] }, (granted) => {
+    chrome.permissions.request({ permissions: ['management', 'privacy'] }, async (granted) => {
+      void chrome.runtime.lastError;
       if (granted) {
         container.innerHTML = '<p class="loading">Auditando con todos los permisos…</p>';
-        chrome.runtime.sendMessage({ type: 'run_audit' }, (freshAudit) => {
-          if (freshAudit) { renderHealthOverview(freshAudit, container); }
-        });
+        const freshAudit = await sendMsg({ type: 'run_audit' });
+        if (freshAudit) { renderHealthOverview(freshAudit, container); }
       }
     });
   });
