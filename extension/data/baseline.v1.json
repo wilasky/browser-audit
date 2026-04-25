@@ -1,0 +1,359 @@
+{
+  "version": "1.0.0",
+  "publishedAt": "2026-04-25T00:00:00Z",
+  "categories": [
+    {
+      "id": "updates",
+      "label": "Actualizaciones",
+      "icon": "↑",
+      "description": "Mantener Chrome y sus componentes actualizados es la primera línea de defensa contra vulnerabilidades conocidas."
+    },
+    {
+      "id": "privacy",
+      "label": "Privacidad",
+      "icon": "◑",
+      "description": "Configuraciones que reducen la cantidad de datos que recogen sitios y servicios."
+    },
+    {
+      "id": "security",
+      "label": "Seguridad",
+      "icon": "◆",
+      "description": "Protecciones contra phishing, malware y ataques web comunes."
+    },
+    {
+      "id": "extensions",
+      "label": "Extensiones",
+      "icon": "⊟",
+      "description": "Auditoría de las extensiones instaladas: permisos, origen y reputación."
+    },
+    {
+      "id": "fingerprint",
+      "label": "Huella digital",
+      "icon": "⌘",
+      "description": "Cuán único es tu navegador para tracking pasivo sin cookies."
+    },
+    {
+      "id": "leaks",
+      "label": "Fugas",
+      "icon": "⚠",
+      "description": "Información que tu navegador puede estar revelando sin que lo sepas."
+    }
+  ],
+  "checks": [
+    {
+      "id": "chrome-version",
+      "category": "updates",
+      "title": "Chrome actualizado",
+      "severity": "high",
+      "weight": 8,
+      "method": {
+        "type": "userAgent",
+        "majorLagAllowed": 2
+      },
+      "rationale": "Las versiones antiguas de Chrome contienen vulnerabilidades públicamente conocidas que pueden ser explotadas por sitios maliciosos.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/help",
+        "instructions": "Ve a 'Acerca de Chrome' y permite la actualización si está disponible."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "third-party-cookies",
+      "category": "privacy",
+      "title": "Cookies de terceros bloqueadas",
+      "severity": "high",
+      "weight": 10,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.thirdPartyCookiesAllowed",
+        "expected": false
+      },
+      "rationale": "Las cookies de terceros permiten a redes publicitarias rastrearte entre sitios distintos sin tu conocimiento.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/cookies",
+        "instructions": "Selecciona 'Bloquear cookies de terceros'."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "do-not-track",
+      "category": "privacy",
+      "title": "Señal Do Not Track activa",
+      "severity": "low",
+      "weight": 2,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.doNotTrackEnabled",
+        "expected": true
+      },
+      "rationale": "Aunque DNT no es vinculante, algunos sitios lo respetan voluntariamente.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/privacy",
+        "instructions": "Activa 'Enviar solicitud Do Not Track'."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "doh-enabled",
+      "category": "privacy",
+      "title": "DNS sobre HTTPS activo",
+      "severity": "medium",
+      "weight": 5,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "network.dnsOverHttpsMode",
+        "expected": "secure"
+      },
+      "rationale": "Sin DNS sobre HTTPS, tu proveedor de Internet ve cada dominio que visitas en texto claro.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/security",
+        "instructions": "Activa 'Usar DNS seguro' y elige un proveedor (Cloudflare 1.1.1.1 o Google)."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "https-only-mode",
+      "category": "security",
+      "title": "Modo HTTPS-First activo",
+      "severity": "medium",
+      "weight": 6,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.httpsOnlyModeEnabled",
+        "expected": true
+      },
+      "rationale": "Fuerza al navegador a intentar HTTPS antes que HTTP, evitando ataques de downgrade.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/security",
+        "instructions": "Activa 'Usar siempre conexiones seguras'."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "safe-browsing-enhanced",
+      "category": "security",
+      "title": "Safe Browsing mejorado",
+      "severity": "medium",
+      "weight": 7,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.safeBrowsingEnhancedEnabled",
+        "expected": true
+      },
+      "rationale": "El modo Mejorado detecta phishing y malware nuevos antes de que aparezcan en las listas conocidas.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/security",
+        "instructions": "Selecciona 'Protección mejorada' en Safe Browsing."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "autofill-credit-cards",
+      "category": "security",
+      "title": "Autocompletado de tarjetas desactivado",
+      "severity": "medium",
+      "weight": 5,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.autofillCreditCardEnabled",
+        "expected": false
+      },
+      "rationale": "Las tarjetas guardadas pueden ser exfiltradas por scripts maliciosos en páginas de pago comprometidas.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/payments",
+        "instructions": "Desactiva 'Guardar e introducir métodos de pago'."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "extensions-blacklist",
+      "category": "extensions",
+      "title": "Sin extensiones maliciosas",
+      "severity": "critical",
+      "weight": 15,
+      "requiresPermission": "management",
+      "method": {
+        "type": "extensionsCheck",
+        "againstList": "extensions-blacklist.json",
+        "matchBy": ["id", "name"]
+      },
+      "rationale": "Existen extensiones identificadas como maliciosas que roban credenciales o exfiltran datos personales.",
+      "fix": {
+        "type": "showInstructions",
+        "instructions": "Desinstala inmediatamente las extensiones marcadas y cambia contraseñas de servicios importantes."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "extensions-permissions",
+      "category": "extensions",
+      "title": "Sin extensiones con permisos excesivos",
+      "severity": "medium",
+      "weight": 6,
+      "requiresPermission": "management",
+      "method": {
+        "type": "extensionsPermissionsAudit",
+        "flagPermissions": [
+          "<all_urls>", "tabs", "history", "cookies",
+          "webRequest", "webRequestBlocking", "downloads",
+          "management", "debugger", "proxy"
+        ],
+        "tolerance": 2
+      },
+      "rationale": "Las extensiones con muchos permisos sensibles pueden hacer mucho daño si son comprometidas o vendidas.",
+      "fix": {
+        "type": "showInstructions",
+        "instructions": "Revisa si las extensiones marcadas realmente necesitan esos permisos. Si dudas, desinstálalas."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "extensions-from-cws",
+      "category": "extensions",
+      "title": "Extensiones desde Chrome Web Store",
+      "severity": "medium",
+      "weight": 5,
+      "requiresPermission": "management",
+      "method": {
+        "type": "extensionsSourceCheck"
+      },
+      "rationale": "Las extensiones instaladas manualmente (sideloaded) no pasan la revisión de Google y son un vector frecuente de malware.",
+      "fix": {
+        "type": "showInstructions",
+        "instructions": "Desinstala extensiones que no provengan de Chrome Web Store salvo que sean tuyas para desarrollo."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "extensions-mv2-deprecated",
+      "category": "extensions",
+      "title": "Sin extensiones MV2 obsoletas",
+      "severity": "low",
+      "weight": 3,
+      "requiresPermission": "management",
+      "method": {
+        "type": "extensionsMV2Check"
+      },
+      "rationale": "Las extensiones Manifest V2 están siendo eliminadas por Google y pueden dejar de funcionar o crear riesgos de seguridad.",
+      "fix": {
+        "type": "showInstructions",
+        "instructions": "Busca alternativas MV3 para las extensiones marcadas o contacta al desarrollador."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "fingerprint-entropy",
+      "category": "fingerprint",
+      "title": "Huella digital del navegador",
+      "severity": "medium",
+      "weight": 5,
+      "method": {
+        "type": "fingerprintCalculation",
+        "thresholds": {
+          "pass": 15,
+          "warn": 22
+        }
+      },
+      "rationale": "Cuanto más único sea tu navegador, más fácil eres de rastrear sin cookies.",
+      "fix": {
+        "type": "externalLink",
+        "url": "https://coveryourtracks.eff.org/",
+        "instructions": "Visita Cover Your Tracks de la EFF para una evaluación más completa."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "webrtc-leak",
+      "category": "leaks",
+      "title": "Sin fugas de IP por WebRTC",
+      "severity": "medium",
+      "weight": 5,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "webrtcLeakTest",
+        "api": "network.webRTCIPHandlingPolicy",
+        "safeValues": ["disable_non_proxied_udp", "default_public_interface_only"]
+      },
+      "rationale": "WebRTC puede revelar tu IP real incluso a través de una VPN.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/privacy",
+        "instructions": "Considera usar una extensión que mitigue fugas de WebRTC."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "popups-blocked",
+      "category": "security",
+      "title": "Popups bloqueados por defecto",
+      "severity": "low",
+      "weight": 3,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.popupsAllowed",
+        "expected": false
+      },
+      "rationale": "Los popups son usados para phishing, scareware y publicidad agresiva.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/content/popups",
+        "instructions": "Asegúrate de que los popups están bloqueados por defecto."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "safe-browsing-enabled",
+      "category": "security",
+      "title": "Safe Browsing activo",
+      "severity": "high",
+      "weight": 8,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.safeBrowsingEnabled",
+        "expected": true
+      },
+      "rationale": "Safe Browsing es la primera línea de defensa contra phishing y malware conocidos.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/security",
+        "instructions": "Activa Safe Browsing (al menos en modo estándar)."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "password-leak-detection",
+      "category": "security",
+      "title": "Detección de contraseñas filtradas",
+      "severity": "medium",
+      "weight": 4,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.passwordLeakDetectionEnabled",
+        "expected": true
+      },
+      "rationale": "Chrome puede avisar cuando usas una contraseña que ha aparecido en filtraciones de datos conocidas.",
+      "fix": {
+        "type": "navigate",
+        "url": "chrome://settings/security",
+        "instructions": "Activa 'Aviso en caso de contraseñas filtradas'."
+      },
+      "introducedIn": "1.0.0"
+    }
+  ]
+}
