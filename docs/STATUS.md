@@ -6,9 +6,9 @@
 
 ## Estado actual
 
-**Fase actual:** FASE 2 — ScriptSpy (completada, pendiente verificación manual en Chrome)
+**Fase actual:** FASE 3 completada — pendiente verificación manual en Chrome
 **Última actualización:** 2026-04-25
-**Próxima tarea:** Verificar ScriptSpy en Chrome → si OK, Fase 3 (sistema de planes)
+**Próxima tarea:** Verificar onboarding y pestaña Pro en Chrome → luego Fase 4 (backend) o saltar a Fase 8 (lanzamiento)
 
 ---
 
@@ -88,14 +88,13 @@ Antes de empezar cualquier tarea, leer:
 
 ### FASE 3 — Sistema de planes
 
-- [ ] Integración ExtensionPay sandbox
-- [ ] `plan-manager.js` con isProUser cacheado
-- [ ] Lógica de gating
-- [ ] Onboarding inicial
-- [ ] Tour rápido
-- [ ] UI de upgrade
-- [ ] Pantalla de gestión de licencia
-- [ ] Verificación de licencia con fallback offline
+- [x] plan-manager.js: tier free/pro en storage, devTogglePro() para sandbox, preparado para ExtensionPay
+- [x] background: mensajes get_plan, dev_toggle_pro, reset_plan
+- [x] Onboarding: tour 2 pasos, solicita permisos, solo en primera instalacion
+- [x] upgrade.js: comparativa free vs pro, toggle dev para simular Pro
+- [x] popup.js + popup.html: pestana Pro en nav, boot con onboarding check
+- [ ] ExtensionPay real — requiere CWS ID publicado (Fase 8)
+- [ ] Verificacion manual en Chrome (PENDIENTE)
 
 ### FASE 4 — Backend de threat intel
 
