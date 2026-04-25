@@ -6,9 +6,9 @@
 
 ## Estado actual
 
-**Fase actual:** FASE 3 completada — pendiente verificación manual en Chrome
+**Fase actual:** FASE 4 completada — backend listo para deploy
 **Última actualización:** 2026-04-25
-**Próxima tarea:** Verificar onboarding y pestaña Pro en Chrome → luego Fase 4 (backend) o saltar a Fase 8 (lanzamiento)
+**Próxima tarea:** Fase 5 (integración cliente-backend) o Fase 7 (export PDF) o Fase 8 (lanzamiento)
 
 ---
 
