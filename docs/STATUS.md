@@ -6,9 +6,9 @@
 
 ## Estado actual
 
-**Fase actual:** FASE 0 — Fundamentos del proyecto
+**Fase actual:** FASE 1 — Browser Health Check
 **Última actualización:** 2026-04-25
-**Próxima tarea:** Verificación manual en Chrome (cargar extension/dist/) → luego iniciar Fase 1
+**Próxima tarea:** Crear extension/data/baseline.v1.json con los 16 chequeos de BASELINE_SPEC.md
 
 ---
 
@@ -56,7 +56,7 @@ Antes de empezar cualquier tarea, leer:
 - [x] Crear `manifest.json` mínimo con permisos justos (storage, activeTab, scripting core; management+privacy opcionales)
 - [x] Crear stubs de código: background/index.js, content/bridge.js, content/instrumentation.js, popup/popup.html+js+css
 - [x] Build pasa sin errores (`npm run build` → extension/dist/)
-- [ ] Verificar que la extensión carga en chrome://extensions sin errores (MANUAL — cargar extension/dist/ en Chrome)
+- [x] Verificar que la extensión carga en chrome://extensions sin errores ✓
 - [x] Setup de CI básico en GitHub Actions (.github/workflows/ci.yml — lint + build + test)
 
 ### FASE 1 — Browser Health Check
