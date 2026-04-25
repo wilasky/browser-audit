@@ -8,7 +8,7 @@ const PROFILES = {
   all:      { label: 'Estándar',  filter: (r) => !r.advanced },
   advanced: { label: 'Avanzado',  filter: () => true },
   basic:    { label: 'Básico',    filter: (r) => ['critical', 'high'].includes(r.severity) && !r.advanced },
-  failed:   { label: 'Fallos',    filter: (r) => r.status === 'fail' || r.status === 'warn' },
+  failed:   { label: 'FAIL',      filter: (r) => r.status === 'fail' || r.status === 'warn' },
   CIS:      { label: 'CIS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CIS')) },
   CCN:      { label: 'ENS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CCN')) },
   NIST:     { label: 'NIST',      filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('NIST')) },
@@ -116,9 +116,9 @@ function renderCategory(cat, fixMap) {
 
   const checks = cat.checks.map((r) => renderCheck(r, fixMap)).join('');
   const statsHtml = [
-    fail > 0 ? `<span class="cat-stat stat-fail">${fail} fallo${fail > 1 ? 's' : ''}</span>` : '',
-    warn > 0 ? `<span class="cat-stat stat-warn">${warn} aviso${warn > 1 ? 's' : ''}</span>` : '',
-    pass > 0 ? `<span class="cat-stat stat-pass">${pass} ok</span>` : '',
+    fail > 0 ? `<span class="cat-stat stat-fail">${fail} FAIL</span>` : '',
+    warn > 0 ? `<span class="cat-stat stat-warn">${warn} WARN</span>` : '',
+    pass > 0 ? `<span class="cat-stat stat-pass">${pass} PASS</span>` : '',
   ].filter(Boolean).join('');
 
   return `
@@ -215,9 +215,9 @@ export function renderHealthOverview(audit, container) {
         <div class="score-meta">
           <div class="score-label">${label}</div>
           <div class="score-sub">
-            ${audit.results.filter((r) => r.status === 'fail').length} fallos ·
-            ${audit.results.filter((r) => r.status === 'warn').length} avisos ·
-            ${audit.results.filter((r) => r.status === 'pass').length} ok
+            ${audit.results.filter((r) => r.status === 'fail').length} FAIL ·
+            ${audit.results.filter((r) => r.status === 'warn').length} WARN ·
+            ${audit.results.filter((r) => r.status === 'pass').length} PASS
           </div>
           <div class="score-sub">${new Date(audit.completedAt).toLocaleTimeString()} · baseline v${audit.baselineVersion}</div>
           <div class="header-actions">
