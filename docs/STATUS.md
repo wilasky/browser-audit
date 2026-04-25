@@ -6,9 +6,9 @@
 
 ## Estado actual
 
-**Fase actual:** FASE 4 completada — backend listo para deploy
+**Fase actual:** FASES 5+7 completadas — pendiente verificación y Fase 8 (lanzamiento)
 **Última actualización:** 2026-04-25
-**Próxima tarea:** Fase 5 (integración cliente-backend) o Fase 7 (export PDF) o Fase 8 (lanzamiento)
+**Próxima tarea:** Fase 8 — Privacy Policy, screenshots, listing Chrome Web Store
 
 ---
 
