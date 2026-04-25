@@ -1,0 +1,18 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      DB_PATH: /app/data/browseraudit.db
+      API_KEYS: ${API_KEYS:-change-me}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-60}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - db_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  db_data:

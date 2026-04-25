@@ -1,0 +1,22 @@
+{
+  "name": "browser-audit-backend",
+  "version": "0.1.0",
+  "description": "Threat intel API for Browser Audit Pro",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "sync": "node src/workers/run-all.js",
+    "migrate": "node src/db/migrate.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.0",
+    "@fastify/rate-limit": "^9.0.0",
+    "better-sqlite3": "^11.0.0",
+    "fastify": "^4.28.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.4.0"
+  }
+}
