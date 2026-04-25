@@ -209,15 +209,23 @@ export function renderHealthOverview(audit, container) {
 
     const groups = groupByCategory(filtered, audit.categories);
 
+    // Stats based on current profile filter, not full audit
+    const fc = filtered.filter((r) => r.status === 'fail').length;
+    const wc = filtered.filter((r) => r.status === 'warn').length;
+    const pc = filtered.filter((r) => r.status === 'pass').length;
+    const sc = filtered.filter((r) => r.status === 'skipped').length;
+    const uc = filtered.filter((r) => r.status === 'unknown').length;
+
     container.innerHTML = `
       <div class="overview-header">
         ${scoreCircleSVG(filteredScore, level)}
         <div class="score-meta">
           <div class="score-label">${label}</div>
           <div class="score-sub">
-            ${audit.results.filter((r) => r.status === 'fail').length} FAIL ·
-            ${audit.results.filter((r) => r.status === 'warn').length} WARN ·
-            ${audit.results.filter((r) => r.status === 'pass').length} PASS
+            <strong>${filtered.length}</strong> checks ·
+            <span style="color:#ef4444">${fc} FAIL</span> ·
+            <span style="color:#f59e0b">${wc} WARN</span> ·
+            <span style="color:#22c55e">${pc} PASS</span>${sc + uc > 0 ? ` · ${sc + uc} N/A` : ''}
           </div>
           <div class="score-sub">${new Date(audit.completedAt).toLocaleTimeString()} · baseline v${audit.baselineVersion}</div>
           <div class="header-actions">
