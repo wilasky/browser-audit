@@ -96,10 +96,16 @@ async function runChromePrivacy(check) {
         return;
       }
 
-      const pass = value === expected;
+      // For object values (e.g. dnsOverHttpsMode returns {mode, templates}),
+      // compare the nested 'mode' field if the expected value is a string
+      const effectiveValue = (value && typeof value === 'object' && 'mode' in value)
+        ? value.mode
+        : value;
+      const pass = effectiveValue === expected;
+      const detailValue = typeof effectiveValue === 'string' ? effectiveValue : String(effectiveValue);
       resolve({
         status: pass ? 'pass' : 'fail',
-        detail: pass ? 'Configurado correctamente' : `Valor actual: ${JSON.stringify(value)}`,
+        detail: pass ? 'Configurado correctamente' : `Valor actual: ${detailValue}`,
       });
     });
   });

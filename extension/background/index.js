@@ -15,20 +15,24 @@ async function doAudit() {
 
 async function injectScriptSpy(tabId) {
   try {
-    // MAIN world: monkey-patches browser APIs
+    const [tab] = await chrome.tabs.get(tabId).then((t) => [t]).catch(() => [null]);
+    if (!tab || tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://')) {
+      return { ok: false, reason: 'Página del sistema — ScriptSpy solo funciona en páginas web.' };
+    }
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ['content/instrumentation.js'],
       world: 'MAIN',
     });
-    // ISOLATED world: bridge that relays events to background
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ['content/bridge.js'],
       world: 'ISOLATED',
     });
+    return { ok: true };
   } catch (err) {
     console.error('[BrowserAudit] Injection failed:', err.message);
+    return { ok: false, reason: err.message };
   }
 }
 
@@ -70,9 +74,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'inject_scriptspy') {
     const tabId = msg.tabId;
     if (tabId) {
-      injectScriptSpy(tabId).then(() => sendResponse({ ok: true }));
+      injectScriptSpy(tabId).then(sendResponse);
     } else {
-      sendResponse({ ok: false });
+      sendResponse({ ok: false, reason: 'No se pudo identificar la pestaña activa.' });
     }
     return true;
   }

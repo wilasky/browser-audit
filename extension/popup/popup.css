@@ -232,5 +232,34 @@ main { padding: 0 0 16px; }
   border-radius: 3px;
   font-weight: 600;
 }
-.badge-3p { background: #1a1a2e; color: #7878c8; }
+.badge-3p     { background: #1a1a2e; color: #7878c8; }
+.badge-1p     { background: #0f1a0f; color: #448844; }
 .badge-threat { background: #3a0a0a; color: #ff4444; }
+
+/* Risk explanation */
+.risk-reason { font-size: 10px; color: #666; font-style: italic; margin-bottom: 3px; }
+
+/* Event chips by type */
+.evt-chip.evt-net { border-color: #1a2a3a; color: #4488aa; }
+.evt-chip.evt-fp  { border-color: #2a1a2a; color: #aa44aa; }
+
+/* Targets */
+.script-targets { font-size: 10px; color: #555; margin-top: 3px; word-break: break-all; }
+.targets-label  { color: #444; }
+
+/* Summary bar */
+.spy-summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  background: #13131a;
+  border-bottom: 1px solid #2a2a2e;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.sum-item   { color: #888; }
+.sum-item strong { color: #ccc; }
+.sum-sep    { color: #333; }
+.sum-high strong { color: #ef4444; }
+.sum-med strong  { color: #f59e0b; }

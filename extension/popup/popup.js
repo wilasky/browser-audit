@@ -4,10 +4,19 @@ import { renderScriptSpyLive } from './views/scriptspy-live.js';
 // Wraps sendMessage and silences lastError so Chrome doesn't log it as unchecked
 function sendMsg(msg) {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(msg, (result) => {
-      void chrome.runtime.lastError; // mark as checked
-      resolve(result ?? null);
-    });
+    try {
+      chrome.runtime.sendMessage(msg, (result) => {
+        void chrome.runtime.lastError;
+        resolve(result ?? null);
+      });
+    } catch (err) {
+      // Extension context invalidated (happens when popup is open during extension reload)
+      if (err.message?.includes('Extension context invalidated')) {
+        document.getElementById('view-root').innerHTML =
+          '<p class="error">Extensión recargada. Cierra y vuelve a abrir el popup.</p>';
+      }
+      resolve(null);
+    }
   });
 }
 
