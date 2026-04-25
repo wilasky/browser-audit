@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Browser Audit",
   "version": "0.1.0",
-  "description": "Audita la configuración de tu navegador e inspecciona el comportamiento de scripts en tiempo real.",
+  "description": "Audit your browser security settings and inspect JavaScript behavior on any website. Free health check + ScriptSpy.",
 
   "permissions": [
     "storage",

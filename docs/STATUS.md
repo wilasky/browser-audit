@@ -143,14 +143,30 @@ Antes de empezar cualquier tarea, leer:
 
 ### FASE 8 — Lanzamiento
 
-- [ ] Cuenta CWS Developer
-- [ ] Privacy Policy
-- [ ] Términos
-- [ ] Screenshots
-- [ ] Vídeo demo
-- [ ] Landing page
-- [ ] Listing CWS
-- [ ] Plan de marketing inicial
+**Documentación (hecho):**
+- [x] Privacy Policy — docs/PRIVACY_POLICY.md
+- [x] Terms of Service — docs/TERMS.md
+- [x] CWS listing text (EN + ES) — docs/CWS_LISTING.md
+- [x] Landing page — landing/index.html
+
+**Pendiente antes de subir a CWS:**
+- [ ] Iconos reales (diseño profesional 16/48/128px — los actuales son placeholders)
+- [ ] 5 screenshots a 1280×800px (ver docs/CWS_LISTING.md para descripción de cada uno)
+- [ ] Promotional tile 440×280px
+- [ ] Hosting de Privacy Policy (GitHub Pages o Cloudflare Pages)
+- [ ] Cuenta CWS Developer ($5 pago único en pay.google.com/us/about/freetrial/)
+- [ ] Subir ZIP de extension/dist/ al Developer Dashboard
+- [ ] Rellenar listing con texto de CWS_LISTING.md
+- [ ] Pegar URL de Privacy Policy publicada en el form de CWS
+- [ ] Justificar permisos (texto en CWS_LISTING.md sección "Justification")
+- [ ] Revisar que versión en manifest.json sea ≥ 0.1.0
+
+**Post-lanzamiento:**
+- [ ] Vídeo demo (Loom, 90 segundos)
+- [ ] Posts en r/netsec, r/privacy, Hacker News Show HN
+- [ ] Deploy backend en Hetzner CX21 (€5/mes) para plan Pro
+- [ ] Integrar ExtensionPay con el CWS extension ID real
+- [ ] Fase 6 — YARA en cliente
 
 ---
 
