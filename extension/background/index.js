@@ -1,5 +1,6 @@
 import { runAudit } from './audit-engine.js';
 import { ingestEvent, getAggregatedData, resetTab } from './event-aggregator.js';
+import { getPlanState, devTogglePro, resetPlan } from './plan-manager.js';
 
 const AUDIT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -84,6 +85,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'get_scriptspy') {
     const tabId = msg.tabId;
     sendResponse(tabId ? getAggregatedData(tabId) : { scripts: [], pageUrl: '' });
+  }
+
+  if (msg.type === 'get_plan') {
+    getPlanState().then(sendResponse);
+    return true;
+  }
+
+  if (msg.type === 'dev_toggle_pro') {
+    devTogglePro().then((tier) => sendResponse({ tier }));
+    return true;
+  }
+
+  if (msg.type === 'reset_plan') {
+    resetPlan().then(() => sendResponse({ ok: true }));
+    return true;
   }
 
   if (msg.type === 'scriptspy_event') {

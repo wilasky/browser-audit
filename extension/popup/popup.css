@@ -162,6 +162,58 @@ main { padding: 0 0 16px; }
   white-space: pre-wrap;
 }
 
+/* ---- Onboarding ---- */
+.ob-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px 24px; gap: 12px; text-align: center;
+}
+.ob-icon { font-size: 40px; line-height: 1; }
+.ob-title { font-size: 16px; font-weight: 700; color: #fff; }
+.ob-body { font-size: 12px; color: #888; line-height: 1.6; max-width: 300px; }
+.ob-dots { display: flex; gap: 6px; margin: 4px 0; }
+.ob-dot { width: 6px; height: 6px; border-radius: 50%; background: #333; }
+.ob-dot.active { background: #4f8ef7; }
+.ob-cta { padding: 8px 24px; font-size: 13px; }
+.ob-skip { background: none; border: none; color: #444; cursor: pointer; font-size: 11px; margin-top: 4px; }
+.ob-skip:hover { color: #888; }
+
+/* ---- Upgrade / Pro view ---- */
+.upgrade-wrap { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+.upgrade-header { display: flex; align-items: center; justify-content: space-between; }
+.upgrade-title { font-size: 14px; font-weight: 700; color: #fff; }
+
+.plan-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.plan-free { background: #1e1e22; color: #666; border: 1px solid #2a2a2e; }
+.plan-pro  { background: #1a2a0a; color: #7ec850; border: 1px solid #3a5a1a; }
+
+.plan-cols { display: flex; gap: 8px; }
+.plan-col {
+  flex: 1; background: #16161a; border: 1px solid #2a2a2e;
+  border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;
+}
+.plan-col.active { border-color: #4f8ef7; background: #0d1a2a; }
+.plan-col-head { font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; }
+.plan-col-pro .plan-col-head { color: #4f8ef7; }
+.plan-col.active .plan-col-head { color: #7ec850; }
+
+.plan-list { list-style: none; font-size: 10px; color: #666; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.plan-list li { line-height: 1.4; }
+.plan-col.active .plan-list { color: #88aacc; }
+
+.plan-price { font-size: 11px; color: #555; font-weight: 600; margin-top: 4px; }
+.plan-col.active .plan-price { color: #7ec850; }
+
+#btn-upgrade { width: 100%; margin-top: 6px; padding: 7px; font-size: 12px; }
+
+.plan-actions { display: flex; gap: 8px; align-items: center; }
+.btn-dev {
+  background: none; border: 1px dashed #333; color: #444;
+  padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-family: monospace;
+}
+.btn-dev:hover { border-color: #666; color: #888; }
+
+.plan-note { font-size: 10px; color: #444; line-height: 1.5; border-top: 1px solid #1e1e22; padding-top: 8px; }
+
 /* Status colors */
 .check-pass .check-icon { color: #22c55e; }
 .check-warn .check-icon { color: #f59e0b; }
