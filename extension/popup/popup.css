@@ -74,7 +74,24 @@ main { padding: 0 0 16px; }
 
 .score-meta { display: flex; flex-direction: column; gap: 6px; }
 
-.export-row { display: flex; gap: 4px; margin-top: 2px; }
+/* Profile bar */
+.profile-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 16px; border-bottom: 1px solid #2a2a2e; background: #0f0f13;
+  flex-wrap: wrap;
+}
+.profile-label { font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 0.06em; }
+.profile-btn {
+  background: none; border: 1px solid #2a2a2e; color: #555;
+  padding: 2px 8px; border-radius: 10px; cursor: pointer; font-size: 10px;
+}
+.profile-btn.active { background: #1e2a3a; border-color: #4f8ef7; color: #4f8ef7; }
+.profile-btn:hover:not(.active) { border-color: #444; color: #888; }
+
+/* Header actions */
+.header-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
+
+.export-row { display: flex; gap: 4px; }
 .btn-export {
   background: #1e1e22; border: 1px solid #3a3a3e; color: #666;
   padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px;
@@ -99,9 +116,11 @@ main { padding: 0 0 16px; }
 .btn-secondary:hover { background: #2a2a2e; color: #e8e8ea; }
 
 /* Categories */
-.categories { padding: 8px 0; }
+.categories { padding: 4px 0; }
 
-.category { padding: 8px 16px; }
+.category { padding: 6px 16px; }
+
+.cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 
 .cat-title {
   font-size: 11px;
@@ -109,51 +128,95 @@ main { padding: 0 0 16px; }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #666;
-  margin-bottom: 6px;
 }
+
+.cat-stats { display: flex; gap: 4px; }
+.cat-stat { font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+.stat-fail { background: #3a1212; color: #ef4444; }
+.stat-warn { background: #2a1800; color: #f59e0b; }
+.stat-pass { background: #0f1a0f; color: #22c55e; }
 
 /* Check items */
 .check-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
 
 .check-item {
-  display: grid;
-  grid-template-columns: 18px 1fr auto;
-  grid-template-rows: auto auto;
-  gap: 0 6px;
-  padding: 6px 8px;
+  padding: 7px 8px;
   border-radius: 6px;
   background: #16161a;
+  cursor: default;
+}
+
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .check-icon {
-  grid-row: 1 / 3;
   font-size: 13px;
-  align-self: center;
   font-weight: 700;
-}
-
-.check-title { font-weight: 500; color: #e0e0e4; font-size: 12px; }
-
-.check-detail {
-  grid-column: 2;
-  font-size: 11px;
-  color: #666;
+  flex-shrink: 0;
+  width: 16px;
   margin-top: 1px;
 }
 
+.check-main { flex: 1; min-width: 0; }
+
+.check-title-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+.check-title-row:hover .check-title { color: #fff; }
+
+.check-title { font-weight: 500; color: #e0e0e4; font-size: 12px; }
+
+.check-detail { font-size: 11px; color: #666; margin-top: 2px; }
+
+.check-actions { flex-shrink: 0; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+
+/* Severity badges */
+.sev-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 700; flex-shrink: 0; }
+.sev-critical { background: #3a0a0a; color: #ff4444; }
+.sev-high     { background: #2a1212; color: #ef6666; }
+.sev-medium   { background: #1a1800; color: #f59e0b; }
+.sev-low      { background: #1a1a1a; color: #666; }
+
+/* Fix buttons */
 .fix-btn {
-  grid-row: 1 / 3;
-  align-self: center;
   background: #1e2a3a;
   border: 1px solid #2a4a6a;
   color: #4f8ef7;
   padding: 3px 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 10px;
   white-space: nowrap;
 }
 .fix-btn:hover { background: #2a3a4e; }
+
+.fix-apply {
+  background: #0d2a1a;
+  border-color: #1a5a2a;
+  color: #22c55e;
+}
+.fix-apply:hover { background: #1a3a2a; }
+.fix-apply.fix-applied { opacity: 0.6; cursor: default; }
+
+.apply-error { font-size: 10px; color: #ef4444; margin-top: 3px; }
+
+/* Rationale panel */
+.check-rationale {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: #0f0f15;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.5;
+}
 
 /* Inline instructions panel */
 .fix-instructions {

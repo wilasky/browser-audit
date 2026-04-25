@@ -99,6 +99,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'apply_fix') {
+    // Directly set a chrome.privacy setting without opening Chrome settings
+    const { api, value } = msg;
+    const [namespace, key] = api.split('.');
+    const setting = chrome.privacy?.[namespace]?.[key];
+    if (!setting) { sendResponse({ ok: false, reason: 'API no disponible' }); return; }
+    setting.set({ value }, () => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ ok: false, reason: chrome.runtime.lastError.message });
+      } else {
+        sendResponse({ ok: true });
+      }
+    });
+    return true;
+  }
+
   if (msg.type === 'get_history') {
     chrome.storage.local.get('auditHistory').then((s) => sendResponse(s.auditHistory ?? []));
     return true;

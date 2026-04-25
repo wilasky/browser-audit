@@ -99,19 +99,27 @@ export async function enrichWithThreatIntel(tabId) {
   const planState = await getPlanState();
 
   if (planState.devMode && planState.isPro) {
-    // Demo mode: mark scripts that contact known ad/tracker domains as TI matches
-    // so the user can see exactly what threat intel looks like with the real backend
+    // Demo mode: show what TI looks like. Mark 3rd-party scripts with network
+    // activity as demo matches so the user always sees the feature working.
     for (const script of scripts) {
-      for (const target of script.targetsContacted) {
-        const domain = target.replace(/^https?:\/\//, '').replace(/\/.*/, '');
-        if (DEMO_TI_DOMAINS.has(domain)) {
+      if (!script.isThirdParty) { continue; }
+      const netActivity = (script.eventCounts['fetch'] ?? 0)
+        + (script.eventCounts['xhr'] ?? 0)
+        + (script.eventCounts['beacon'] ?? 0)
+        + (script.eventCounts['websocket'] ?? 0);
+      // Mark scripts with significant network activity OR known ad domains
+      if (netActivity >= 2 || script.targetsContacted.size >= 1) {
+        const contactsKnownDomain = [...script.targetsContacted].some((t) => {
+          const d = t.replace(/^https?:\/\//, '').replace(/\/.*/, '');
+          return DEMO_TI_DOMAINS.has(d);
+        });
+        if (netActivity >= 3 || contactsKnownDomain) {
           script.threatIntelMatch = true;
           script.threatIntelSource = 'demo';
-          break;
         }
       }
     }
-    return; // skip real lookup in demo mode
+    return;
   }
 
   const results = await lookupHashes(hashes);

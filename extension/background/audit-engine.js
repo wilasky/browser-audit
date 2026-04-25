@@ -271,6 +271,11 @@ export async function runAudit() {
               title: check.title,
               severity: check.severity,
               weight: check.weight,
+              rationale: check.rationale,
+              fix: check.fix,
+              api: check.method.api ?? null,
+              expected: check.method.expected ?? null,
+              canApply: check.method.canApply ?? false,
               status: 'skipped',
               detail: `Requiere permiso "${check.requiresPermission}"`,
             };
@@ -297,7 +302,12 @@ export async function runAudit() {
           title: check.title,
           severity: check.severity,
           weight: check.weight,
+          rationale: check.rationale,
           fix: check.fix,
+          // Pass api+expected so popup can apply the fix directly
+          api: check.method.api ?? null,
+          expected: check.method.expected ?? null,
+          canApply: check.method.canApply ?? false,
           ...result,
         };
       } catch (err) {

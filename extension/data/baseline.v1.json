@@ -352,6 +352,146 @@
         "instructions": "Busca 'Aviso de contrasena hackeada' o 'Proteccion de Contrasena' y activalo."
       },
       "introducedIn": "1.0.0"
+    },
+    {
+      "id": "hyperlink-auditing",
+      "category": "privacy",
+      "title": "Auditoría de hipervínculos desactivada",
+      "severity": "low",
+      "weight": 2,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.hyperlinkAuditingEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "El atributo 'ping' en enlaces permite a los sitios rastrear en qué enlaces haces clic, enviando una petición silenciosa a un servidor de terceros.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el envío de pings de auditoría de hipervínculos."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "network-prediction",
+      "category": "privacy",
+      "title": "Predicción de red desactivada",
+      "severity": "low",
+      "weight": 2,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "network.networkPredictionEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "La predicción de red (prefetch/preconnect) conecta con destinos que no has visitado, revelando intención de navegación a terceros.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el prefetch y preconnect de Chrome."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "referrer-headers",
+      "category": "privacy",
+      "title": "Cabeceras Referer controladas",
+      "severity": "low",
+      "weight": 2,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.referrersEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Las cabeceras Referer revelan qué página venías antes de visitar un sitio, permitiendo tracking entre dominios.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el envío de cabeceras Referer."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "autofill-addresses",
+      "category": "security",
+      "title": "Autocompletado de direcciones desactivado",
+      "severity": "low",
+      "weight": 2,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.autofillAddressEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Las direcciones guardadas pueden ser exfiltradas por scripts maliciosos en formularios comprometidos.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el autocompletado de direcciones."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "translation-service",
+      "category": "privacy",
+      "title": "Servicio de traducción no invasivo",
+      "severity": "low",
+      "weight": 1,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.translationServiceEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "El servicio de traducción de Chrome envía el contenido completo de la página a servidores de Google para traducirla.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el servicio de traducción automática."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "spelling-service",
+      "category": "privacy",
+      "title": "Corrector ortográfico en la nube desactivado",
+      "severity": "low",
+      "weight": 2,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.spellingServiceEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "El corrector en la nube envía lo que escribes en cualquier campo de texto a los servidores de Google para corregirlo.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el corrector ortográfico en la nube. El corrector local sigue funcionando."
+      },
+      "introducedIn": "1.0.0"
+    },
+    {
+      "id": "search-suggestions",
+      "category": "privacy",
+      "title": "Sugerencias de búsqueda desactivadas",
+      "severity": "low",
+      "weight": 2,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "services.searchSuggestEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Las sugerencias de búsqueda envían cada pulsación de tecla en la barra de direcciones al motor de búsqueda antes de que hayas terminado de escribir.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva el envío de texto en tiempo real al buscador."
+      },
+      "introducedIn": "1.0.0"
     }
   ]
 }
