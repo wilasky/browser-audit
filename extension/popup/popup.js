@@ -1,8 +1,20 @@
 import { renderHealthOverview } from './views/health-overview.js';
+import { renderScriptSpyLive } from './views/scriptspy-live.js';
 
 const root = document.getElementById('view-root');
+const tabs = document.querySelectorAll('.tab-btn');
 
-async function init() {
+function setView(view) {
+  tabs.forEach((t) => t.classList.toggle('active', t.dataset.view === view));
+
+  if (view === 'health') {
+    loadHealthView();
+  } else {
+    renderScriptSpyLive(root);
+  }
+}
+
+async function loadHealthView() {
   root.innerHTML = '<p class="loading">Cargando auditoría…</p>';
 
   const audit = await new Promise((resolve) =>
@@ -23,4 +35,8 @@ async function init() {
   }
 }
 
-init();
+tabs.forEach((btn) => {
+  btn.addEventListener('click', () => setView(btn.dataset.view));
+});
+
+setView('health');

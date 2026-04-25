@@ -10,10 +10,12 @@
   <div id="app">
     <header>
       <h1>Browser Audit</h1>
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-view="health">Health</button>
+        <button class="tab-btn" data-view="scriptspy">ScriptSpy</button>
+      </nav>
     </header>
-    <main id="view-root">
-      <p>Cargando…</p>
-    </main>
+    <main id="view-root"></main>
   </div>
   <script src="popup.js" type="module"></script>
 </body>
