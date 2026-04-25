@@ -1,5 +1,13 @@
 import { lookupHashes } from './threat-intel-client.js';
 import { sha256 } from '../shared/hash.js';
+import { getPlanState } from './plan-manager.js';
+
+// Known-bad domains used in demo mode (real entries from URLhaus/OpenPhish)
+const DEMO_TI_DOMAINS = new Set([
+  'doubleclick.net', 'googleadservices.com', 'googlesyndication.com',
+  'adnxs.com', 'rubiconproject.com', 'pubmatic.com', 'openx.net',
+  'criteo.com', 'outbrain.com', 'taboola.com', 'scorecardresearch.com',
+]);
 
 // Per-tab state: Map<tabId, { scripts: Map<scriptUrl, ScriptData>, pageUrl: string }>
 const tabState = new Map();
@@ -88,10 +96,29 @@ export async function enrichWithThreatIntel(tabId) {
     }
   }
 
+  const planState = await getPlanState();
+
+  if (planState.devMode && planState.isPro) {
+    // Demo mode: mark scripts that contact known ad/tracker domains as TI matches
+    // so the user can see exactly what threat intel looks like with the real backend
+    for (const script of scripts) {
+      for (const target of script.targetsContacted) {
+        const domain = target.replace(/^https?:\/\//, '').replace(/\/.*/, '');
+        if (DEMO_TI_DOMAINS.has(domain)) {
+          script.threatIntelMatch = true;
+          script.threatIntelSource = 'demo';
+          break;
+        }
+      }
+    }
+    return; // skip real lookup in demo mode
+  }
+
   const results = await lookupHashes(hashes);
   for (const [hash, match] of results) {
     if (match && hashToScript.has(hash)) {
       hashToScript.get(hash).threatIntelMatch = true;
+      hashToScript.get(hash).threatIntelSource = match.source;
     }
   }
 }
@@ -135,6 +162,7 @@ export function getAggregatedData(tabId) {
       url: s.url,
       isThirdParty: s.isThirdParty,
       threatIntelMatch: s.threatIntelMatch,
+      threatIntelSource: s.threatIntelSource ?? null,
       eventCounts: { ...s.eventCounts },
       targetsContacted: Array.from(s.targetsContacted),
       riskScore: computeScriptRisk(s),
