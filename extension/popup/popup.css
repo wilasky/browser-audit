@@ -206,6 +206,14 @@ main { padding: 0 0 16px; }
 .btn-reset { color: #ef6666; }
 .btn-reset:hover { background: #2a1212; color: #ff8888; }
 
+/* Grant permissions button — shown only when there are skipped checks */
+.btn-grant {
+  background: #0d2a1a;
+  border-color: #1a5a2a;
+  color: #22c55e;
+}
+.btn-grant:hover { background: #1a3a2a; border-color: #2a7a3a; color: #44ee77; }
+
 /* Fix buttons */
 .fix-btn {
   background: #1e2a3a;

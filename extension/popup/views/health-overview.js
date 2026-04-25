@@ -199,7 +199,8 @@ export function renderHealthOverview(audit, container) {
     const filteredScore = (() => {
       let tw = 0, lost = 0;
       for (const r of filtered) {
-        if (r.status === 'skipped') { continue; }
+        // Same rule as audit-engine: only pass/warn/fail count
+        if (r.status !== 'pass' && r.status !== 'warn' && r.status !== 'fail') { continue; }
         tw += r.weight;
         if (r.status === 'fail') { lost += r.weight; }
         if (r.status === 'warn') { lost += r.weight * 0.5; }
@@ -230,8 +231,8 @@ export function renderHealthOverview(audit, container) {
           <div class="score-sub">${new Date(audit.completedAt).toLocaleTimeString()} · baseline v${audit.baselineVersion}</div>
           <div class="header-actions">
             <button id="btn-refresh" class="btn-secondary">↺ Actualizar</button>
-            <button id="btn-grant-permissions" class="btn-secondary">+ Activar chequeos</button>
-            <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="Restaura todos los settings que aplicaste con ⚡ Aplicar a sus valores por defecto">↶ Restablecer</button>
+            ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="Concede permisos opcionales para ejecutar los ${sc} checks que requieren management/privacy/contentSettings">+ Activar ${sc} checks</button>` : ''}
+            <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="Restablecer ajustes de Chrome aplicados con ⚡">↶ Restablecer</button>
             <div class="export-row">
               <button id="btn-export-json" class="btn-export">↓ JSON</button>
               <button id="btn-export-pdf" class="btn-export">↓ PDF</button>
@@ -254,7 +255,7 @@ export function renderHealthOverview(audit, container) {
       if (freshAudit) { renderHealthOverview(freshAudit, container); }
     });
 
-    container.querySelector('#btn-grant-permissions').addEventListener('click', () => {
+    container.querySelector('#btn-grant-permissions')?.addEventListener('click', () => {
       chrome.permissions.request({ permissions: ['management', 'privacy', 'contentSettings'] }, async (granted) => {
         void chrome.runtime.lastError;
         if (granted) {
@@ -265,8 +266,17 @@ export function renderHealthOverview(audit, container) {
       });
     });
 
-    container.querySelector('#btn-export-json').addEventListener('click', () => exportAuditJSON(audit));
-    container.querySelector('#btn-export-pdf').addEventListener('click', () => exportAuditPDF(audit));
+    // Build a filtered audit copy that respects the active profile
+    const filteredAudit = {
+      ...audit,
+      score: filteredScore,
+      results: filtered,
+      profile: activeProfile,
+      profileLabel: PROFILES[activeProfile].label,
+    };
+
+    container.querySelector('#btn-export-json').addEventListener('click', () => exportAuditJSON(filteredAudit));
+    container.querySelector('#btn-export-pdf').addEventListener('click', () => exportAuditPDF(filteredAudit));
 
     container.querySelector('#btn-reset-fixes').addEventListener('click', async () => {
       // Send ALL applicable APIs from the audit to reset — works even for changes

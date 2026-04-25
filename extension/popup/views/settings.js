@@ -244,6 +244,20 @@ function renderPlanSection(plan) {
 function renderDataSection() {
   return `
     <section class="settings-section">
+      <h3 class="settings-heading">Importar / Exportar configuración</h3>
+      <p class="settings-hint">
+        Guarda y restaura tus preferencias entre dispositivos. La API key de IA NO se exporta
+        por seguridad — debes pegarla manualmente en cada equipo.
+      </p>
+      <div class="settings-row">
+        <button id="btn-export-config" class="btn-secondary">↓ Exportar config (.json)</button>
+        <button id="btn-import-config" class="btn-secondary">↑ Importar config (.json)</button>
+        <input type="file" id="input-import-file" accept="application/json" style="display:none"/>
+      </div>
+      <p id="config-status" class="settings-hint"></p>
+    </section>
+
+    <section class="settings-section">
       <h3 class="settings-heading">Datos y privacidad</h3>
       <div class="settings-row">
         <button id="btn-clear-cache" class="btn-secondary">Limpiar caché TI</button>
@@ -345,6 +359,55 @@ export async function renderSettings(container) {
       await chrome.storage.local.remove('auditHistory');
       renderSettings(container);
     }
+  });
+
+  // --- Import / Export config ---
+  container.querySelector('#btn-export-config').addEventListener('click', async () => {
+    const data = await chrome.storage.local.get(['userPrefs', 'aiConfig']);
+    // Strip the API key from export — security
+    const exported = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      userPrefs: data.userPrefs ?? {},
+      aiConfig: data.aiConfig ? { provider: data.aiConfig.provider, model: data.aiConfig.model } : null,
+    };
+    const blob = new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `browser-audit-config-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  const fileInput = container.querySelector('#input-import-file');
+  container.querySelector('#btn-import-config').addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) { return; }
+    const status = container.querySelector('#config-status');
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data.version) { throw new Error('Archivo no válido (sin versión)'); }
+      const updates = {};
+      if (data.userPrefs && typeof data.userPrefs === 'object') {
+        updates.userPrefs = { ...DEFAULTS, ...data.userPrefs };
+      }
+      if (data.aiConfig?.provider) {
+        const cur = await getAIConfig();
+        updates.aiConfig = { provider: data.aiConfig.provider, model: data.aiConfig.model ?? '', apiKey: cur.apiKey };
+      }
+      await chrome.storage.local.set(updates);
+      status.textContent = '✓ Configuración importada correctamente.';
+      status.style.color = '#22c55e';
+      setTimeout(() => renderSettings(container), 1500);
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+      status.style.color = '#ef4444';
+    }
+    fileInput.value = '';
   });
 
   container.querySelector('#btn-clear-cache').addEventListener('click', async () => {

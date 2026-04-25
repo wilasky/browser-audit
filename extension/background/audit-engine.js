@@ -7,10 +7,12 @@ export function calculateScore(results) {
   let lostPoints = 0;
 
   for (const r of results) {
-    if (r.status === 'skipped') {continue;}
+    // Only evaluated checks count: pass / warn / fail
+    // skipped (no permission) and unknown (API not available) are excluded entirely
+    if (r.status !== 'pass' && r.status !== 'warn' && r.status !== 'fail') { continue; }
     totalWeight += r.weight;
-    if (r.status === 'fail') {lostPoints += r.weight;}
-    if (r.status === 'warn') {lostPoints += r.weight * 0.5;}
+    if (r.status === 'fail') { lostPoints += r.weight; }
+    if (r.status === 'warn') { lostPoints += r.weight * 0.5; }
   }
 
   if (totalWeight === 0) {return 100;}

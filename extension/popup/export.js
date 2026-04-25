@@ -53,7 +53,7 @@ export function exportAuditPDF(audit) {
   doc.setFontSize(10); doc.setFont('helvetica', 'normal');
   doc.setTextColor(100);
   doc.text(`Fecha: ${new Date(audit.completedAt).toLocaleString()}`, MARGIN, y);
-  doc.text(`Baseline: v${audit.baselineVersion}`, W / 2, y);
+  doc.text(`Baseline: v${audit.baselineVersion}${audit.profileLabel ? ` · Vista: ${audit.profileLabel}` : ''}`, W / 2, y);
   y += 12;
 
   // Score circle (text version)
