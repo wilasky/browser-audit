@@ -140,17 +140,15 @@
       "title": "Modo HTTPS-First activo",
       "severity": "medium",
       "weight": 6,
-      "requiresPermission": "privacy",
       "method": {
-        "type": "chromePrivacy",
-        "api": "websites.httpsOnlyModeEnabled",
-        "expected": true
+        "type": "manualCheck",
+        "url": "chrome://settings/security"
       },
-      "rationale": "Fuerza al navegador a intentar HTTPS antes que HTTP, evitando ataques de downgrade.",
+      "rationale": "Fuerza al navegador a intentar HTTPS antes que HTTP, evitando ataques de downgrade. Chrome no expone esta opción a las extensiones — debe verificarse manualmente.",
       "fix": {
         "type": "navigate",
         "url": "chrome://settings/security",
-        "instructions": "Busca 'Usar siempre conexiones seguras' y activalo. Chrome intentara HTTPS antes de HTTP en cada conexion."
+        "instructions": "Busca 'Usar siempre conexiones seguras' y actívalo."
       },
       "introducedIn": "1.0.0",
       "frameworks": [
@@ -365,11 +363,10 @@
       "title": "Popups bloqueados por defecto",
       "severity": "low",
       "weight": 3,
-      "requiresPermission": "privacy",
+      "advanced": true,
       "method": {
-        "type": "chromePrivacy",
-        "api": "websites.popupsAllowed",
-        "expected": false
+        "type": "contentSettingCheck",
+        "setting": "popups"
       },
       "rationale": "Los popups son usados para phishing, scareware y publicidad agresiva.",
       "fix": {
@@ -644,49 +641,23 @@
     {
       "id": "metrics-reporting",
       "category": "privacy",
-      "title": "Métricas de uso desactivadas",
+      "title": "Métricas y reporting a Google",
       "severity": "medium",
       "weight": 3,
       "advanced": true,
-      "requiresPermission": "privacy",
       "method": {
-        "type": "chromePrivacy",
-        "api": "services.metricsReportingEnabled",
-        "expected": false,
-        "canApply": true
+        "type": "manualCheck",
+        "url": "chrome://settings/syncSetup"
       },
-      "rationale": "Chrome envía estadísticas de uso, crashes y datos de rendimiento a Google de forma continua.",
+      "rationale": "Chrome envía estadísticas de uso, crashes y datos de rendimiento a Google. La API para auditarlo no está expuesta a extensiones.",
       "fix": {
-        "type": "apply",
-        "instructions": "Desactiva el envío de estadísticas y datos de diagnóstico."
+        "type": "navigate",
+        "url": "chrome://settings/syncSetup",
+        "instructions": "En Sync y servicios de Google, desactiva 'Ayudar a mejorar las funciones y el rendimiento de Chrome'."
       },
       "introducedIn": "1.0.0",
       "frameworks": [
         "CCN-2.8"
-      ]
-    },
-    {
-      "id": "data-saver",
-      "category": "privacy",
-      "title": "Sin proxy de compresión activo",
-      "severity": "high",
-      "weight": 6,
-      "advanced": true,
-      "requiresPermission": "privacy",
-      "method": {
-        "type": "chromePrivacy",
-        "api": "network.webRTCIPHandlingPolicy",
-        "expected": "disable_non_proxied_udp",
-        "canApply": true
-      },
-      "rationale": "La política WebRTC controla qué IPs se exponen. 'disable_non_proxied_udp' es la más segura — evita fugas de IP incluso con VPN.",
-      "fix": {
-        "type": "apply",
-        "instructions": "Activa la política WebRTC más restrictiva para evitar fugas de IP."
-      },
-      "introducedIn": "1.0.0",
-      "frameworks": [
-        "CCN-3.5"
       ]
     },
     {
@@ -781,32 +752,6 @@
       ]
     },
     {
-      "id": "https-upgrade-mode",
-      "category": "security",
-      "title": "HTTPS-Only Mode completo",
-      "severity": "medium",
-      "weight": 5,
-      "advanced": true,
-      "requiresPermission": "privacy",
-      "method": {
-        "type": "chromePrivacy",
-        "api": "websites.httpsOnlyModeEnabled",
-        "expected": true,
-        "canApply": true
-      },
-      "rationale": "Este check evalúa si el modo HTTPS-Only está activo correctamente, distinguiéndolo del modo HTTPS-First.",
-      "fix": {
-        "type": "navigate",
-        "url": "chrome://settings/security",
-        "instructions": "Asegúrate de que 'Usar siempre conexiones seguras' está activado (no solo la versión parcial)."
-      },
-      "introducedIn": "1.0.0",
-      "frameworks": [
-        "CIS-3.1",
-        "CCN-3.1"
-      ]
-    },
-    {
       "id": "site-isolation",
       "category": "security",
       "title": "Aislamiento de sitios activo",
@@ -857,17 +802,15 @@
       "severity": "low",
       "weight": 3,
       "advanced": true,
-      "requiresPermission": "privacy",
       "method": {
-        "type": "chromePrivacy",
-        "api": "services.backgroundModeEnabled",
-        "expected": false,
-        "canApply": true
+        "type": "manualCheck",
+        "url": "chrome://settings/system"
       },
-      "rationale": "El modo en segundo plano mantiene Chrome ejecutándose tras cerrar la ventana. Aumenta la superficie de ataque y consumo.",
+      "rationale": "Mantener Chrome ejecutándose tras cerrar ventanas aumenta la superficie de ataque.",
       "fix": {
-        "type": "apply",
-        "instructions": "Desactiva la ejecución en segundo plano de Chrome."
+        "type": "navigate",
+        "url": "chrome://settings/system",
+        "instructions": "Desactiva 'Continuar ejecutando aplicaciones en segundo plano cuando se cierre Google Chrome'."
       },
       "introducedIn": "1.0.0",
       "frameworks": ["CIS-1.2", "CCN-1.5"]
@@ -1118,6 +1061,71 @@
       },
       "introducedIn": "1.0.0",
       "frameworks": ["CCN-2.9"]
+    },
+    {
+      "id": "global-privacy-control",
+      "category": "privacy",
+      "title": "Global Privacy Control (GPC) activo",
+      "severity": "medium",
+      "weight": 4,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "network.globalPrivacyControlEnabled",
+        "expected": true,
+        "canApply": true
+      },
+      "rationale": "GPC es el sucesor moderno y legalmente vinculante de Do Not Track. California (CCPA) y otras jurisdicciones lo respetan obligatoriamente.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Activa GPC para enviar señal universal de no-tracking a todas las webs."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CCN-2.6", "OWASP-PRIVACY"]
+    },
+    {
+      "id": "privacy-sandbox-master",
+      "category": "privacy",
+      "title": "Privacy Sandbox desactivado",
+      "severity": "high",
+      "weight": 5,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.privacySandboxEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Master switch que desactiva todas las APIs de Privacy Sandbox de Google de una sola vez (Topics, FLEDGE, AdMeasurement, Attribution Reporting).",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva Privacy Sandbox completo. Equivale a desactivar Topics, FLEDGE y Ad Measurement juntas."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CCN-2.1", "OWASP-PRIVACY"]
+    },
+    {
+      "id": "related-website-sets",
+      "category": "privacy",
+      "title": "Related Website Sets desactivado",
+      "severity": "medium",
+      "weight": 3,
+      "advanced": true,
+      "requiresPermission": "privacy",
+      "method": {
+        "type": "chromePrivacy",
+        "api": "websites.relatedWebsiteSetsEnabled",
+        "expected": false,
+        "canApply": true
+      },
+      "rationale": "Permite a empresas declarar varios dominios como 'mismo sitio' para compartir cookies entre ellos. Vía de tracking cross-domain encubierto.",
+      "fix": {
+        "type": "apply",
+        "instructions": "Desactiva Related Website Sets para evitar tracking cross-domain de mismas empresas."
+      },
+      "introducedIn": "1.0.0",
+      "frameworks": ["CCN-2.1", "OWASP-PRIVACY"]
     }
   ],
   "frameworks": {

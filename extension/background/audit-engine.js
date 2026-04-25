@@ -62,7 +62,10 @@ async function runChromePrivacy(check) {
   return new Promise((resolve) => {
     const setting = chrome.privacy?.[namespace]?.[key];
     if (!setting) {
-      resolve({ status: 'unknown', detail: `API chrome.privacy.${api} no disponible en esta versión de Chrome` });
+      resolve({
+        status: 'unknown',
+        detail: `No aplicable en tu Chrome (la API privacy.${api} no está expuesta a extensiones en esta versión o plataforma)`,
+      });
       return;
     }
 
@@ -316,6 +319,14 @@ async function runPermissionCheck() {
   return { status: 'pass', detail: 'Revisa manualmente en chrome://settings/content' };
 }
 
+// Manual check — no API to verify, user must check the setting themselves
+async function runManualCheck(check) {
+  return {
+    status: 'unknown',
+    detail: `Verifica manualmente en ${check.method.url ?? 'chrome://settings'} — Chrome no expone esta opción a extensiones`,
+  };
+}
+
 async function runPrivateNetworkCheck() {
   // No public API to check this flag — return informational
   return {
@@ -390,6 +401,7 @@ const HANDLERS = {
   managementPolicyCheck: runManagementPolicyCheck,
   downloadPromptCheck: runDownloadPromptCheck,
   contentSettingCheck: runContentSettingCheck,
+  manualCheck: runManualCheck,
 };
 
 // --- Main audit runner ---
