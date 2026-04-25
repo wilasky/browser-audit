@@ -57,8 +57,14 @@ function renderCheck(r, fixMap) {
   const icon = STATUS_ICON[r.status] ?? '?';
   const fix = fixMap[r.id];
 
+  const isFingerprintCheck = r.id === 'fingerprint-entropy';
   const showFix = fix && r.status !== 'pass' && r.status !== 'skipped';
   const canApply = fix?.type === 'apply' || r.canApply;
+
+  // Fingerprint check always shows a "Ver detalles" button
+  const detailBtn = isFingerprintCheck
+    ? `<button class="fix-btn fix-detail" data-check-id="${r.id}">Ver detalles →</button>`
+    : '';
 
   let fixBtn = '';
   if (showFix) {
@@ -82,7 +88,7 @@ function renderCheck(r, fixMap) {
           </div>
           <span class="check-detail">${r.detail ?? ''}</span>
         </div>
-        <div class="check-actions">${fixBtn}</div>
+        <div class="check-actions">${detailBtn}${fixBtn}</div>
       </div>
       <div class="check-rationale" id="rationale-${r.id}" style="display:none">
         ${r.rationale ?? ''}
@@ -264,6 +270,10 @@ export function renderHealthOverview(audit, container) {
     container.querySelectorAll('.check-item').forEach((item) => {
       item.querySelector('.check-title-row')?.addEventListener('click', () => {
         const id = item.dataset.checkId;
+        if (id === 'fingerprint-entropy') {
+          container.dispatchEvent(new CustomEvent('open-fingerprint', { bubbles: true }));
+          return;
+        }
         const panel = document.getElementById(`rationale-${id}`);
         if (panel) { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; }
       });

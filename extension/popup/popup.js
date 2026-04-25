@@ -3,6 +3,7 @@ import { renderScriptSpyLive } from './views/scriptspy-live.js';
 import { renderUpgrade } from './views/upgrade.js';
 import { renderSettings } from './views/settings.js';
 import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
+import { renderFingerprintDetail } from './views/fingerprint-detail.js';
 import { calculateFingerprintEntropy } from '../shared/fingerprint.js';
 
 const root = document.getElementById('view-root');
@@ -43,6 +44,11 @@ async function loadHealthView() {
 
   if (audit) {
     renderHealthOverview(audit, root);
+    // Wire fingerprint detail view — fires when user clicks on that check
+    root.addEventListener('open-fingerprint', () => {
+      renderFingerprintDetail(root).catch(console.error);
+      root.addEventListener('fp-back', () => loadHealthView().catch(console.error), { once: true });
+    }, { once: true });
   } else {
     root.innerHTML = '<p class="loading">Ejecutando primera auditoría…</p>';
     const freshAudit = await sendMsg({ type: 'run_audit' });

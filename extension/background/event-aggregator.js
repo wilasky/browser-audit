@@ -99,25 +99,28 @@ export async function enrichWithThreatIntel(tabId) {
   const planState = await getPlanState();
 
   if (planState.devMode && planState.isPro) {
-    // Demo mode: show what TI looks like. Mark 3rd-party scripts with network
-    // activity as demo matches so the user always sees the feature working.
-    for (const script of scripts) {
-      if (!script.isThirdParty) { continue; }
-      const netActivity = (script.eventCounts['fetch'] ?? 0)
-        + (script.eventCounts['xhr'] ?? 0)
-        + (script.eventCounts['beacon'] ?? 0)
-        + (script.eventCounts['websocket'] ?? 0);
-      // Mark scripts with significant network activity OR known ad domains
-      if (netActivity >= 2 || script.targetsContacted.size >= 1) {
-        const contactsKnownDomain = [...script.targetsContacted].some((t) => {
-          const d = t.replace(/^https?:\/\//, '').replace(/\/.*/, '');
-          return DEMO_TI_DOMAINS.has(d);
-        });
-        if (netActivity >= 3 || contactsKnownDomain) {
-          script.threatIntelMatch = true;
-          script.threatIntelSource = 'demo';
-        }
+    // Demo mode: always mark 3rd-party scripts with any network or FP activity.
+    // Guaranteed to show something so the user sees the feature working.
+    const thirdParties = scripts.filter((s) => s.isThirdParty);
+    for (const script of thirdParties) {
+      const totalEvents = Object.values(script.eventCounts).reduce((a, b) => a + b, 0);
+      const contactsKnown = [...script.targetsContacted].some((t) => {
+        const d = t.replace(/^https?:\/\//, '').replace(/\/.*/, '');
+        return DEMO_TI_DOMAINS.has(d);
+      });
+      // Mark if: contacts a known ad domain, OR has significant event activity
+      if (contactsKnown || totalEvents >= 5) {
+        script.threatIntelMatch = true;
+        script.threatIntelSource = 'demo';
       }
+    }
+    // Guarantee at least 1 match if there are any 3rd-party scripts
+    if (thirdParties.length > 0 && !thirdParties.some((s) => s.threatIntelMatch)) {
+      thirdParties.sort((a, b) =>
+        Object.values(b.eventCounts).reduce((x, y) => x + y, 0) -
+        Object.values(a.eventCounts).reduce((x, y) => x + y, 0)
+      )[0].threatIntelMatch = true;
+      thirdParties[0].threatIntelSource = 'demo';
     }
     return;
   }
