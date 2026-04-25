@@ -247,6 +247,64 @@ main { padding: 0 0 16px; }
 .script-targets { font-size: 10px; color: #555; margin-top: 3px; word-break: break-all; }
 .targets-label  { color: #444; }
 
+/* View script button */
+.view-script-btn {
+  margin-top: 4px;
+  background: none;
+  border: 1px solid #2a2a3a;
+  color: #555;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 10px;
+}
+.view-script-btn:hover { color: #4f8ef7; border-color: #4f8ef7; }
+
+/* Legend */
+.legend-wrap {
+  margin: 0 8px 4px;
+  border: 1px solid #2a2a2e;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.legend-toggle {
+  font-size: 11px;
+  color: #555;
+  padding: 6px 10px;
+  cursor: pointer;
+  list-style: none;
+  background: #13131a;
+}
+.legend-toggle::-webkit-details-marker { display: none; }
+.legend-toggle:hover { color: #888; }
+.legend-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  background: #0f0f13;
+}
+.leg-section-row .leg-section {
+  padding: 4px 10px 2px;
+  color: #4f8ef7;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #13131a;
+}
+.leg-term {
+  padding: 2px 10px;
+  color: #aaa;
+  font-family: monospace;
+  white-space: nowrap;
+  width: 110px;
+}
+.leg-def {
+  padding: 2px 10px 2px 0;
+  color: #555;
+  line-height: 1.4;
+}
+
 /* Summary bar */
 .spy-summary {
   display: flex;

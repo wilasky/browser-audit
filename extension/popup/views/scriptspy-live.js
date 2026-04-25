@@ -14,6 +14,58 @@ const EVENT_LABELS = {
 const FP_TYPES = new Set(['fp-canvas', 'fp-audio', 'fp-webgl', 'fp-navigator', 'fp-screen', 'fp-fonts', 'fp-battery']);
 const NET_TYPES = new Set(['fetch', 'xhr', 'beacon', 'websocket']);
 
+const LEGEND_ITEMS = [
+  { section: 'Origen', items: [
+    ['1st party', 'Script del mismo dominio que la página'],
+    ['3rd party', 'Script externo — puede rastrearte entre sitios'],
+  ]},
+  { section: 'Riesgo', items: [
+    ['ALTO ≥70', 'Comportamiento muy sospechoso'],
+    ['MEDIO ≥35', 'Actividad que merece atención'],
+    ['BAJO <35', 'Sin señales de alerta'],
+  ]},
+  { section: 'Red', items: [
+    ['Fetch / XHR', 'Petición HTTP enviada por el script'],
+    ['Beacon', 'Envío silencioso de datos al servidor (no espera respuesta)'],
+    ['WebSocket', 'Conexión persistente bidireccional'],
+    ['→ dominio', 'Destinos de red contactados'],
+  ]},
+  { section: 'Almacenamiento', items: [
+    ['Cookie R/W', 'Lectura / escritura de cookies'],
+    ['Storage R/W', 'Lectura / escritura de localStorage o sessionStorage'],
+  ]},
+  { section: 'Inputs', items: [
+    ['Input listener', 'El script escucha eventos de teclado o formulario'],
+    ['Mouse', 'El script sigue el movimiento del ratón o clicks'],
+    ['Form read', 'El script leyó el contenido de un formulario (FormData)'],
+    ['Script inject', 'El script inyectó dinámicamente otro script en la página'],
+  ]},
+  { section: 'Fingerprinting (FP)', items: [
+    ['Canvas FP', 'Lee el renderizado del canvas para identificar la GPU/fuentes'],
+    ['Audio FP', 'Mide el procesado de audio para obtener un identificador único'],
+    ['WebGL FP', 'Lee parámetros de la GPU via WebGL'],
+    ['Navigator FP', 'Lee userAgent, idioma, CPU, memoria del dispositivo'],
+    ['Screen FP', 'Lee resolución y profundidad de color de la pantalla'],
+    ['Fonts FP', 'Detecta las fuentes instaladas en el sistema'],
+    ['Battery FP', 'Lee el estado de la batería (identificador muy preciso)'],
+  ]},
+];
+
+function renderLegend() {
+  const sections = LEGEND_ITEMS.map(({ section, items }) => {
+    const rows = items.map(([term, def]) =>
+      `<tr><td class="leg-term">${term}</td><td class="leg-def">${def}</td></tr>`
+    ).join('');
+    return `<tr class="leg-section-row"><td colspan="2" class="leg-section">${section}</td></tr>${rows}`;
+  }).join('');
+
+  return `
+    <details class="legend-wrap">
+      <summary class="legend-toggle">? Leyenda de términos</summary>
+      <table class="legend-table">${sections}</table>
+    </details>`;
+}
+
 function shortUrl(url) {
   if (url === 'inline') { return 'inline'; }
   try {
@@ -38,9 +90,12 @@ function riskExplanation(s) {
   return reasons.length ? reasons.join(' · ') : 'sin comportamiento sospechoso';
 }
 
-function renderScript(s) {
+function renderScript(s, idx) {
   const [riskText, riskCls] = RISK_LABEL(s.riskScore);
-  const thirdPartyBadge = s.isThirdParty ? '<span class="badge badge-3p">3rd party</span>' : '<span class="badge badge-1p">1st party</span>';
+  const isInline = s.url === 'inline';
+  const thirdPartyBadge = s.isThirdParty
+    ? '<span class="badge badge-3p">3rd party</span>'
+    : '<span class="badge badge-1p">1st party</span>';
   const tieBadge = s.threatIntelMatch ? '<span class="badge badge-threat">⚠ THREAT</span>' : '';
 
   const netEvents = Object.entries(s.eventCounts)
@@ -62,7 +117,9 @@ function renderScript(s) {
     ? `<div class="script-targets"><span class="targets-label">→</span> ${s.targetsContacted.join(', ')}</div>`
     : '';
 
-  const explanation = `<div class="risk-reason">${riskExplanation(s)}</div>`;
+  const viewBtn = !isInline
+    ? `<button class="view-script-btn" data-script-idx="${idx}">Ver script ↗</button>`
+    : '';
 
   return `
     <li class="script-item">
@@ -71,9 +128,12 @@ function renderScript(s) {
         ${thirdPartyBadge}${tieBadge}
         <span class="risk-pill ${riskCls}">${s.riskScore} ${riskText}</span>
       </div>
-      ${explanation}
-      ${netEvents || fpEvents || otherEvents ? `<div class="script-events">${netEvents}${fpEvents}${otherEvents}</div>` : ''}
+      <div class="risk-reason">${riskExplanation(s)}</div>
+      ${netEvents || fpEvents || otherEvents
+        ? `<div class="script-events">${netEvents}${fpEvents}${otherEvents}</div>`
+        : ''}
       ${targets}
+      ${viewBtn}
     </li>`;
 }
 
@@ -82,7 +142,9 @@ function renderSummary(scripts) {
   const high = scripts.filter((s) => s.riskScore >= 70).length;
   const med = scripts.filter((s) => s.riskScore >= 35 && s.riskScore < 70).length;
   const thirdParty = scripts.filter((s) => s.isThirdParty).length;
-  const totalEvents = scripts.reduce((acc, s) => acc + Object.values(s.eventCounts).reduce((a, b) => a + b, 0), 0);
+  const totalEvents = scripts.reduce(
+    (acc, s) => acc + Object.values(s.eventCounts).reduce((a, b) => a + b, 0), 0
+  );
 
   return `
     <div class="spy-summary">
@@ -111,7 +173,10 @@ export async function renderScriptSpyLive(container) {
       <button id="btn-spy-inject" class="btn-primary">Activar ScriptSpy</button>
     </div>
     <div id="spy-summary-area"></div>
+    ${renderLegend()}
     <ul class="script-list"></ul>`;
+
+  let currentScripts = [];
 
   function sendMsg(msg) {
     return new Promise((resolve) => {
@@ -127,6 +192,8 @@ export async function renderScriptSpyLive(container) {
     const data = await sendMsg({ type: 'get_scriptspy', tabId });
     if (!data) { return; }
 
+    currentScripts = data.scripts;
+
     const pageHost = data.pageUrl
       ? (() => { try { return new URL(data.pageUrl).hostname; } catch { return data.pageUrl; } })()
       : '—';
@@ -137,7 +204,17 @@ export async function renderScriptSpyLive(container) {
 
     if (data.scripts.length) {
       summaryArea.innerHTML = renderSummary(data.scripts);
-      list.innerHTML = data.scripts.map(renderScript).join('');
+      list.innerHTML = data.scripts.map((s, i) => renderScript(s, i)).join('');
+
+      // Wire up "Ver script" buttons
+      list.querySelectorAll('.view-script-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const s = currentScripts[parseInt(btn.dataset.scriptIdx, 10)];
+          if (s?.url && s.url !== 'inline') {
+            chrome.tabs.create({ url: s.url });
+          }
+        });
+      });
     } else {
       summaryArea.innerHTML = '';
       list.innerHTML = '<li><p class="loading">Sin datos. Navega en la página activa, activa ScriptSpy y pulsa Actualizar.</p></li>';
