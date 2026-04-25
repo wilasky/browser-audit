@@ -1,3 +1,5 @@
+import { esc } from '../../shared/sanitize.js';
+
 function sendMsg(msg) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(msg, (result) => {
@@ -56,13 +58,13 @@ export async function renderUpgrade(container) {
     : `<span class="plan-badge plan-free">Plan FREE</span>`;
 
   const freeList = FREE_FEATURES.map((f) =>
-    `<li><span class="feat-icon feat-free">${f.icon}</span>${f.text}</li>`
+    `<li><span class="feat-icon feat-free">${esc(f.icon)}</span>${esc(f.text)}</li>`
   ).join('');
 
   const proList = PRO_FEATURES.map((f) =>
     `<li>
-      <span class="feat-icon feat-pro">${f.icon}</span>
-      <span class="feat-text">${f.text}${f.sub ? `<br><span class="feat-sub">${f.sub}</span>` : ''}</span>
+      <span class="feat-icon feat-pro">${esc(f.icon)}</span>
+      <span class="feat-text">${esc(f.text)}${f.sub ? `<br><span class="feat-sub">${esc(f.sub)}</span>` : ''}</span>
     </li>`
   ).join('');
 

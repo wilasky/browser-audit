@@ -12,7 +12,10 @@
       "Bash(node scripts/generate-icons.js)",
       "Bash(grep -o \"Acerca de Chrome.\\\\{0,50\\\\}\" extension/dist/background/index.js)",
       "Bash(node -e ' *)",
-      "Bash(curl -s \"https://unpkg.com/extpay@3.0.7/dist/ExtPay.js\" -o extension/background/extpay.js)"
+      "Bash(curl -s \"https://unpkg.com/extpay@3.0.7/dist/ExtPay.js\" -o extension/background/extpay.js)",
+      "Bash(grep -rn \"\\\\\\\\$\\\\|interpolat\\\\|template\" extension/ backend/src --include=\"*.js\")",
+      "Bash(grep -rn \"\\\\`.*\\\\$\\\\{\" extension/ popup/views --include=\"*.js\")",
+      "Bash(grep -rn \"innerHTML.*\\\\${\" extension/popup/views --include=\"*.js\")"
     ]
   }
 }

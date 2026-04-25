@@ -1,3 +1,5 @@
+import { esc } from '../../shared/sanitize.js';
+
 const RISK_LABEL = (s) =>
   s >= 70 ? ['ALTO', 'risk-high'] : s >= 35 ? ['MEDIO', 'risk-med'] : ['BAJO', 'risk-low'];
 
@@ -122,7 +124,7 @@ function renderScript(s, idx) {
     .join('');
 
   const targets = s.targetsContacted.length
-    ? `<div class="script-targets"><span class="targets-label">→</span> ${s.targetsContacted.join(', ')}</div>`
+    ? `<div class="script-targets"><span class="targets-label">→</span> ${s.targetsContacted.map(esc).join(', ')}</div>`
     : '';
 
   const viewBtn = !isInline
@@ -132,11 +134,11 @@ function renderScript(s, idx) {
   return `
     <li class="script-item">
       <div class="script-header">
-        <span class="script-url" title="${s.url}">${shortUrl(s.url)}</span>
+        <span class="script-url" title="${esc(s.url)}">${esc(shortUrl(s.url))}</span>
         ${thirdPartyBadge}${tieBadge}
-        <span class="risk-pill ${riskCls}">${s.riskScore} ${riskText}</span>
+        <span class="risk-pill ${riskCls}">${s.riskScore} ${esc(riskText)}</span>
       </div>
-      <div class="risk-reason">${riskExplanation(s)}</div>
+      <div class="risk-reason">${esc(riskExplanation(s))}</div>
       ${netEvents || fpEvents || otherEvents
         ? `<div class="script-events">${netEvents}${fpEvents}${otherEvents}</div>`
         : ''}
@@ -283,7 +285,12 @@ export async function renderScriptSpyLive(container) {
       btn.disabled = false;
       btn.textContent = 'Activar ScriptSpy';
       const list = container.querySelector('.script-list');
-      list.innerHTML = `<li><p class="error">${res?.reason ?? 'Error al inyectar.'}</p></li>`;
+      const li = document.createElement('li');
+      const p = document.createElement('p');
+      p.className = 'error';
+      p.textContent = res?.reason ?? 'Error al inyectar.';
+      li.appendChild(p);
+      list.replaceChildren(li);
     }
   });
 

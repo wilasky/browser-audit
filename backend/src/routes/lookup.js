@@ -1,6 +1,11 @@
 import { getDb } from '../db/db.js';
 import { validateApiKey } from '../lib/auth.js';
 
+function safeParseTags(raw) {
+  if (!raw) { return []; }
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
 const SHA256_RE = /^[0-9a-f]{64}$/;
 
 export async function lookupRoutes(fastify) {
@@ -45,7 +50,7 @@ export async function lookupRoutes(fastify) {
         type: 'domain',
         source: r.source,
         severity: r.severity,
-        tags: r.tags ? JSON.parse(r.tags) : [],
+        tags: safeParseTags(r.tags),
       })),
       ...scriptMatches.map((r) => ({
         hash: r.hash,
@@ -53,7 +58,7 @@ export async function lookupRoutes(fastify) {
         source: r.source,
         severity: 'critical',
         malwareFamily: r.malwareFamily,
-        tags: r.tags ? JSON.parse(r.tags) : [],
+        tags: safeParseTags(r.tags),
       })),
     ];
 

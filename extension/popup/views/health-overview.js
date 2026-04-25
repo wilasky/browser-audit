@@ -1,4 +1,5 @@
 import { exportAuditJSON, exportAuditPDF } from '../export.js';
+import { esc } from '../../shared/sanitize.js';
 
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
@@ -78,21 +79,21 @@ function renderCheck(r, fixMap) {
   }
 
   return `
-    <li class="check-item check-${cls}" data-check-id="${r.id}">
+    <li class="check-item check-${cls}" data-check-id="${esc(r.id)}">
       <div class="check-row">
-        <span class="check-icon">${icon}</span>
+        <span class="check-icon">${esc(icon)}</span>
         <div class="check-main">
           <div class="check-title-row">
-            <span class="check-title">${r.title}</span>
+            <span class="check-title">${esc(r.title)}</span>
             ${severityLabel(r.severity)}
           </div>
-          <span class="check-detail">${r.detail ?? ''}</span>
+          <span class="check-detail">${esc(r.detail ?? '')}</span>
         </div>
         <div class="check-actions">${detailBtn}${fixBtn}</div>
       </div>
-      <div class="check-rationale" id="rationale-${r.id}" style="display:none">
-        ${r.rationale ?? ''}
-        ${fix?.instructions ? `<div class="fix-instructions">${fix.instructions}</div>` : ''}
+      <div class="check-rationale" id="rationale-${esc(r.id)}" style="display:none">
+        ${esc(r.rationale ?? '')}
+        ${fix?.instructions ? `<div class="fix-instructions">${esc(fix.instructions)}</div>` : ''}
       </div>
     </li>`;
 }

@@ -22,11 +22,20 @@ async function doAudit() {
 }
 
 async function injectScriptSpy(tabId) {
+  // Validate tab exists and is injectable before attempting
+  let tab = null;
   try {
-    const [tab] = await chrome.tabs.get(tabId).then((t) => [t]).catch(() => [null]);
-    if (!tab || tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://')) {
-      return { ok: false, reason: 'Página del sistema — ScriptSpy solo funciona en páginas web.' };
-    }
+    tab = await chrome.tabs.get(tabId);
+  } catch {
+    return { ok: false, reason: 'La pestaña ya no existe.' };
+  }
+
+  const url = tab.url ?? '';
+  if (!url || url.startsWith('chrome://') || url.startsWith('chrome-extension://') || url.startsWith('about:')) {
+    return { ok: false, reason: 'ScriptSpy solo funciona en páginas web (http/https).' };
+  }
+
+  try {
     await chrome.scripting.executeScript({
       target: { tabId },
       files: ['content/instrumentation.js'],
@@ -40,7 +49,7 @@ async function injectScriptSpy(tabId) {
     return { ok: true };
   } catch (err) {
     console.error('[BrowserAudit] Injection failed:', err.message);
-    return { ok: false, reason: err.message };
+    return { ok: false, reason: `Error al inyectar: ${err.message}` };
   }
 }
 
@@ -61,9 +70,14 @@ chrome.runtime.onStartup.addListener(async () => {
 
 // Reset ScriptSpy data when user navigates to a new page
 chrome.webNavigation?.onCommitted.addListener((details) => {
-  if (details.frameId === 0) {
+  if (details.frameId === 0 && details.tabId > 0) {
     resetTab(details.tabId);
   }
+});
+
+// Clean up when a tab is closed to prevent memory leaks
+chrome.tabs.onRemoved.addListener((tabId) => {
+  resetTab(tabId);
 });
 
 // --- Message handler ---
@@ -94,7 +108,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (!tabId) { sendResponse({ scripts: [], pageUrl: '' }); return; }
     // Enrich with TI then respond (non-blocking if TI fails)
     enrichWithThreatIntel(tabId)
-      .catch(() => {})
+      .catch((err) => console.warn('[BrowserAudit] TI enrichment failed:', err.message))
       .finally(() => sendResponse(getAggregatedData(tabId)));
     return true;
   }

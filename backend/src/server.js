@@ -21,7 +21,18 @@ const fastify = Fastify({
   logger: { level: process.env.LOG_LEVEL ?? 'info' },
 });
 
-await fastify.register(cors, { origin: false }); // extension talks directly, no CORS needed
+// Only allow requests from Chrome extensions (no browser CORS needed for extensions,
+// but explicit config prevents abuse from web pages hitting the API directly)
+await fastify.register(cors, {
+  origin: (origin, cb) => {
+    // Allow: no origin (server-to-server, curl), chrome-extension origins
+    if (!origin || origin.startsWith('chrome-extension://')) {
+      cb(null, true);
+    } else {
+      cb(new Error('CORS: origin not allowed'), false);
+    }
+  },
+});
 await fastify.register(rateLimit, { max: RATE_MAX, timeWindow: '1 minute' });
 
 await fastify.register(healthRoutes);

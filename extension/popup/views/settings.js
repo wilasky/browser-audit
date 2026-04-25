@@ -1,3 +1,5 @@
+import { esc } from '../../shared/sanitize.js';
+
 function sendMsg(msg) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(msg, (result) => {
@@ -43,7 +45,7 @@ export async function renderSettings(container) {
         <p class="settings-hint">Necesaria para que ScriptSpy consulte threat intelligence en tiempo real.</p>
         <div class="api-key-row">
           <input id="input-api-key" type="password" class="api-key-input"
-            placeholder="Pega tu API key aquí" value="${storedKey}" />
+            placeholder="Pega tu API key aquí" />
           <button id="btn-save-key" class="btn-secondary">Guardar</button>
         </div>
         <p id="key-status" class="settings-hint"></p>
@@ -53,7 +55,7 @@ export async function renderSettings(container) {
         <h3 class="settings-heading">Plan actual</h3>
         <p class="settings-hint">
           ${plan?.isPro
-            ? `Plan <strong>PRO</strong>${plan.devMode ? ' (modo dev)' : ''} · ${plan.email ?? ''}`
+            ? `Plan <strong>PRO</strong>${plan.devMode ? ' (modo dev)' : ''} · ${esc(plan.email ?? '')}`
             : 'Plan <strong>FREE</strong> — activa Pro en la pestaña Pro ✦'}
         </p>
       </section>
@@ -64,6 +66,9 @@ export async function renderSettings(container) {
         No se envían URLs ni datos personales al servidor.</p>
       </section>
     </div>`;
+
+  // Set value via DOM (not innerHTML) to avoid XSS
+  container.querySelector('#input-api-key').value = storedKey;
 
   container.querySelector('#btn-save-key').addEventListener('click', async () => {
     const key = container.querySelector('#input-api-key').value.trim();

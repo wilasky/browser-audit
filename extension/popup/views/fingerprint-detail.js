@@ -1,4 +1,5 @@
 import { calculateFingerprintDetail } from '../../shared/fingerprint.js';
+import { esc } from '../../shared/sanitize.js';
 
 const UNIQUENESS_LABEL = {
   common: { text: 'Común', cls: 'fp-common', icon: '🟢' },
@@ -14,15 +15,15 @@ function renderSignal(s) {
   return `
     <div class="fp-signal ${s.highlight ? 'fp-highlight' : ''}">
       <div class="fp-signal-header">
-        <span class="fp-signal-name">${s.name}</span>
-        <span class="fp-uniq ${u.cls}">${u.icon} ${u.text}</span>
-        <span class="fp-bits">${bits} bits</span>
+        <span class="fp-signal-name">${esc(s.name)}</span>
+        <span class="fp-uniq ${u.cls}">${esc(u.icon)} ${esc(u.text)}</span>
+        <span class="fp-bits">${esc(bits)} bits</span>
       </div>
-      <div class="fp-value">${s.value}</div>
+      <div class="fp-value">${esc(s.value)}</div>
       <div class="fp-bar-wrap">
         <div class="fp-bar" style="width:${barWidth}%;background:${barColor}"></div>
       </div>
-      <div class="fp-tip">${s.tip}</div>
+      <div class="fp-tip">${esc(s.tip)}</div>
     </div>`;
 }
 
@@ -44,7 +45,7 @@ export async function renderFingerprintDetail(container) {
         <div class="fp-score-row">
           <div class="fp-total" style="color:${color}">${detail.totalEntropy} bits</div>
           <div class="fp-score-meta">
-            <div class="fp-level-text" style="color:${color}">${detail.levelText}</div>
+            <div class="fp-level-text" style="color:${color}">${esc(detail.levelText)}</div>
             <div class="fp-stats">${rare} señal${rare !== 1 ? 'es' : ''} única${rare !== 1 ? 's' : ''} de ${detail.signals.length}</div>
           </div>
         </div>
@@ -77,6 +78,9 @@ export async function renderFingerprintDetail(container) {
       chrome.tabs.create({ url: 'https://coveryourtracks.eff.org/' });
     });
   } catch (err) {
-    container.innerHTML = `<p class="error">Error calculando huella: ${err.message}</p>`;
+    const p = document.createElement('p');
+    p.className = 'error';
+    p.textContent = `Error calculando huella: ${err.message}`;
+    container.replaceChildren(p);
   }
 }
