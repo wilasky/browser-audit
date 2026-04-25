@@ -217,6 +217,9 @@ export function renderHealthOverview(audit, container) {
     const sc = filtered.filter((r) => r.status === 'skipped').length;
     const uc = filtered.filter((r) => r.status === 'unknown').length;
 
+    const isFiltered = activeProfile !== 'all';
+    const profileLabel = PROFILES[activeProfile].label;
+
     container.innerHTML = `
       <div class="overview-header">
         ${scoreCircleSVG(filteredScore, level)}
@@ -228,14 +231,17 @@ export function renderHealthOverview(audit, container) {
             <span style="color:#f59e0b">${wc} WARN</span> ·
             <span style="color:#22c55e">${pc} PASS</span>${sc + uc > 0 ? ` · ${sc + uc} N/A` : ''}
           </div>
+          ${isFiltered ? `<div class="score-sub score-context">Score del filtro <strong>${esc(profileLabel)}</strong> · Global: <strong>${audit.score}</strong></div>` : ''}
           <div class="score-sub">${new Date(audit.completedAt).toLocaleTimeString()} · baseline v${audit.baselineVersion}</div>
           <div class="header-actions">
             <button id="btn-refresh" class="btn-secondary">↺ Actualizar</button>
             ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="Concede permisos opcionales para ejecutar los ${sc} checks que requieren management/privacy/contentSettings">+ Activar ${sc} checks</button>` : ''}
             <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="Restablecer ajustes de Chrome aplicados con ⚡">↶ Restablecer</button>
             <div class="export-row">
-              <button id="btn-export-json" class="btn-export">↓ JSON</button>
-              <button id="btn-export-pdf" class="btn-export">↓ PDF</button>
+              <button id="btn-export-json" class="btn-export" title="Descarga JSON con los checks del filtro activo">↓ JSON</button>
+              <button id="btn-export-pdf" class="btn-export" title="Descarga PDF con los checks del filtro activo">↓ PDF</button>
+              <button id="btn-import-json" class="btn-export" title="Cargar un audit JSON previamente exportado">↑ Import</button>
+              <input type="file" id="input-audit-json" accept="application/json" style="display:none"/>
             </div>
           </div>
         </div>
@@ -277,6 +283,34 @@ export function renderHealthOverview(audit, container) {
 
     container.querySelector('#btn-export-json').addEventListener('click', () => exportAuditJSON(filteredAudit));
     container.querySelector('#btn-export-pdf').addEventListener('click', () => exportAuditPDF(filteredAudit));
+
+    // Import previously exported audit
+    const fileInput = container.querySelector('#input-audit-json');
+    container.querySelector('#btn-import-json').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) { return; }
+      try {
+        const data = JSON.parse(await file.text());
+        // Accept either: 1) raw audit object 2) export format with .results
+        if (!data.results || !Array.isArray(data.results)) {
+          throw new Error('Formato no válido — falta el array results');
+        }
+        const importedAudit = {
+          score: data.score ?? audit.score,
+          label: data.label ?? audit.label,
+          level: data.level ?? audit.level,
+          completedAt: data.completedAt ? new Date(data.completedAt).getTime() : Date.now(),
+          baselineVersion: data.baselineVersion ?? 'imported',
+          results: data.results,
+          categories: audit.categories,
+        };
+        renderHealthOverview(importedAudit, container);
+      } catch (err) {
+        alert(`Error importando JSON: ${err.message}`);
+      }
+      fileInput.value = '';
+    });
 
     container.querySelector('#btn-reset-fixes').addEventListener('click', async () => {
       // Send ALL applicable APIs from the audit to reset — works even for changes

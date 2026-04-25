@@ -2,21 +2,41 @@ import { jsPDF } from 'jspdf';
 
 // --- JSON export ---
 
+function profileSuffix(audit) {
+  if (!audit.profile || audit.profile === 'all') { return ''; }
+  return `-${audit.profile}`;
+}
+
 export function exportAuditJSON(audit) {
   const data = {
     exportedAt: new Date().toISOString(),
     tool: 'Browser Audit v0.1',
+    profile: audit.profile ?? 'all',
+    profileLabel: audit.profileLabel ?? 'Estándar',
     score: audit.score,
     label: audit.label,
+    level: audit.level,
     baselineVersion: audit.baselineVersion,
     completedAt: new Date(audit.completedAt).toISOString(),
+    summary: {
+      total: audit.results.length,
+      pass: audit.results.filter((r) => r.status === 'pass').length,
+      warn: audit.results.filter((r) => r.status === 'warn').length,
+      fail: audit.results.filter((r) => r.status === 'fail').length,
+      skipped: audit.results.filter((r) => r.status === 'skipped').length,
+      unknown: audit.results.filter((r) => r.status === 'unknown').length,
+    },
     results: audit.results.map((r) => ({
       id: r.id,
       category: r.category,
       title: r.title,
       severity: r.severity,
+      weight: r.weight,
       status: r.status,
       detail: r.detail,
+      rationale: r.rationale,
+      frameworks: r.frameworks ?? [],
+      advanced: r.advanced ?? false,
     })),
   };
 
@@ -24,7 +44,7 @@ export function exportAuditJSON(audit) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `browser-audit-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `browser-audit${profileSuffix(audit)}-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -117,5 +137,5 @@ export function exportAuditPDF(audit) {
   doc.setFontSize(8); doc.setTextColor(150);
   doc.text('Generado por Browser Audit · https://github.com/wilasky/browser-audit', MARGIN, 290);
 
-  doc.save(`browser-audit-${new Date().toISOString().slice(0, 10)}.pdf`);
+  doc.save(`browser-audit${profileSuffix(audit)}-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

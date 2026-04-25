@@ -893,6 +893,20 @@ main { padding: 0 0 16px; }
   font-weight: 600;
 }
 
+.fp-compare-links {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;
+}
+
+.score-context {
+  background: #1a2a3a;
+  border: 1px solid #2a4a6a;
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: inline-block;
+  margin-top: 2px !important;
+}
+.score-context strong { color: #4f8ef7; }
+
 /* ---- Settings view ---- */
 .settings-wrap { padding: 8px 16px; display: flex; flex-direction: column; gap: 16px; }
 .settings-section { display: flex; flex-direction: column; gap: 6px; }

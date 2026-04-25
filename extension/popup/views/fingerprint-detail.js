@@ -126,6 +126,18 @@ export async function renderFingerprintDetail(container) {
           <p><strong>¿Qué es esto?</strong> Cada señal es un dato que tu navegador revela a las webs que visitas.
           Combinadas forman un identificador casi único aunque borres las cookies. El hash de arriba representa
           tu "huella" actual — sería el ID con el que te seguiría un tracker.</p>
+
+          <p style="margin-top:8px"><strong>Comparar contra otros usuarios</strong> (sitios externos):</p>
+          <div class="fp-compare-links">
+            <button class="fp-action-btn" data-flag="https://coveryourtracks.eff.org/">EFF Cover Your Tracks</button>
+            <button class="fp-action-btn" data-flag="https://amiunique.org/fp">amiunique.org</button>
+            <button class="fp-action-btn" data-flag="https://browserleaks.com/">BrowserLeaks</button>
+            <button class="fp-action-btn" data-flag="https://abrahamjuliot.github.io/creepjs/">CreepJS</button>
+          </div>
+          <p style="margin-top:6px;font-size:9px;color:#444">
+            Estos sitios tienen base de datos para decir si tu huella es única entre millones.
+            Nuestra extensión calcula los mismos valores que ellos pero sin la comparación poblacional.
+          </p>
         </div>
       </div>`;
 
