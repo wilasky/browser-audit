@@ -207,6 +207,7 @@ export async function renderScriptSpyLive(container) {
     <ul class="script-list"></ul>`;
 
   let currentScripts = [];
+  let autoRefreshTimer = null;
 
   function sendMsg(msg) {
     return new Promise((resolve) => {
@@ -217,20 +218,38 @@ export async function renderScriptSpyLive(container) {
     });
   }
 
+  function startAutoRefresh() {
+    if (autoRefreshTimer) { return; }
+    autoRefreshTimer = setInterval(refresh, 3000);
+  }
+
+  function stopAutoRefresh() {
+    if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  }
+
   async function refresh() {
     if (!tabId) { return; }
+    // If the user navigated to another tab, the DOM no longer has our elements.
+    // Stop the timer to prevent null reference errors.
+    const pageEl = container.querySelector('.spy-page');
+    if (!pageEl) { stopAutoRefresh(); return; }
+
     const data = await sendMsg({ type: 'get_scriptspy', tabId });
     if (!data) { return; }
+
+    // Re-check after async — the container may have been replaced during await
+    if (!container.querySelector('.spy-page')) { stopAutoRefresh(); return; }
 
     currentScripts = data.scripts;
 
     const pageHost = data.pageUrl
       ? (() => { try { return new URL(data.pageUrl).hostname; } catch { return data.pageUrl; } })()
       : '—';
-    container.querySelector('.spy-page').textContent = pageHost;
+    pageEl.textContent = pageHost;
 
     const summaryArea = container.querySelector('#spy-summary-area');
     const list = container.querySelector('.script-list');
+    if (!summaryArea || !list) { stopAutoRefresh(); return; }
 
     if (data.scripts.length) {
       summaryArea.innerHTML = renderSummary(data.scripts);
@@ -258,18 +277,6 @@ export async function renderScriptSpyLive(container) {
       summaryArea.innerHTML = '';
       list.innerHTML = '<li><p class="loading">Sin datos. Navega en la página activa, activa ScriptSpy y pulsa Actualizar.</p></li>';
     }
-  }
-
-  let autoRefreshTimer = null;
-
-  function startAutoRefresh() {
-    if (autoRefreshTimer) { return; }
-    autoRefreshTimer = setInterval(refresh, 3000);
-  }
-
-  function stopAutoRefresh() {
-    clearInterval(autoRefreshTimer);
-    autoRefreshTimer = null;
   }
 
   // Stop auto-refresh when popup is closed
