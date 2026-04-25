@@ -1103,6 +1103,22 @@ main { padding: 0 0 16px; }
 }
 .view-script-btn:hover { color: #4f8ef7; border-color: #4f8ef7; }
 
+/* Host permission banner — proactive */
+.spy-host-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, #2a2008 0%, #1a1408 100%);
+  border-bottom: 1px solid #3a2a08;
+  font-size: 11px; color: #ddd;
+  flex-wrap: wrap;
+}
+.spy-host-banner span { flex: 1; min-width: 200px; line-height: 1.4; }
+.btn-grant-host {
+  padding: 4px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 /* Analyze button — deep script analysis */
 .analyze-script-btn {
   margin-top: 4px;

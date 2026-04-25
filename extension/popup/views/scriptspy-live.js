@@ -194,8 +194,36 @@ async function getActiveTabId() {
   return tab?.id ?? null;
 }
 
+function hasHostPermission() {
+  return new Promise((resolve) => {
+    chrome.permissions.contains({ origins: ['<all_urls>'] }, (has) => {
+      void chrome.runtime.lastError;
+      resolve(has);
+    });
+  });
+}
+
+function requestHostPermission() {
+  return new Promise((resolve) => {
+    chrome.permissions.request({ origins: ['<all_urls>'] }, (granted) => {
+      void chrome.runtime.lastError;
+      resolve(granted);
+    });
+  });
+}
+
 export async function renderScriptSpyLive(container) {
-  const tabId = await getActiveTabId();
+  const [tabId, hasHostPerm] = await Promise.all([
+    getActiveTabId(),
+    hasHostPermission(),
+  ]);
+
+  const hostBanner = !hasHostPerm
+    ? `<div class="spy-host-banner">
+        <span>🔬 Para análisis profundo (descarga de scripts, hash SHA256, detección de obfuscación) activa el permiso de host.</span>
+        <button id="btn-grant-host" class="btn-primary btn-grant-host">Activar</button>
+       </div>`
+    : '';
 
   container.innerHTML = `
     <div class="spy-toolbar">
@@ -203,9 +231,18 @@ export async function renderScriptSpyLive(container) {
       <button id="btn-spy-refresh" class="btn-secondary">Actualizar</button>
       <button id="btn-spy-inject" class="btn-primary">Activar ScriptSpy</button>
     </div>
+    ${hostBanner}
     <div id="spy-summary-area"></div>
     ${renderLegend()}
     <ul class="script-list"></ul>`;
+
+  container.querySelector('#btn-grant-host')?.addEventListener('click', async () => {
+    const granted = await requestHostPermission();
+    if (granted) {
+      // Re-render to remove the banner
+      renderScriptSpyLive(container).catch(console.error);
+    }
+  });
 
   let currentScripts = [];
   let autoRefreshTimer = null;
@@ -277,15 +314,25 @@ export async function renderScriptSpyLive(container) {
 
       // Deep analysis button — fires event for popup.js to switch view
       list.querySelectorAll('.analyze-script-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          stopAutoRefresh();
+        btn.addEventListener('click', async () => {
           const s = currentScripts[parseInt(btn.dataset.scriptIdx, 10)];
-          if (s?.url && s.url !== 'inline') {
-            container.dispatchEvent(new CustomEvent('open-script-detail', {
-              bubbles: true,
-              detail: s,
-            }));
+          if (!s?.url || s.url === 'inline') { return; }
+
+          // Ask for permission first if not granted (avoids a frustrating error inside detail view)
+          const has = await hasHostPermission();
+          if (!has) {
+            const granted = await requestHostPermission();
+            if (!granted) {
+              alert('Sin permiso de host no se puede descargar el código del script para analizarlo.');
+              return;
+            }
           }
+
+          stopAutoRefresh();
+          container.dispatchEvent(new CustomEvent('open-script-detail', {
+            bubbles: true,
+            detail: s,
+          }));
         });
       });
     } else {
