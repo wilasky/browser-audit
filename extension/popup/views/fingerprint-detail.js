@@ -67,18 +67,65 @@ export async function renderFingerprintDetail(container) {
           ${d.signals.map(renderSignal).join('')}
         </div>
 
-        <div class="fp-footer">
-          <p><strong>¿Qué es esto?</strong> Cada señal de arriba es un dato que tu navegador
-          revela a los sitios que visitas. Combinadas forman un identificador casi único
-          aunque borres las cookies. El hash de arriba representa tu "huella" actual.</p>
-          <p style="margin-top:6px">
-            Para protegerte: <strong>Brave</strong> bloquea canvas/WebGL por defecto.
-            <strong>Firefox</strong> con "Strict" protection también reduce la entropía.
-            En Chrome hay poco que hacer sin extensiones de protección.
-          </p>
+        <div class="fp-actions-block">
+          <h3 class="fp-actions-title">⚙ Cómo reducir tu huella</h3>
+
+          <div class="fp-action">
+            <div class="fp-action-head">
+              <strong>1. Activar User-Agent reducido (Chrome)</strong>
+              <button class="fp-action-btn" data-flag="chrome://flags/#reduce-user-agent">Abrir flag →</button>
+            </div>
+            <p class="fp-action-desc">
+              Chrome puede reducir la información del User-Agent automáticamente.
+              Esto reduce ~3 bits de entropía. Activa <code>Reduce User-Agent string</code>.
+            </p>
+          </div>
+
+          <div class="fp-action">
+            <div class="fp-action-head">
+              <strong>2. Bloquear canvas con extensión</strong>
+              <button class="fp-action-btn" data-flag="https://chromewebstore.google.com/search/canvas%20blocker">Buscar →</button>
+            </div>
+            <p class="fp-action-desc">
+              Chrome no bloquea canvas nativamente. Instala una extensión como
+              <code>Canvas Blocker</code> o <code>Trace</code> que añadan ruido aleatorio.
+              Reduce ~8 bits de entropía.
+            </p>
+          </div>
+
+          <div class="fp-action">
+            <div class="fp-action-head">
+              <strong>3. Cambiar a Brave o Firefox</strong>
+              <button class="fp-action-btn" data-flag="https://brave.com/download/">Brave →</button>
+            </div>
+            <p class="fp-action-desc">
+              <strong>Brave</strong> bloquea canvas, WebGL y audio fingerprinting por defecto.
+              <strong>Firefox</strong> con "Strict tracking protection" también lo hace.
+              Cero configuración necesaria.
+            </p>
+          </div>
+
+          <div class="fp-action">
+            <div class="fp-action-head">
+              <strong>4. Tor Browser (máxima privacidad)</strong>
+              <button class="fp-action-btn" data-flag="https://www.torproject.org/download/">Descargar →</button>
+            </div>
+            <p class="fp-action-desc">
+              Para casos extremos: Tor Browser estandariza todas las señales para que
+              todos los usuarios tengan el mismo fingerprint (~10 bits de entropía total).
+              Más lento pero indistinguible.
+            </p>
+          </div>
+
           ${d.canvasBlocked
-            ? '<p style="color:#22c55e;margin-top:6px">✓ Tu navegador está bloqueando el canvas fingerprint.</p>'
+            ? '<div class="fp-success">✓ Tu navegador YA está bloqueando el canvas fingerprint. Buen trabajo.</div>'
             : ''}
+        </div>
+
+        <div class="fp-footer">
+          <p><strong>¿Qué es esto?</strong> Cada señal es un dato que tu navegador revela a las webs que visitas.
+          Combinadas forman un identificador casi único aunque borres las cookies. El hash de arriba representa
+          tu "huella" actual — sería el ID con el que te seguiría un tracker.</p>
         </div>
       </div>`;
 
@@ -91,6 +138,13 @@ export async function renderFingerprintDetail(container) {
       const btn = container.querySelector('#btn-copy-hash');
       btn.textContent = '✓';
       setTimeout(() => { btn.textContent = '⎘'; }, 1500);
+    });
+
+    container.querySelectorAll('.fp-action-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const url = btn.dataset.flag;
+        if (url) { chrome.tabs.create({ url }); }
+      });
     });
   } catch (err) {
     const p = document.createElement('p');

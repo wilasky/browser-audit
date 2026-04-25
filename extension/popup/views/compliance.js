@@ -97,16 +97,22 @@ function calcSecurityScore(r) {
     issues.push({ s: 'pass', t: 'HTTPS activo' });
   }
 
-  if (r.mixedContent > 0) {
-    issues.push({ s: 'fail', t: `${r.mixedContent} recurso(s) cargado(s) por HTTP en página HTTPS (mixed content)` });
-    pts -= 20;
+  const md = r.mixedDetail ?? { total: 0 };
+  if (md.total > 0) {
+    const parts = [];
+    if (md.images) { parts.push(`${md.images} imágenes`); }
+    if (md.scripts) { parts.push(`${md.scripts} scripts`); }
+    if (md.links) { parts.push(`${md.links} CSS`); }
+    if (md.iframes) { parts.push(`${md.iframes} iframes`); }
+    issues.push({ s: 'fail', t: `${md.total} recursos por HTTP en página HTTPS (${parts.join(', ')})` });
+    pts -= Math.min(40, md.total * 5);
   }
 
   const h = r.headers ?? {};
 
   const headerChecks = [
     { key: 'hsts', name: 'HSTS', weight: 10, hint: 'Protege contra downgrade attacks' },
-    { key: 'csp', name: 'Content-Security-Policy', weight: 15, hint: 'Bloquea XSS y carga de recursos no autorizados' },
+    { key: 'csp', name: 'Content-Security-Policy', weight: 15, hint: 'Bloquea XSS y recursos no autorizados' },
     { key: 'xfo', name: 'X-Frame-Options', weight: 5, hint: 'Previene clickjacking' },
     { key: 'xcto', name: 'X-Content-Type-Options', weight: 3, hint: 'Previene MIME sniffing' },
     { key: 'referrerPolicy', name: 'Referrer-Policy', weight: 5, hint: 'Controla qué Referer envías' },
@@ -120,6 +126,103 @@ function calcSecurityScore(r) {
       issues.push({ s: 'warn', t: `${c.name}: no presente — ${c.hint}` });
       pts -= c.weight;
     }
+  }
+
+  if (h.poweredBy) {
+    issues.push({ s: 'warn', t: `X-Powered-By revela tecnología: "${h.poweredBy}"` });
+    pts -= 3;
+  }
+  if (h.server && /\d/.test(h.server)) {
+    issues.push({ s: 'warn', t: `Server header revela versión: "${h.server}"` });
+    pts -= 3;
+  }
+  if (h.xxss) {
+    issues.push({ s: 'warn', t: 'X-XSS-Protection presente (deprecated, mejor CSP)' });
+  }
+  if (h.cspReportOnly && !h.csp) {
+    issues.push({ s: 'warn', t: 'CSP en modo Report-Only únicamente — no bloquea ataques' });
+    pts -= 5;
+  }
+
+  return { score: Math.max(0, pts), issues };
+}
+
+function calcPentestScore(r) {
+  const issues = [];
+  let pts = 100;
+
+  // Iframes inseguros
+  const unsafeIframes = (r.iframes ?? []).filter((i) => i.crossOrigin && !i.sandbox);
+  if (unsafeIframes.length > 0) {
+    issues.push({ s: 'warn', t: `${unsafeIframes.length} iframe(s) cross-origin sin atributo sandbox` });
+    pts -= Math.min(20, unsafeIframes.length * 5);
+  } else if (r.iframes?.length > 0) {
+    issues.push({ s: 'pass', t: 'Todos los iframes tienen sandbox o son same-origin' });
+  }
+
+  // SRI en scripts externos
+  if (r.totalThirdPartyScripts > 0) {
+    if (r.scriptsWithoutSRI === 0) {
+      issues.push({ s: 'pass', t: `${r.totalThirdPartyScripts} scripts externos, todos con SRI` });
+    } else {
+      issues.push({ s: 'fail', t: `${r.scriptsWithoutSRI} de ${r.totalThirdPartyScripts} scripts externos SIN Subresource Integrity` });
+      pts -= Math.min(30, r.scriptsWithoutSRI * 3);
+    }
+  }
+
+  if (r.stylesheetsWithoutSRI > 0) {
+    issues.push({ s: 'warn', t: `${r.stylesheetsWithoutSRI} CSS externos sin SRI` });
+    pts -= 5;
+  }
+
+  // Inline event handlers (onclick, onerror, etc.)
+  if (r.inlineHandlers > 5) {
+    issues.push({ s: 'warn', t: `${r.inlineHandlers} elementos con event handlers inline (incompatible con CSP estricta)` });
+    pts -= 5;
+  }
+
+  // Forms
+  for (const form of r.forms ?? []) {
+    if (!form.hasCsrfToken && form.method === 'POST' && form.sensitive.length > 0) {
+      issues.push({ s: 'warn', t: `Formulario POST con campos sensibles sin token CSRF detectado` });
+      pts -= 5;
+    }
+    if (form.actionCrossOrigin) {
+      issues.push({ s: 'warn', t: `Formulario envía datos a otro dominio: ${form.action}` });
+      pts -= 5;
+    }
+  }
+
+  // Outdated libraries
+  if (r.libs?.jquery) {
+    const v = r.libs.jquery;
+    const major = parseInt(v.split('.')[0], 10);
+    if (major < 3) {
+      issues.push({ s: 'fail', t: `jQuery ${v} obsoleto (XSS conocidos en 1.x/2.x)` });
+      pts -= 15;
+    } else {
+      issues.push({ s: 'pass', t: `jQuery ${v} (versión moderna)` });
+    }
+  }
+
+  // Cookies inseguras
+  if (r.cookies.count > 0 && !r.isHttps) {
+    issues.push({ s: 'fail', t: 'Cookies en página HTTP (interceptables en red)' });
+    pts -= 20;
+  }
+
+  // Storage usage
+  if (r.storage.lsSize > 100000) {
+    issues.push({ s: 'warn', t: `localStorage con ${(r.storage.lsSize / 1024).toFixed(1)} KB de datos` });
+  }
+
+  // Service worker
+  if (r.serviceWorker) {
+    issues.push({ s: 'pass', t: `Service Worker registrado: ${r.serviceWorker.scriptURL ?? r.serviceWorker.scope}` });
+  }
+
+  if (issues.length === 0) {
+    issues.push({ s: 'pass', t: 'Sin problemas técnicos detectados en esta página' });
   }
 
   return { score: Math.max(0, pts), issues };
@@ -154,8 +257,9 @@ function renderReport(r) {
   const cookieScore = calcCookieScore(r);
   const gdprScore = calcGdprScore(r);
   const secScore = calcSecurityScore(r);
+  const pentestScore = calcPentestScore(r);
 
-  const total = Math.round((cookieScore.score + gdprScore.score + secScore.score) / 3);
+  const total = Math.round((cookieScore.score + gdprScore.score + secScore.score + pentestScore.score) / 4);
   const totalColor = total >= 80 ? '#22c55e' : total >= 60 ? '#f59e0b' : '#ef4444';
 
   const headers = r.headers ?? {};
@@ -174,15 +278,17 @@ function renderReport(r) {
       <div class="comp-total" style="color:${totalColor}">${total}<span class="comp-total-suffix">/100</span></div>
       <div class="comp-total-label">Cumplimiento general</div>
       <div class="comp-summary">
-        🍪 ${r.cookies.count} cookies · 🛡 ${r.banners.length > 0 ? 'Banner detectado' : 'Sin banner'} ·
-        📄 ${r.policyLinks.length} link${r.policyLinks.length !== 1 ? 's' : ''} privacidad ·
-        🌐 ${r.thirdPartyScripts.length} 3rd party
+        🍪 ${r.cookies.count} cookies · 🛡 ${r.banners.length > 0 ? 'Banner OK' : 'Sin banner'} ·
+        📄 ${r.policyLinks.length} legal ·
+        🌐 ${r.thirdPartyScripts.length} 3rd party ·
+        🖼 ${(r.iframes ?? []).length} iframes
       </div>
     </div>
 
     ${renderSection('🍪 Cookies & Consentimiento', cookieScore)}
     ${renderSection('📋 RGPD / LSSI', gdprScore)}
     ${renderSection('🔒 Headers de seguridad', secScore)}
+    ${renderSection('🔧 Análisis técnico (pentest)', pentestScore)}
 
     <details class="comp-details">
       <summary>Ver headers HTTP detectados</summary>
@@ -206,8 +312,58 @@ function renderReport(r) {
             <div class="comp-form">
               <strong>${esc(f.method)} ${esc(f.action)}</strong>
               <div>${f.sensitive.map((s) => esc(`${s.type}:${s.name}`)).join(' · ')}</div>
+              <div class="settings-hint">
+                ${f.hasCsrfToken ? '✓ Token CSRF detectado' : '⚠ Sin token CSRF aparente'}
+                ${f.actionCrossOrigin ? ' · ⚠ Action cross-origin' : ''}
+              </div>
             </div>
           `).join('')}
+        </div>
+      </details>
+    ` : ''}
+
+    ${r.iframes?.length > 0 ? `
+      <details class="comp-details">
+        <summary>Iframes (${r.iframes.length})</summary>
+        <div class="comp-3rd">
+          ${r.iframes.map((i) => `
+            <div class="comp-form">
+              <strong>${esc(i.host || 'inline')}</strong> ${i.crossOrigin ? '<span style="color:#f59e0b">cross-origin</span>' : '<span style="color:#22c55e">same-origin</span>'}
+              <div class="settings-hint">
+                ${i.sandbox ? `sandbox="${esc(i.sandbox)}"` : '<span style="color:#ef4444">sin sandbox</span>'}
+                ${i.allow ? ` · allow="${esc(i.allow.slice(0, 60))}"` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </details>
+    ` : ''}
+
+    ${Object.keys(r.libs ?? {}).length > 0 ? `
+      <details class="comp-details">
+        <summary>Librerías JavaScript detectadas</summary>
+        <div class="comp-3rd">
+          ${Object.entries(r.libs).map(([k, v]) => `<div><strong>${esc(k)}</strong>: ${esc(v)}</div>`).join('')}
+        </div>
+      </details>
+    ` : ''}
+
+    ${r.serviceWorker ? `
+      <details class="comp-details">
+        <summary>Service Worker activo</summary>
+        <div class="comp-3rd">
+          <div>Scope: ${esc(r.serviceWorker.scope)}</div>
+          ${r.serviceWorker.scriptURL ? `<div>Script: ${esc(r.serviceWorker.scriptURL)}</div>` : ''}
+        </div>
+      </details>
+    ` : ''}
+
+    ${r.storage.lsCount + r.storage.ssCount > 0 ? `
+      <details class="comp-details">
+        <summary>Almacenamiento local (${r.storage.lsCount + r.storage.ssCount} entradas)</summary>
+        <div class="comp-3rd">
+          <div>localStorage: ${r.storage.lsCount} entradas · ${(r.storage.lsSize / 1024).toFixed(1)} KB</div>
+          <div>sessionStorage: ${r.storage.ssCount} entradas · ${(r.storage.ssSize / 1024).toFixed(1)} KB</div>
         </div>
       </details>
     ` : ''}
