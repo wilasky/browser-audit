@@ -137,31 +137,58 @@ function renderProfileSelector(activeProfile) {
   ).join('');
 }
 
-function applyFix(fix, api, expected, btn) {
+async function applyFix(fix, api, expected, btn) {
   if (fix?.type === 'apply' || api) {
-    // Apply directly via background
     btn.disabled = true;
     btn.textContent = 'Aplicando…';
-    sendMsg({ type: 'apply_fix', api, value: expected }).then((res) => {
-      if (res?.ok) {
-        btn.textContent = '✓ Aplicado';
-        btn.classList.add('fix-applied');
-        // Update the check item visual
-        const item = btn.closest('.check-item');
-        if (item) { item.className = item.className.replace(/check-\w+/, 'check-pass'); }
-        const icon = item?.querySelector('.check-icon');
-        if (icon) { icon.textContent = '✓'; }
-      } else {
+
+    // Auto-request privacy permission if missing
+    const hasPrivacy = await new Promise((resolve) =>
+      chrome.permissions.contains({ permissions: ['privacy'] }, (has) => {
+        void chrome.runtime.lastError;
+        resolve(has);
+      })
+    );
+
+    if (!hasPrivacy) {
+      btn.textContent = 'Pidiendo permiso…';
+      const granted = await new Promise((resolve) =>
+        chrome.permissions.request({ permissions: ['privacy'] }, (g) => {
+          void chrome.runtime.lastError;
+          resolve(g);
+        })
+      );
+      if (!granted) {
         btn.disabled = false;
         btn.textContent = '⚡ Aplicar ahora';
         const item = btn.closest('.check-item');
         if (item) {
           let err = item.querySelector('.apply-error');
           if (!err) { err = document.createElement('div'); err.className = 'apply-error'; item.appendChild(err); }
-          err.textContent = res?.reason ?? 'No se pudo aplicar — requiere permiso "privacy"';
+          err.textContent = 'Sin permiso "privacy" no se puede aplicar.';
         }
+        return;
       }
-    });
+    }
+
+    const res = await sendMsg({ type: 'apply_fix', api, value: expected });
+    if (res?.ok) {
+      btn.textContent = '✓ Aplicado';
+      btn.classList.add('fix-applied');
+      const item = btn.closest('.check-item');
+      if (item) { item.className = item.className.replace(/check-\w+/, 'check-pass'); }
+      const icon = item?.querySelector('.check-icon');
+      if (icon) { icon.textContent = '✓'; }
+    } else {
+      btn.disabled = false;
+      btn.textContent = '⚡ Aplicar ahora';
+      const item = btn.closest('.check-item');
+      if (item) {
+        let err = item.querySelector('.apply-error');
+        if (!err) { err = document.createElement('div'); err.className = 'apply-error'; item.appendChild(err); }
+        err.textContent = res?.reason ?? 'No se pudo aplicar (puede requerir reauditar para verificar).';
+      }
+    }
     return;
   }
   if ((fix?.type === 'navigate' || fix?.type === 'externalLink') && fix.url) {
@@ -178,8 +205,11 @@ function applyFix(fix, api, expected, btn) {
   }
 }
 
-export function renderHealthOverview(audit, container) {
-  let activeProfile = 'all';
+export async function renderHealthOverview(audit, container) {
+  // Read user-configured default profile from prefs
+  const stored = await chrome.storage.local.get('userPrefs');
+  const defaultProfile = stored.userPrefs?.defaultProfile ?? 'all';
+  let activeProfile = PROFILES[defaultProfile] ? defaultProfile : 'all';
   const { label, level } = audit;
 
   const fixMap = {};
@@ -232,7 +262,7 @@ export function renderHealthOverview(audit, container) {
             <span style="color:#22c55e">${pc} PASS</span>${sc + uc > 0 ? ` · ${sc + uc} N/A` : ''}
           </div>
           ${isFiltered ? `<div class="score-sub score-context">Score del filtro <strong>${esc(profileLabel)}</strong> · Global: <strong>${audit.score}</strong></div>` : ''}
-          <div class="score-sub">${new Date(audit.completedAt).toLocaleTimeString()} · baseline v${audit.baselineVersion}</div>
+          <div class="score-sub" title="Conjunto de checks de seguridad usados (CIS / NIST / CCN-STIC). v${esc(audit.baselineVersion)} = versión de la lista.">Auditado ${new Date(audit.completedAt).toLocaleTimeString()} · checks v${esc(audit.baselineVersion)}</div>
           <div class="header-actions">
             <button id="btn-refresh" class="btn-secondary">↺ Actualizar</button>
             ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="Concede permisos opcionales para ejecutar los ${sc} checks que requieren management/privacy/contentSettings">+ Activar ${sc} checks</button>` : ''}

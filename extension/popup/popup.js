@@ -86,16 +86,16 @@ tabs.forEach((btn) => {
   btn.addEventListener('click', () => setView(btn.dataset.view));
 });
 
-// Boot: show onboarding on first install, otherwise load health view
+// Boot: show onboarding on first install, otherwise load default view (ScriptSpy)
 async function boot() {
   const showOnboarding = await shouldShowOnboarding();
   if (showOnboarding) {
-    setActiveTab('health');
+    setActiveTab('scriptspy');
     renderOnboarding(root, () => {
-      setView('health');
+      setView('scriptspy');
     });
   } else {
-    setView('health');
+    setView('scriptspy');
   }
 }
 

@@ -67,97 +67,72 @@ function arcCoverage(x, y, cx, cy, rInner, rOuter, startAngle, endAngle) {
   return ringCov;
 }
 
-// Coverage of a rounded square at (cx, cy) with half-size hs and corner radius cr
-function roundedSquareCoverage(x, y, cx, cy, hs, cr) {
-  const dx = Math.abs(x - cx) - (hs - cr);
-  const dy = Math.abs(y - cy) - (hs - cr);
-  if (dx <= 0 && dy <= 0) { return 1; }
-  if (dx > 0 && dy > 0) {
-    // Corner — circle of radius cr
-    return circleCoverage(dx + cr, dy + cr, cr, cr, cr);
-  }
-  // Edge zone
-  const edge = Math.max(dx, dy);
-  if (edge < -0.5) { return 1; }
-  if (edge > 0.5) { return 0; }
-  return 0.5 - edge;
-}
-
-// --- Render an icon at the given size ---
+// --- Render an icon at the given size (RGBA with alpha — circular) ---
 function renderIcon(size) {
   const cx = size / 2;
   const cy = size / 2;
-  const half = size / 2;
 
   // Geometry — relative to size
-  const cornerR     = size * 0.22;
+  const discRadius  = size * 0.48;       // outer circle (the badge)
   const ringOuter   = size * 0.40;
   const ringInner   = size * 0.31;
   const innerCircle = size * 0.27;
   const okOuter     = size * 0.18;
   const okInner     = size * 0.08;
 
-  // Image data: rgb per pixel
-  const data = Buffer.alloc(size * size * 3);
+  // Image data: RGBA per pixel
+  const data = Buffer.alloc(size * size * 4);
 
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
-      // 1. Start with rounded-square background gradient (bgOuter at edges → bgInner at center)
-      const bgCov = roundedSquareCoverage(px, py, cx, cy, half - 0.5, cornerR);
-      // Radial gradient inside the square
-      const radial = Math.min(1, Math.hypot(px - cx, py - cy) / half);
-      let color = mix(C.bgOuter, C.bgInner, 1 - radial * 0.7);
+      // Start fully transparent
+      let r = 0, g = 0, b = 0, a = 0;
 
-      // Outside the rounded square: transparent black (we encode RGB only, so use bgOuter)
-      if (bgCov < 1) {
-        color = mix(color, [0, 0, 0], bgCov);
-      }
-
-      // 2. Inner darker disc (gives depth)
-      const discCov = circleCoverage(px, py, cx, cy, innerCircle);
+      // 1. Outer disc (the badge background, with anti-aliased edges)
+      const discCov = circleCoverage(px, py, cx, cy, discRadius);
       if (discCov > 0) {
-        color = mix([0x0a, 0x0d, 0x16], color, discCov);
+        const radial = Math.min(1, Math.hypot(px - cx, py - cy) / discRadius);
+        const bg = mix(C.bgOuter, C.bgInner, 1 - radial * 0.7);
+        r = bg[0]; g = bg[1]; b = bg[2];
+        a = Math.round(discCov * 255);
       }
 
-      // 3. Outer track ring (subtle, full circle)
+      // 2. Inner darker disc (depth)
+      const innerCov = circleCoverage(px, py, cx, cy, innerCircle);
+      if (innerCov > 0) {
+        const blended = mix([0x0a, 0x0d, 0x16], [r, g, b], innerCov);
+        r = blended[0]; g = blended[1]; b = blended[2];
+      }
+
+      // 3. Outer track ring
       const trackCov = ringCoverage(px, py, cx, cy, ringInner, ringOuter);
       if (trackCov > 0) {
-        color = mix(C.ringBg, color, trackCov);
+        const blended = mix(C.ringBg, [r, g, b], trackCov);
+        r = blended[0]; g = blended[1]; b = blended[2];
       }
 
-      // 4. Score arc (~78% of circle) — starts at top, sweeps clockwise
-      // Math.atan2 has 0 = right, π/2 = bottom. We want top = -π/2.
+      // 4. Score arc (~78% of circle)
       const arcStart = -Math.PI / 2 - 0.05;
       const arcEnd   = arcStart + (2 * Math.PI * 0.78);
       const arcCov = arcCoverage(px, py, cx, cy, ringInner, ringOuter, arcStart, arcEnd);
       if (arcCov > 0) {
-        // Gradient along the arc — accent at start, slightly dimmer at end
         const angle = Math.atan2(py - cy, px - cx);
         const norm = ((angle - arcStart) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
         const t = Math.min(1, norm / (arcEnd - arcStart));
         const arcColor = mix(C.accent, C.accentLo, 1 - t * 0.45);
-        color = mix(arcColor, color, arcCov);
+        const blended = mix(arcColor, [r, g, b], arcCov);
+        r = blended[0]; g = blended[1]; b = blended[2];
       }
 
-      // 5. Center "OK" indicator — small green dot ring
+      // 5. Center OK ring
       const okCov = ringCoverage(px, py, cx, cy, okInner, okOuter);
       if (okCov > 0) {
-        color = mix(C.ok, color, okCov);
+        const blended = mix(C.ok, [r, g, b], okCov);
+        r = blended[0]; g = blended[1]; b = blended[2];
       }
 
-      // 6. Inner highlight (top-left quadrant subtle glow)
-      const dxh = px - cx * 0.7;
-      const dyh = py - cy * 0.7;
-      const hd = Math.hypot(dxh, dyh);
-      if (hd < size * 0.15) {
-        const intensity = (1 - hd / (size * 0.15)) * 0.08;
-        color = mix(C.highlight, color, intensity);
-      }
-
-      const i = (py * size + px) * 3;
-      data[i] = color[0];
-      data[i + 1] = color[1];
-      data[i + 2] = color[2];
+      const i = (py * size + px) * 4;
+      data[i] = r; data[i + 1] = g; data[i + 2] = b; data[i + 3] = a;
     }
   }
 
@@ -188,21 +163,20 @@ function makeChunk(type, data) {
   return buf;
 }
 
-function encodePNG(rgbData, size) {
+function encodePNG(rgbaData, size) {
   const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);
   ihdr.writeUInt32BE(size, 4);
   ihdr[8] = 8;  // bit depth
-  ihdr[9] = 2;  // color type RGB
+  ihdr[9] = 6;  // color type RGBA (with alpha)
 
-  // Apply filter type 0 (none) per scanline
-  const rowSize = 1 + size * 3;
+  const rowSize = 1 + size * 4;
   const filtered = Buffer.alloc(size * rowSize);
   for (let y = 0; y < size; y++) {
     filtered[y * rowSize] = 0;
-    rgbData.copy(filtered, y * rowSize + 1, y * size * 3, (y + 1) * size * 3);
+    rgbaData.copy(filtered, y * rowSize + 1, y * size * 4, (y + 1) * size * 4);
   }
 
   const compressed = deflateSync(filtered);

@@ -72,12 +72,14 @@ chrome.runtime.onStartup.addListener(async () => {
 chrome.webNavigation?.onCommitted.addListener((details) => {
   if (details.frameId === 0 && details.tabId > 0) {
     resetTab(details.tabId);
+    chrome.storage.local.remove(`scriptspyActive_${details.tabId}`);
   }
 });
 
 // Clean up when a tab is closed to prevent memory leaks
 chrome.tabs.onRemoved.addListener((tabId) => {
   resetTab(tabId);
+  chrome.storage.local.remove(`scriptspyActive_${tabId}`);
 });
 
 // --- Message handler ---

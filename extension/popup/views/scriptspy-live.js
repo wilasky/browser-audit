@@ -265,14 +265,22 @@ export async function renderScriptSpyLive(container) {
     if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
   }
 
+  let refreshInFlight = false;
+
   async function refresh() {
-    if (!tabId) { return; }
-    // If the user navigated to another tab, the DOM no longer has our elements.
-    // Stop the timer to prevent null reference errors.
+    if (!tabId || refreshInFlight) { return; }
     const pageEl = container.querySelector('.spy-page');
     if (!pageEl) { stopAutoRefresh(); return; }
 
+    refreshInFlight = true;
+    const refreshBtn = container.querySelector('#btn-spy-refresh');
+    if (refreshBtn) { refreshBtn.textContent = '⌛'; }
+
     const data = await sendMsg({ type: 'get_scriptspy', tabId });
+    refreshInFlight = false;
+    if (refreshBtn && container.querySelector('#btn-spy-refresh')) {
+      container.querySelector('#btn-spy-refresh').textContent = 'Actualizar';
+    }
     if (!data) { return; }
 
     // Re-check after async — the container may have been replaced during await
@@ -346,14 +354,29 @@ export async function renderScriptSpyLive(container) {
 
   container.querySelector('#btn-spy-refresh').addEventListener('click', refresh);
 
+  // Persist active state per tab so ScriptSpy stays "active" even when
+  // the popup closes / reopens. Use local storage (more compatible than session).
+  const stateKey = `scriptspyActive_${tabId}`;
+  const stored = await chrome.storage.local.get(stateKey).catch(() => ({}));
+  const wasActive = !!stored[stateKey];
+
+  if (wasActive) {
+    const btn = container.querySelector('#btn-spy-inject');
+    btn.textContent = 'ScriptSpy activo ✓';
+    btn.disabled = true;
+    refresh();
+    startAutoRefresh();
+  }
+
   container.querySelector('#btn-spy-inject').addEventListener('click', async () => {
     if (!tabId) { return; }
     const btn = container.querySelector('#btn-spy-inject');
     btn.disabled = true;
-    btn.textContent = 'Inyectando…';
+    btn.textContent = '⌛ Inyectando…';
     const res = await sendMsg({ type: 'inject_scriptspy', tabId });
     if (res?.ok) {
       btn.textContent = 'ScriptSpy activo ✓';
+      await chrome.storage.local.set({ [stateKey]: Date.now() }).catch(() => {});
       setTimeout(() => { refresh(); startAutoRefresh(); }, 600);
     } else {
       btn.disabled = false;

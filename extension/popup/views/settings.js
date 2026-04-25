@@ -235,8 +235,12 @@ function renderPlanSection(plan) {
       <h3 class="settings-heading">Plan</h3>
       <p class="settings-hint">
         Plan <strong>${plan?.isPro ? 'PRO' : 'FREE'}</strong>${plan?.devMode ? ' (modo dev)' : ''}
-        — Browser Audit es ahora gratis. Las funciones de threat intelligence
-        requieren montar el backend (ver docs).
+        — La extensión es <strong>gratis</strong> y siempre lo será en sus funciones core.
+      </p>
+      <p class="settings-hint" style="margin-top:6px">
+        ✦ <strong>Próximamente versión Pro</strong> con threat intelligence en tiempo real,
+        análisis con IA preempaquetada (sin necesidad de tu propia key), reglas YARA y
+        export profesional. Si te interesa, dale follow al proyecto en GitHub.
       </p>
     </section>`;
 }
