@@ -22,7 +22,7 @@ function shortUrl(url) {
 
 function renderScript(s) {
   const [riskText, riskCls] = RISK_LABEL(s.riskScore);
-  const thirdPartyBadge = s.isThirdParty ? '<span class="badge badge-3p">3rd party</span>' : '';
+  const thirdPartyBadge = s.isThirdParty ? '<span class="badge badge-3p">3rd</span>' : '';
   const tieBadge = s.threatIntelMatch ? '<span class="badge badge-threat">⚠ THREAT</span>' : '';
 
   const events = Object.entries(s.eventCounts)
@@ -46,23 +46,14 @@ function renderScript(s) {
     </li>`;
 }
 
-function renderEmpty() {
-  return `<p class="loading">No hay datos aún. Navega en la pestaña activa y pulsa Actualizar.</p>`;
+async function getActiveTabId() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tab?.id ?? null;
 }
 
-function renderData(data, container) {
-  const { scripts, pageUrl } = data;
-  const pageHost = pageUrl ? (() => { try { return new URL(pageUrl).hostname; } catch (_) { return pageUrl; } })() : '—';
+export async function renderScriptSpyLive(container) {
+  const tabId = await getActiveTabId();
 
-  container.querySelector('.spy-page').textContent = pageHost;
-
-  const list = container.querySelector('.script-list');
-  list.innerHTML = scripts.length
-    ? scripts.map(renderScript).join('')
-    : renderEmpty();
-}
-
-export function renderScriptSpyLive(container) {
   container.innerHTML = `
     <div class="spy-toolbar">
       <span class="spy-label">Página: <strong class="spy-page">—</strong></span>
@@ -72,16 +63,30 @@ export function renderScriptSpyLive(container) {
     <ul class="script-list"></ul>`;
 
   function refresh() {
-    chrome.runtime.sendMessage({ type: 'get_scriptspy' }, (data) => {
-      if (data) { renderData(data, container); }
+    if (!tabId) { return; }
+    chrome.runtime.sendMessage({ type: 'get_scriptspy', tabId }, (data) => {
+      if (!data) { return; }
+      const pageHost = data.pageUrl
+        ? (() => { try { return new URL(data.pageUrl).hostname; } catch { return data.pageUrl; } })()
+        : '—';
+      container.querySelector('.spy-page').textContent = pageHost;
+      const list = container.querySelector('.script-list');
+      list.innerHTML = data.scripts.length
+        ? data.scripts.map(renderScript).join('')
+        : '<li><p class="loading">Sin datos. Pulsa Activar ScriptSpy y luego Actualizar.</p></li>';
     });
   }
 
   container.querySelector('#btn-spy-refresh').addEventListener('click', refresh);
 
   container.querySelector('#btn-spy-inject').addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'inject_scriptspy' }, () => {
-      setTimeout(refresh, 800); // give instrumentation time to emit page-start
+    if (!tabId) { return; }
+    const btn = container.querySelector('#btn-spy-inject');
+    btn.disabled = true;
+    btn.textContent = 'Inyectando…';
+    chrome.runtime.sendMessage({ type: 'inject_scriptspy', tabId }, (res) => {
+      btn.textContent = res?.ok ? 'ScriptSpy activo' : 'Error al inyectar';
+      if (res?.ok) { setTimeout(refresh, 600); }
     });
   });
 

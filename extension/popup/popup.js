@@ -10,7 +10,7 @@ function setView(view) {
   if (view === 'health') {
     loadHealthView();
   } else {
-    renderScriptSpyLive(root);
+    renderScriptSpyLive(root).catch(console.error);
   }
 }
 

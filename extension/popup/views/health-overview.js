@@ -31,8 +31,9 @@ function renderCheck(r) {
   const cls = STATUS_CLASS[r.status] ?? 'skip';
   const icon = STATUS_ICON[r.status] ?? '?';
   const showFix = r.fix && r.status !== 'pass' && r.status !== 'skipped';
+  // Use data-check-id only — fix data stays in JS, never in HTML attributes
   const fixBtn = showFix
-    ? `<button class="fix-btn" data-fix='${JSON.stringify(r.fix)}'>Arreglar</button>`
+    ? `<button class="fix-btn" data-check-id="${r.id}">Arreglar</button>`
     : '';
 
   return `
@@ -53,9 +54,23 @@ function renderCategory(cat) {
     </section>`;
 }
 
+function applyFix(fix) {
+  if ((fix.type === 'navigate' || fix.type === 'externalLink') && fix.url) {
+    chrome.tabs.create({ url: fix.url });
+  } else if (fix.type === 'showInstructions' && fix.instructions) {
+    alert(fix.instructions);
+  }
+}
+
 export function renderHealthOverview(audit, container) {
   const { label, level } = audit;
   const groups = groupByCategory(audit.results, audit.categories);
+
+  // Build fix lookup map before touching the DOM
+  const fixMap = {};
+  for (const r of audit.results) {
+    if (r.fix) { fixMap[r.id] = r.fix; }
+  }
 
   container.innerHTML = `
     <div class="overview-header">
@@ -64,7 +79,7 @@ export function renderHealthOverview(audit, container) {
         <div class="score-label">${label}</div>
         <div class="score-sub">Auditado ${new Date(audit.completedAt).toLocaleTimeString()}</div>
         <button id="btn-refresh" class="btn-secondary">Actualizar</button>
-        <button id="btn-grant-permissions" class="btn-secondary">Activar todos los chequeos</button>
+        <button id="btn-grant-permissions" class="btn-secondary">Activar chequeos</button>
       </div>
     </div>
     <div class="categories">${groups.map(renderCategory).join('')}</div>`;
@@ -72,7 +87,7 @@ export function renderHealthOverview(audit, container) {
   container.querySelector('#btn-refresh').addEventListener('click', () => {
     container.innerHTML = '<p class="loading">Auditando…</p>';
     chrome.runtime.sendMessage({ type: 'run_audit' }, (freshAudit) => {
-      if (freshAudit) {renderHealthOverview(freshAudit, container);}
+      if (freshAudit) { renderHealthOverview(freshAudit, container); }
     });
   });
 
@@ -81,21 +96,16 @@ export function renderHealthOverview(audit, container) {
       if (granted) {
         container.innerHTML = '<p class="loading">Auditando con todos los permisos…</p>';
         chrome.runtime.sendMessage({ type: 'run_audit' }, (freshAudit) => {
-          if (freshAudit) {renderHealthOverview(freshAudit, container);}
+          if (freshAudit) { renderHealthOverview(freshAudit, container); }
         });
       }
     });
   });
 
-  // Fix buttons
   container.querySelectorAll('.fix-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const fix = JSON.parse(btn.dataset.fix);
-      if ((fix.type === 'navigate' || fix.type === 'externalLink') && fix.url) {
-        chrome.tabs.create({ url: fix.url });
-      } else if (fix.type === 'showInstructions' && fix.instructions) {
-        alert(fix.instructions);
-      }
+      const fix = fixMap[btn.dataset.checkId];
+      if (fix) { applyFix(fix); }
     });
   });
 }

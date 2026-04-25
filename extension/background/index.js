@@ -68,25 +68,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'inject_scriptspy') {
-    chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-      if (tab?.id) {
-        injectScriptSpy(tab.id).then(() => sendResponse({ ok: true }));
-      } else {
-        sendResponse({ ok: false });
-      }
-    });
+    const tabId = msg.tabId;
+    if (tabId) {
+      injectScriptSpy(tabId).then(() => sendResponse({ ok: true }));
+    } else {
+      sendResponse({ ok: false });
+    }
     return true;
   }
 
   if (msg.type === 'get_scriptspy') {
-    chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-      if (tab?.id) {
-        sendResponse(getAggregatedData(tab.id));
-      } else {
-        sendResponse({ scripts: [], pageUrl: '' });
-      }
-    });
-    return true;
+    const tabId = msg.tabId;
+    sendResponse(tabId ? getAggregatedData(tabId) : { scripts: [], pageUrl: '' });
   }
 
   if (msg.type === 'scriptspy_event') {
