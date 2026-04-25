@@ -92,6 +92,26 @@ function riskExplanation(s) {
   return reasons.length ? reasons.join(' · ') : 'sin comportamiento sospechoso';
 }
 
+function buildLookupLinks(url) {
+  if (!url || url === 'inline') { return ''; }
+  let domain;
+  try { domain = new URL(url).hostname; } catch { return ''; }
+
+  const vt = `https://www.virustotal.com/gui/search/${encodeURIComponent(url)}`;
+  const us = `https://urlscan.io/search/#${encodeURIComponent('domain:' + domain)}`;
+  const uh = `https://urlhaus.abuse.ch/browse.php?search=${encodeURIComponent(domain)}`;
+  const sb = `https://transparencyreport.google.com/safe-browsing/search?url=${encodeURIComponent(domain)}`;
+
+  return `
+    <div class="script-lookup">
+      <span class="lookup-label">Buscar en:</span>
+      <a class="lookup-link" data-href="${esc(vt)}" title="VirusTotal — análisis multi-engine">VirusTotal</a>
+      <a class="lookup-link" data-href="${esc(us)}" title="urlscan.io — escaneos públicos">urlscan</a>
+      <a class="lookup-link" data-href="${esc(uh)}" title="URLhaus — base de datos de malware (abuse.ch)">URLhaus</a>
+      <a class="lookup-link" data-href="${esc(sb)}" title="Google Safe Browsing">Safe Browsing</a>
+    </div>`;
+}
+
 function renderScript(s, idx) {
   const [riskText, riskCls] = RISK_LABEL(s.riskScore);
   const isInline = s.url === 'inline';
@@ -128,8 +148,10 @@ function renderScript(s, idx) {
     : '';
 
   const viewBtn = !isInline
-    ? `<button class="view-script-btn" data-script-idx="${idx}">Ver script ↗</button>`
+    ? `<button class="view-script-btn" data-script-idx="${idx}">Ver código fuente ↗</button>`
     : '';
+
+  const lookups = buildLookupLinks(s.url);
 
   return `
     <li class="script-item">
@@ -143,6 +165,7 @@ function renderScript(s, idx) {
         ? `<div class="script-events">${netEvents}${fpEvents}${otherEvents}</div>`
         : ''}
       ${targets}
+      ${lookups}
       ${viewBtn}
     </li>`;
 }
@@ -242,6 +265,15 @@ export async function renderScriptSpyLive(container) {
           if (s?.url && s.url !== 'inline') {
             chrome.tabs.create({ url: s.url });
           }
+        });
+      });
+
+      // External lookup links (VirusTotal, urlscan, URLhaus, Safe Browsing)
+      list.querySelectorAll('.lookup-link').forEach((a) => {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          const href = a.dataset.href;
+          if (href) { chrome.tabs.create({ url: href }); }
         });
       });
     } else {

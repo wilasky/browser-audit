@@ -41,11 +41,27 @@ export async function renderSettings(container) {
       </section>
 
       <section class="settings-section">
-        <h3 class="settings-heading">API Key Pro</h3>
-        <p class="settings-hint">Necesaria para que ScriptSpy consulte threat intelligence en tiempo real.</p>
+        <h3 class="settings-heading">API Key Pro · Threat Intelligence</h3>
+
+        <div class="api-info-box">
+          <p class="settings-hint">
+            La API Key conecta tu extensión con <strong>nuestro backend de threat intelligence</strong>
+            (api.browseraudit.com). Permite verificar en tiempo real si los scripts y dominios
+            que ves están en bases de datos de malware: URLhaus, MalwareBazaar, OpenPhish y
+            extensiones blacklisteadas.
+          </p>
+          <p class="settings-hint" style="margin-top:6px">
+            <strong>¿Qué se envía?</strong> Solo hashes SHA256. Nunca URLs ni datos personales.
+          </p>
+          <p class="settings-hint" style="margin-top:6px">
+            <strong>¿Cómo conseguirla?</strong> Activa Pro en la pestaña ✦ y recibirás tu key por email.
+            Para probar sin cuenta, usa el modo demo (gratis, datos simulados).
+          </p>
+        </div>
+
         <div class="api-key-row">
           <input id="input-api-key" type="password" class="api-key-input"
-            placeholder="Pega tu API key aquí" />
+            placeholder="Pega tu API key cuando la tengas" />
           <button id="btn-save-key" class="btn-secondary">Guardar</button>
         </div>
         <p id="key-status" class="settings-hint"></p>
