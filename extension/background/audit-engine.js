@@ -42,26 +42,15 @@ async function runUserAgent(check) {
   if (!m) {return { status: 'unknown', detail: 'No se pudo leer la versión de Chrome' };}
 
   const current = parseInt(m[1], 10);
+  const min = check.method.minMajorVersion ?? 120;
 
-  // Fetch latest stable version from Chromium dash
-  try {
-    const res = await fetch(
-      'https://chromiumdash.appspot.com/fetch_releases?channel=Stable&platform=Windows&num=1'
-    );
-    const data = await res.json();
-    const latest = data[0]?.version ? parseInt(data[0].version.split('.')[0], 10) : null;
-
-    if (!latest) {return { status: 'unknown', detail: `Chrome v${current} (no se pudo verificar la última versión)` };}
-
-    const lag = latest - current;
-    const allowed = check.method.majorLagAllowed ?? 2;
-
-    if (lag <= 0) {return { status: 'pass', detail: `Chrome v${current} (última versión)` };}
-    if (lag <= allowed) {return { status: 'warn', detail: `Chrome v${current} (${lag} versión(es) por detrás)` };}
-    return { status: 'fail', detail: `Chrome v${current} (${lag} versiones por detrás — vulnerable)` };
-  } catch {
-    return { status: 'unknown', detail: `Chrome v${current} (sin conexión para verificar)` };
+  if (current >= min) {
+    return { status: 'pass', detail: `Chrome v${current}` };
   }
+  if (current >= min - 4) {
+    return { status: 'warn', detail: `Chrome v${current} — considera actualizar (mínimo recomendado: v${min})` };
+  }
+  return { status: 'fail', detail: `Chrome v${current} — versión antigua con vulnerabilidades conocidas (mínimo: v${min})` };
 }
 
 async function runChromePrivacy(check) {

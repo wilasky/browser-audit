@@ -48,7 +48,7 @@
       "weight": 8,
       "method": {
         "type": "userAgent",
-        "majorLagAllowed": 2
+        "minMajorVersion": 134
       },
       "rationale": "Las versiones antiguas de Chrome contienen vulnerabilidades públicamente conocidas que pueden ser explotadas por sitios maliciosos.",
       "fix": {
@@ -92,9 +92,8 @@
       },
       "rationale": "Aunque DNT no es vinculante, algunos sitios lo respetan voluntariamente.",
       "fix": {
-        "type": "navigate",
-        "url": "chrome://settings/privacy",
-        "instructions": "Activa 'Enviar solicitud Do Not Track'."
+        "type": "showInstructions",
+        "instructions": "Chrome 120+: Configuracion > Privacidad y Seguridad > Controles de publicidad > desplazate hasta la opcion 'Enviar solicitud Do Not Track'. Si no aparece, esta opcion ha sido eliminada de tu version de Chrome."
       },
       "introducedIn": "1.0.0"
     },
@@ -114,7 +113,7 @@
       "fix": {
         "type": "navigate",
         "url": "chrome://settings/security",
-        "instructions": "Activa 'Usar DNS seguro' y elige un proveedor (Cloudflare 1.1.1.1 o Google)."
+        "instructions": "En 'Usar DNS seguro' activa la opcion y elige Cloudflare (1.1.1.1) o Google (8.8.8.8)."
       },
       "introducedIn": "1.0.0"
     },
@@ -134,7 +133,7 @@
       "fix": {
         "type": "navigate",
         "url": "chrome://settings/security",
-        "instructions": "Activa 'Usar siempre conexiones seguras'."
+        "instructions": "Busca 'Usar siempre conexiones seguras' y activalo. Chrome intentara HTTPS antes de HTTP en cada conexion."
       },
       "introducedIn": "1.0.0"
     },
@@ -154,7 +153,7 @@
       "fix": {
         "type": "navigate",
         "url": "chrome://settings/security",
-        "instructions": "Selecciona 'Protección mejorada' en Safe Browsing."
+        "instructions": "En 'Navegacion segura' selecciona 'Proteccion mejorada' (la primera opcion, con el icono de escudo)."
       },
       "introducedIn": "1.0.0"
     },
@@ -289,9 +288,8 @@
       },
       "rationale": "WebRTC puede revelar tu IP real incluso a través de una VPN.",
       "fix": {
-        "type": "navigate",
-        "url": "chrome://settings/privacy",
-        "instructions": "Considera usar una extensión que mitigue fugas de WebRTC."
+        "type": "showInstructions",
+        "instructions": "Chrome no expone esta opcion en la UI. Para mitigarlo instala la extension 'WebRTC Leak Prevent' desde Chrome Web Store, o si usas VPN consulta si tu cliente VPN incluye proteccion WebRTC."
       },
       "introducedIn": "1.0.0"
     },
@@ -331,7 +329,7 @@
       "fix": {
         "type": "navigate",
         "url": "chrome://settings/security",
-        "instructions": "Activa Safe Browsing (al menos en modo estándar)."
+        "instructions": "En 'Navegacion segura' selecciona al menos 'Proteccion estandar'. No desactives esta opcion."
       },
       "introducedIn": "1.0.0"
     },
@@ -351,7 +349,7 @@
       "fix": {
         "type": "navigate",
         "url": "chrome://settings/security",
-        "instructions": "Activa 'Aviso en caso de contraseñas filtradas'."
+        "instructions": "Busca 'Aviso de contrasena hackeada' o 'Proteccion de Contrasena' y activalo."
       },
       "introducedIn": "1.0.0"
     }

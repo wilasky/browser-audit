@@ -1,5 +1,6 @@
 import { renderHealthOverview } from './views/health-overview.js';
 import { renderScriptSpyLive } from './views/scriptspy-live.js';
+import { calculateFingerprintEntropy } from '../shared/fingerprint.js';
 
 // Wraps sendMessage and silences lastError so Chrome doesn't log it as unchecked
 function sendMsg(msg) {
@@ -34,6 +35,16 @@ function setView(view) {
 }
 
 async function loadHealthView() {
+  root.innerHTML = '<p class="loading">Calculando huella digital…</p>';
+
+  // Fingerprint must run in popup (has DOM). Cache result for background to read.
+  try {
+    const bits = await calculateFingerprintEntropy();
+    await chrome.storage.local.set({ fingerprintEntropy: bits });
+  } catch {
+    // Non-fatal: audit will show 'unknown' for this check
+  }
+
   root.innerHTML = '<p class="loading">Cargando auditoría…</p>';
 
   const audit = await sendMsg({ type: 'get_audit' });
