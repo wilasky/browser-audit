@@ -28,6 +28,9 @@ async function copyStatics() {
   if (existsSync(`${SRC}/icons`)) {
     await cp(`${SRC}/icons`, `${OUT}/icons`, { recursive: true });
   }
+  if (existsSync(`${SRC}/_locales`)) {
+    await cp(`${SRC}/_locales`, `${OUT}/_locales`, { recursive: true });
+  }
 }
 
 const ctx = await esbuild.context({

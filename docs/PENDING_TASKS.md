@@ -104,6 +104,14 @@ Pediste en su día y no entraron en v0.1:
 4. **Top scripts maliciosos / mini-base de datos** — biblioteca curada de scripts conocidos por riesgo
 5. **Histórico de análisis profundos** — guardar resultados anteriores de análisis estático
 6. **Reglas YARA** — para Pro futuro (post-backend)
+7. **Botón Reportar bug/feedback** — pequeño botón en Settings o footer:
+   - Opción A: `mailto:` con email pre-rellenado, info de versión y debug
+   - Opción B: Link a GitHub Issues (más visible y público)
+   - Opción C: Modal con textarea + envío a backend (cuando tengamos)
+   - **Recomendación**: Opción B inicialmente (cero infra). Más adelante un widget propio
+8. **i18n completo de toda la UI** — actualmente solo strings clave (tabs, botones principales).
+   Faltan textos de Health Check, Compliance, ScriptSpy detalles
+9. **Más idiomas** — actualmente ES + EN. Añadir FR, DE, PT-BR según mercado
 
 ---
 

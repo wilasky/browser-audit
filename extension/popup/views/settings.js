@@ -1,5 +1,6 @@
 import { esc } from '../../shared/sanitize.js';
 import { listProviders, getAIConfig, saveAIConfig } from '../../shared/ai-client.js';
+import { getLanguagePreference, setLanguage } from '../../shared/i18n.js';
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -120,6 +121,22 @@ function renderAuditSection(prefs) {
         <span>Calcular huella digital al abrir el popup</span>
       </label>
       <p class="settings-hint">Desactivar acelera la apertura del popup (~300ms más rápido).</p>
+    </section>`;
+}
+
+function renderLanguageSection(currentLang) {
+  return `
+    <section class="settings-section">
+      <h3 class="settings-heading">Idioma · Language</h3>
+      <div class="settings-row">
+        <label class="settings-label">Idioma de la extensión:</label>
+        <select id="pref-lang" class="settings-select">
+          <option value="auto" ${currentLang === 'auto' ? 'selected' : ''}>Automático (Chrome) / Auto</option>
+          <option value="es" ${currentLang === 'es' ? 'selected' : ''}>Español</option>
+          <option value="en" ${currentLang === 'en' ? 'selected' : ''}>English</option>
+        </select>
+      </div>
+      <p class="settings-hint">Cambia el idioma de la interfaz. Recarga el popup para aplicar.</p>
     </section>`;
 }
 
@@ -292,13 +309,13 @@ function renderAboutSection() {
     <section class="settings-section">
       <h3 class="settings-heading">Acerca de</h3>
       <p class="settings-hint">
-        Browser Audit v0.1 · Privacidad por diseño<br>
+        Lucent v0.1 · Browser security & privacy<br>
         Cliente open source · MIT License
       </p>
       <div class="settings-row">
         <a href="https://github.com/wilasky/browser-audit" data-link class="link-btn">GitHub</a>
         <a href="https://github.com/wilasky/browser-audit/blob/main/docs/PRIVACY_POLICY.md" data-link class="link-btn">Política privacidad</a>
-        <a href="https://github.com/wilasky/browser-audit/issues" data-link class="link-btn">Reportar bug</a>
+        <button id="btn-feedback" class="link-btn" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0">💬 Reportar bug / sugerencia</button>
       </div>
     </section>`;
 }
@@ -306,15 +323,17 @@ function renderAboutSection() {
 // --- Main ---
 
 export async function renderSettings(container) {
-  const [plan, history, prefs, aiConfig] = await Promise.all([
+  const [plan, history, prefs, aiConfig, currentLang] = await Promise.all([
     sendMsg({ type: 'get_plan' }),
     sendMsg({ type: 'get_history' }),
     loadPrefs(),
     getAIConfig(),
+    getLanguagePreference(),
   ]);
 
   container.innerHTML = `
     <div class="settings-wrap">
+      ${renderLanguageSection(currentLang)}
       ${renderHistorySection(history ?? [])}
       ${renderAuditSection(prefs)}
       ${renderViewSection(prefs)}
@@ -339,6 +358,12 @@ export async function renderSettings(container) {
       await savePrefs({ ...cur, [key]: val });
     });
   }
+
+  // Language change
+  container.querySelector('#pref-lang').addEventListener('change', async (e) => {
+    await setLanguage(e.target.value);
+    location.reload();
+  });
 
   bindPref('pref-auto-audit', 'autoAudit');
   bindPref('pref-interval', 'auditInterval', 'number');
@@ -462,6 +487,33 @@ export async function renderSettings(container) {
     a.addEventListener('click', (e) => {
       e.preventDefault();
       chrome.tabs.create({ url: a.href });
+    });
+  });
+
+  // --- Feedback button — opens GitHub issue with pre-filled context ---
+  container.querySelector('#btn-feedback')?.addEventListener('click', () => {
+    const ua = navigator.userAgent;
+    const chromeVersion = (ua.match(/Chrome\/([\d.]+)/) || [])[1] ?? 'unknown';
+    const lang = navigator.language;
+    const body = encodeURIComponent(
+`**Tipo:** [Bug / Sugerencia / Pregunta]
+
+**Descripción:**
+
+
+**Pasos para reproducir (si aplica):**
+1.
+2.
+3.
+
+**Contexto:**
+- Lucent versión: 0.1.0
+- Chrome: ${chromeVersion}
+- SO/idioma: ${lang}
+`
+    );
+    chrome.tabs.create({
+      url: `https://github.com/wilasky/browser-audit/issues/new?body=${body}`,
     });
   });
 }

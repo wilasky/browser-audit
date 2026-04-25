@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Browser Audit",
+  "name": "__MSG_appName__",
   "version": "0.1.0",
-  "description": "Audit your browser security settings and inspect JavaScript behavior on any website. Free health check + ScriptSpy.",
+  "description": "__MSG_appDescription__",
+  "default_locale": "en",
 
   "permissions": [
     "storage",
@@ -28,7 +29,7 @@
 
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Browser Audit",
+    "default_title": "__MSG_appName__",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

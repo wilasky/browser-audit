@@ -47,6 +47,9 @@ async function build() {
   if (existsSync(`${SRC}/icons`)) {
     await cp(`${SRC}/icons`, `${OUT}/icons`, { recursive: true });
   }
+  if (existsSync(`${SRC}/_locales`)) {
+    await cp(`${SRC}/_locales`, `${OUT}/_locales`, { recursive: true });
+  }
 
   console.warn('Build complete →', OUT);
 }

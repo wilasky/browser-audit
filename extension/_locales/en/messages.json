@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "Lucent — Browser Audit",
+    "description": "Extension name shown in Chrome and CWS"
+  },
+  "appDescription": {
+    "message": "Audit your browser security, inspect JavaScript behavior on any website, and analyze GDPR compliance — all locally.",
+    "description": "Extension description shown in CWS"
+  }
+}

@@ -5,6 +5,7 @@ import { renderSettings } from './views/settings.js';
 import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
 import { renderFingerprintDetail } from './views/fingerprint-detail.js';
 import { renderScriptDetail } from './views/script-detail.js';
+import { initI18n, t } from '../shared/i18n.js';
 
 const root = document.getElementById('view-root');
 const tabs = document.querySelectorAll('.tab-btn');
@@ -86,8 +87,21 @@ tabs.forEach((btn) => {
   btn.addEventListener('click', () => setView(btn.dataset.view));
 });
 
+function localizeStaticUI() {
+  // Translate the tab labels in popup.html
+  document.querySelectorAll('[data-view]').forEach((btn) => {
+    const view = btn.dataset.view;
+    if (view === 'scriptspy') { btn.textContent = t('tab.scriptspy'); }
+    else if (view === 'compliance') { btn.textContent = t('tab.compliance'); }
+    else if (view === 'health') { btn.textContent = t('tab.health'); }
+  });
+}
+
 // Boot: show onboarding on first install, otherwise load default view (ScriptSpy)
 async function boot() {
+  await initI18n();
+  localizeStaticUI();
+
   const showOnboarding = await shouldShowOnboarding();
   if (showOnboarding) {
     setActiveTab('scriptspy');
