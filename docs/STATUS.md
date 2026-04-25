@@ -155,9 +155,34 @@ Antes de empezar cualquier tarea, leer:
 
 ---
 
-## Notas y aprendizajes
+## Ideas a desarrollar
 
-[A rellenar según vayan apareciendo]
+### Baseline dinámica con perfiles y fuentes
+
+**Contexto:** la baseline actual es estática (embebida en `extension/data/baseline.v1.json`).
+La arquitectura ya prevé sincronización desde `/baseline/latest.json` sin actualizar la extensión.
+
+**Ideas concretas a implementar cuando estemos estables:**
+
+1. **Silenciar checks individuales** — el usuario puede marcar "ignorar este check para siempre"
+   (p.ej. DNT, que no es vinculante). Se guarda en `chrome.storage.local`, no requiere backend.
+   UI: botón "Ignorar" junto a "Arreglar" en cada check fallido.
+
+2. **Perfiles de usuario** — conjuntos de checks activados/pesos ajustados según contexto:
+   - `casual` — solo critical + high, ignora fingerprint y DNT
+   - `tecnico` — todos los checks, umbrales más estrictos
+   - `trabajo` — ignora extensiones sideloaded (pueden ser herramientas internas)
+   Implementable como campo `profiles: ['casual', 'tecnico']` en cada check de la baseline.
+
+3. **Fuentes y referencias por check** — añadir campo `source` en la baseline con enlace
+   a la referencia que justifica el check (Chrome docs, EFF, CRXcavator, etc.).
+   Se muestra en la vista de detalle del check. Aumenta credibilidad y confianza del usuario.
+
+4. **Baseline dinámica sin backend** — la extensión puede sincronizar la baseline desde
+   una URL pública (GitHub raw, Cloudflare Pages) sin necesidad de servidor propio.
+   Actualización silenciosa cada 24h, notificación si hay nueva versión mayor.
+
+**Notas y aprendizajes**
 
 ---
 
