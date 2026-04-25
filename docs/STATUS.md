@@ -6,9 +6,9 @@
 
 ## Estado actual
 
-**Fase actual:** FASE 1 — Browser Health Check (completada, pendiente verificación manual)
+**Fase actual:** FASE 2 — ScriptSpy reactivado
 **Última actualización:** 2026-04-25
-**Próxima tarea:** Verificar UI en Chrome → si OK, iniciar Fase 2 (ScriptSpy)
+**Próxima tarea:** Implementar capas de instrumentación (network, storage, input, fingerprinting, injection)
 
 ---
 
@@ -71,7 +71,7 @@ Antes de empezar cualquier tarea, leer:
 - [x] Persistencia en chrome.storage.local
 - [x] Re-auditoría automática cada 24h (via onStartup)
 - [x] Tests unitarios — 13 tests, calculateScore y scoreLabel
-- [ ] Verificación manual en Chrome (PENDIENTE)
+- [x] Verificación manual en Chrome ✓ — score, categorías, botones Fix, todo funciona
 
 ### FASE 2 — ScriptSpy reactivado
 
