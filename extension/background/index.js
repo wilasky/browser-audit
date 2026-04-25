@@ -93,6 +93,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'extract_page_text') {
+    const tabId = msg.tabId;
+    if (!tabId) { sendResponse({ ok: false, reason: 'No active tab.' }); return; }
+    chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['content/page-text-probe.js'],
+      world: 'MAIN',
+    }).then((results) => {
+      const result = results?.[0]?.result ?? null;
+      sendResponse({ ok: true, result });
+    }).catch((err) => sendResponse({ ok: false, reason: err.message }));
+    return true;
+  }
+
   if (msg.type === 'run_compliance_probe') {
     const tabId = msg.tabId;
     if (!tabId) { sendResponse({ ok: false, reason: 'No active tab.' }); return; }

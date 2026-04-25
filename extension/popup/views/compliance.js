@@ -1,4 +1,5 @@
 import { esc } from '../../shared/sanitize.js';
+import { isAIConfigured, summarizePrivacyPolicy } from '../../shared/ai-client.js';
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -217,17 +218,85 @@ function renderReport(r) {
 
 export async function renderCompliance(container) {
   const tabId = await getActiveTabId();
+  const aiReady = await isAIConfigured();
 
   container.innerHTML = `
     <div class="comp-wrap">
       <div class="comp-toolbar">
         <span class="spy-label">Análisis RGPD / LSSI / Cookies de la página activa</span>
         <button id="btn-comp-run" class="btn-primary">Analizar página</button>
+        <button id="btn-comp-ai" class="btn-secondary btn-ai" title="${aiReady ? 'Resume con IA la política de privacidad de esta página' : 'Configura una API key en Settings ⚙ para activar el resumen con IA'}">
+          ✨ Resumir con IA
+        </button>
       </div>
       <div id="comp-result">
         <p class="loading">Pulsa <strong>Analizar página</strong> para evaluar la web actual contra criterios de cumplimiento.</p>
       </div>
     </div>`;
+
+  container.querySelector('#btn-comp-ai').addEventListener('click', async () => {
+    if (!tabId) { return; }
+    if (!(await isAIConfigured())) {
+      alert('Configura una API key de Claude u OpenAI en la pestaña ⚙ Settings → Asistente IA.');
+      return;
+    }
+    const result = container.querySelector('#comp-result');
+    const btn = container.querySelector('#btn-comp-ai');
+    btn.disabled = true;
+    btn.textContent = '✨ Extrayendo texto…';
+
+    try {
+      const extracted = await sendMsg({ type: 'extract_page_text', tabId });
+      if (!extracted?.ok || !extracted.result?.text) {
+        result.innerHTML = '<p class="error">No se pudo extraer el texto de la página.</p>';
+        btn.disabled = false; btn.textContent = '✨ Resumir con IA';
+        return;
+      }
+      const { text, host, length, title } = extracted.result;
+
+      btn.textContent = `✨ Resumiendo (${length.toLocaleString()} chars)…`;
+
+      result.innerHTML = `
+        <div class="ai-summary">
+          <div class="ai-summary-header">
+            <strong>Análisis IA</strong>
+            <span class="ai-summary-host">${esc(host)} · ${esc(title.slice(0, 60))}</span>
+          </div>
+          <p class="loading">Resumiendo política de privacidad…</p>
+        </div>`;
+
+      const summary = await summarizePrivacyPolicy(text, host);
+
+      const formatted = summary
+        .split('\n')
+        .map((line) => esc(line))
+        .join('<br>');
+
+      result.innerHTML = `
+        <div class="ai-summary">
+          <div class="ai-summary-header">
+            <strong>✨ Resumen IA</strong>
+            <span class="ai-summary-host">${esc(host)}</span>
+          </div>
+          <div class="ai-summary-body">${formatted}</div>
+          <div class="ai-summary-foot">
+            <span>El contenido pasó por tu API key de IA. No por nuestros servidores.</span>
+            <button id="btn-ai-back" class="btn-secondary">Volver</button>
+          </div>
+        </div>`;
+
+      result.querySelector('#btn-ai-back').addEventListener('click', () => {
+        result.innerHTML = '<p class="loading">Pulsa <strong>Analizar página</strong> para evaluar cumplimiento.</p>';
+      });
+
+      btn.disabled = false;
+      btn.textContent = '✨ Resumir con IA';
+    } catch (err) {
+      result.innerHTML = `<p class="error">Error IA: ${esc(err.message)}</p>`;
+      btn.disabled = false;
+      btn.textContent = '✨ Resumir con IA';
+    }
+  });
 
   container.querySelector('#btn-comp-run').addEventListener('click', async () => {
     if (!tabId) { return; }
