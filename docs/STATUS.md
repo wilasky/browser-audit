@@ -6,9 +6,9 @@
 
 ## Estado actual
 
-**Fase actual:** FASE 2 — ScriptSpy reactivado
+**Fase actual:** FASE 2 — ScriptSpy (completada, pendiente verificación manual en Chrome)
 **Última actualización:** 2026-04-25
-**Próxima tarea:** Implementar capas de instrumentación (network, storage, input, fingerprinting, injection)
+**Próxima tarea:** Verificar ScriptSpy en Chrome → si OK, Fase 3 (sistema de planes)
 
 ---
 
@@ -75,14 +75,16 @@ Antes de empezar cualquier tarea, leer:
 
 ### FASE 2 — ScriptSpy reactivado
 
-- [ ] Verificar que las 5 capas de instrumentación funcionan
-- [ ] `event-aggregator.js`
-- [ ] `classifier.js`
-- [ ] `computeScriptRisk` con la fórmula de Architecture sección 5.4
-- [ ] Vistas Live, Fingerprint, Targets
-- [ ] Live event ticker
-- [ ] Reset por navegación
-- [ ] Tests del classifier
+- [x] 5 capas de instrumentación: network, storage, input-tracking, fingerprinting, injection
+- [x] instrumentation.js (MAIN world) con getCallerScript() para atribución de eventos
+- [x] bridge.js (ISOLATED world) relay de eventos al background
+- [x] event-aggregator.js: agrupa eventos por script, computeScriptRisk (fórmula §5.4)
+- [x] Inyección bajo demanda via chrome.scripting.executeScript (activeTab + scripting)
+- [x] Reset por navegación (webNavigation.onCommitted)
+- [x] Vista ScriptSpy Live: scripts ordenados por riesgo, event chips, risk pills
+- [x] Pestañas Health / ScriptSpy en el popup
+- [x] 15 tests unitarios de event-aggregator y computeScriptRisk
+- [ ] Verificación manual en Chrome (PENDIENTE)
 
 ### FASE 3 — Sistema de planes
 
