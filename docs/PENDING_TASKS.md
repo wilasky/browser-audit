@@ -94,6 +94,31 @@ Después, en local hacer `git pull` para sincronizar.
 
 ---
 
+## 🚀 v0.2 — Features y mejoras
+
+**Highlights pedidas por el usuario:**
+
+1. **i18n COMPLETO** (resultados GDPR, Health checks, deep analysis ScriptSpy)
+   — descripción detallada en bug #2 abajo
+2. **Mejorar Chrome version check** — actualmente da igual mensaje en Brave que en Chrome.
+   Solución: detectar si es Brave/Edge/Opera (chromium-based) via UA y ajustar mensaje.
+   Para Brave: comparar contra última versión de Brave, no de Chrome upstream.
+   Detectar via: `navigator.brave?.isBrave()`, `navigator.userAgentData.brands`.
+3. **Cookie banner: detectar consentimiento ya aceptado**
+   - Buscar cookies de consentimiento típicas (cookieConsent, OptanonAlertBoxClosed,
+     CookieConsent, GDPR_consent, etc.) — si existen, el usuario ya aceptó
+   - Buscar marcadores en localStorage (cookie_consent_user_consent_token, etc.)
+   - Si el banner ya no está visible pero hay cookies de consent → reportar como "✓ Banner aceptado"
+4. **Bug: detectar botón "Configurar/Ajustes" del banner aunque no lleve ese texto exacto**
+   - Algunos banners usan: "Más opciones", "Personalizar", "Gestionar cookies", "Settings"
+   - Ampliar regex en compliance-probe.js
+5. **Análisis multi-lenguaje** (feature grande, post-v0.2 quizá v0.3)
+   - Detectar y analizar scripts NO solo JavaScript: WASM, PHP server responses,
+     respuestas de APIs sospechosas con código en otros lenguajes
+   - Análisis de payloads en respuestas: ¿el servidor devuelve PHP? ¿Python pickle?
+     ¿código serializado en respuestas JSON?
+   - Pattern matching para signatures de exploits conocidos en respuestas
+
 ## 🐛 Bugs conocidos para v0.2
 
 1. **Cookie banner detection mejorada** — cuando el usuario acepta cookies, la extensión
