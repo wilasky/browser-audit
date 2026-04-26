@@ -113,7 +113,7 @@ El plan gratuito incluye el Browser Health Check completo y ScriptSpy con análi
 | Category | Privacy & Security |
 | Language | English (primary), Spanish |
 | Website | https://github.com/wilasky/browser-audit |
-| Privacy Policy URL | (host PRIVACY_POLICY.md publicly) |
+| Privacy Policy URL | https://wilasky.github.io/browser-audit/PRIVACY_POLICY |
 | Support URL | https://github.com/wilasky/browser-audit/issues |
 | Visibility | Public |
 | Regions | Worldwide |

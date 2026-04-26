@@ -1,0 +1,10 @@
+title: Lucent
+description: Browser security & privacy auditing
+theme: jekyll-theme-minimal
+permalink: /:title
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
