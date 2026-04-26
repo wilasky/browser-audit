@@ -7,7 +7,7 @@
 
 ## Tier único: Pro Personal · €2/mes · €20/año
 
-**2 features clave:**
+**4 features clave:**
 
 1. **Threat Intelligence en tiempo real**
    - Backend ya construido (`backend/`)
@@ -21,10 +21,28 @@
    - Análisis con IA de scripts sospechosos
    - Coste asumido por la suscripción
 
-**Por qué solo estas dos:**
+3. **🔒 Bloqueo de configuración (lock individual)**
+   - Cliente puro, sin coste para el backend
+   - Botón 🔒 junto a ⚡ Aplicar en cada check
+   - El setting se re-aplica INMEDIATAMENTE si algo lo cambia (listener onChange)
+   - Notificación: "Otro programa intentó cambiar X — restaurado por Lucent"
+   - Implementación: ~3-4h de trabajo
+
+4. **↶ Deshacer ajuste individual (undo por check)**
+   - Cliente puro, sin coste para el backend
+   - Por cada apply guarda `previousValue`
+   - Botón ↶ Deshacer junto a ✓ Aplicado
+   - Útil para experimentar sin perder el estado original
+   - Implementación: ~2h de trabajo
+
+**Por qué estas 4:**
 - TI = el killer feature ("ningún competidor a este precio")
 - IA = removes friction (90% no se va a configurar API key propia)
-- Suficiente para validar la propuesta de valor
+- Lock = paz mental para usuarios paranoicos (target de la herramienta)
+- Undo = mejora UX, hace experimentar más fácil
+
+Las dos primeras requieren backend. Las dos últimas son cliente puro y se pueden
+añadir sin coste de infra. **Buen balance para tier único.**
 
 ---
 

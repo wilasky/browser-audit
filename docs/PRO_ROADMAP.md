@@ -25,6 +25,94 @@
 
 ---
 
+## 🆕 Features añadidas tras feedback
+
+### Bloqueo de configuración (lock individual)
+**Tier:** Pro Personal
+- Junto al botón ⚡ Aplicar, un icono **🔒 Bloquear**
+- Una vez bloqueado: el setting NO solo se re-aplica cada 30 min (como hacemos
+  ahora con `appliedFixes`), sino que:
+  - Se re-aplica **inmediatamente** si cambia (listener `setting.onChange`)
+  - Notificación al user: "⚠ Otro programa intentó cambiar X. Restaurado."
+  - Badge visual "🔒 Bloqueado por Lucent" en el check
+- Útil contra: malware, otras extensiones agresivas, "fixes" de soporte técnico
+  que cambian settings sin permiso
+- Implementación: nuevo storage `lockedFixes`, listener por API en background
+
+### Deshacer ajuste individual (undo por check)
+**Tier:** Pro Personal
+- Junto al botón ✓ Aplicado, un botón **↶ Deshacer**
+- Diferencia con "Restablecer todo":
+  - Restablecer = vuelve TODO a defaults de Chrome
+  - Deshacer = vuelve SOLO este check a su valor PREVIO al apply
+- Por cada apply, guardar `previousValue` en storage:
+  ```js
+  appliedFixes: [{ api, value, previousValue }]
+  ```
+- Al deshacer: `setting.set({ value: previousValue })`
+- Útil para experimentar: aplicas, no te gusta el efecto, deshaces solo eso
+
+### Análisis multi-lenguaje extendido
+**Tier:** Pro Pentester (más complejo, gran valor técnico)
+
+**Investigación realizada — formatos peligrosos en navegador:**
+
+| Formato | Riesgo | Por qué analizar |
+|---------|--------|------------------|
+| **WebAssembly (.wasm)** | ALTO | Código binario opaco. Cryptominers modernos lo usan (CoinHive successors) |
+| **Service Workers** | ALTO | JS persistente fuera de pestaña. Interceptan requests, exfiltran |
+| **HTML inline event handlers** | MEDIO | onload, onerror, onclick — bypass de CSP |
+| **data: URIs con código** | ALTO | `data:text/html,<script>` ejecuta JS sin descarga |
+| **JSONP** | MEDIO | Carga JS de cualquier dominio sin SRI |
+| **SVG con scripts** | ALTO | SVG puede contener `<script>` y handlers — XSS via image |
+| **CSS @import remoto** | BAJO | Vector de tracking via referrer |
+| **WebGL Shaders (GLSL)** | BAJO | Exploits de driver raros pero existentes |
+| **CSS Houdini / Worklets** | BAJO | Emergente, poco documentado |
+| **PHP/Python serialized en respuestas** | ALTO (server-side) | Si el server devuelve serialized data, RCE en deserialización del cliente |
+| **eval() con base64** | ALTO | Patrón clásico de obfuscación. Ya lo detectamos parcialmente |
+
+**Lo que añadiríamos en Pro Pentester:**
+
+1. **WASM analyzer**
+   - Disassembly básico a WAT (WebAssembly Text format) legible
+   - Detección de funciones sospechosas: `crypto`, `mining`, syscalls
+   - Hash SHA256 para lookup en bases de malware
+   - Clasificación: ¿es CoinHive? ¿xmrig? ¿unknown?
+
+2. **Service Worker auditor**
+   - Listar todos los SW registrados en el dominio
+   - Analizar el código del SW (ya tenemos análisis JS)
+   - Detectar fetch interceptors agresivos
+   - Detectar push subscription suspicious
+
+3. **HTML inline handler detector**
+   - Contar y mostrar todos los onXXX="..." en el DOM
+   - Marcar como vulnerabilidad XSS si hay user-content
+   - Sugerir CSP estricta
+
+4. **data: URI scanner**
+   - Buscar todas las data URIs en el DOM
+   - Decodificar y analizar el contenido
+   - Flag si hay JS embebido
+
+5. **SVG script auditor**
+   - Buscar `<script>` y `on*=` en SVGs
+   - Cross-origin SVG = surface XSS
+
+6. **Server response analyzer (avanzado)**
+   - Capturar respuestas via webRequest API (requiere permission)
+   - Detectar headers Content-Type sospechosos
+   - Buscar firmas de PHP serialized (`O:8:"stdClass"...`), Python pickle (`\x80\x04`),
+     .NET BinaryFormatter
+   - Alertar: "El servidor devolvió código serializado — riesgo de deserialization attack"
+
+**Por qué no es feature Free:**
+- WASM analyzer requiere librería pesada (~2MB)
+- Server response analysis necesita `webRequest` permission (problemático en CWS)
+- Mantenimiento de signatures actualizadas (parecido a YARA)
+
+---
+
 ## 🥉 Pro Personal (€2/mes · €20/año)
 
 Para usuarios técnicos individuales que quieren más automatización y datos en tiempo real.
