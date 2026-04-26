@@ -308,9 +308,9 @@ const TRANSLATIONS = {
   'settings.import_ok':        { es: '✓ Configuración importada correctamente.', en: '✓ Config imported successfully.' },
 
   'settings.data_privacy':     { es: 'Datos y privacidad',          en: 'Data & privacy' },
-  'settings.clear_cache':      { es: 'Limpiar caché TI',            en: 'Clear TI cache' },
+  'settings.clear_cache':      { es: 'Limpiar caché de búsquedas',   en: 'Clear lookup cache' },
   'settings.clear_prefs':      { es: 'Restablecer preferencias',    en: 'Reset preferences' },
-  'settings.cache_cleared':    { es: 'Caché de threat intelligence limpiada.', en: 'Threat intelligence cache cleared.' },
+  'settings.cache_cleared':    { es: 'Caché de búsquedas limpiada.', en: 'Lookup cache cleared.' },
   'settings.prefs_confirm':    { es: '¿Restablecer todas las preferencias a valores por defecto?', en: 'Reset all preferences to defaults?' },
   'settings.privacy_note':     { es: 'Toda la configuración se guarda en chrome.storage.local. Se borra automáticamente al desinstalar la extensión. Nunca se transmite a ningún servidor.', en: 'All config is stored in chrome.storage.local. Deleted automatically on extension uninstall. Never transmitted to any server.' },
 
