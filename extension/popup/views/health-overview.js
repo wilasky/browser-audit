@@ -2,6 +2,7 @@ import { exportAuditJSON, exportAuditPDF } from '../export.js';
 import { esc } from '../../shared/sanitize.js';
 import { t } from '../../shared/i18n.js';
 import { checkText } from '../../shared/baseline-i18n.js';
+import baseline from '../../data/baseline.v1.json';
 
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
@@ -349,10 +350,25 @@ export async function renderHealthOverview(audit, container) {
           throw new Error(t('health.import_invalid'));
         }
 
-        // Detect applicable settings (pass + canApply + expected defined)
+        // Build a baseline lookup so we can enrich older exports that didn't include api/expected
+        const baselineMap = {};
+        for (const c of baseline.checks) {
+          if (c.method?.api && c.method?.expected !== undefined && c.method?.canApply) {
+            baselineMap[c.id] = { api: c.method.api, value: c.method.expected };
+          }
+        }
+
+        // Detect applicable settings: prefer JSON's api/expected, fall back to baseline by id
         const applicableFixes = data.results
-          .filter((r) => r.status === 'pass' && r.api && r.expected !== undefined && r.expected !== null)
-          .map((r) => ({ api: r.api, value: r.expected }));
+          .filter((r) => r.status === 'pass')
+          .map((r) => {
+            if (r.api && r.expected !== undefined && r.expected !== null) {
+              return { api: r.api, value: r.expected };
+            }
+            if (baselineMap[r.id]) { return baselineMap[r.id]; }
+            return null;
+          })
+          .filter(Boolean);
 
         let shouldApply = false;
         if (applicableFixes.length > 0) {

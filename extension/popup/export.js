@@ -37,6 +37,10 @@ export function exportAuditJSON(audit) {
       rationale: r.rationale,
       frameworks: r.frameworks ?? [],
       advanced: r.advanced ?? false,
+      // Include apply metadata so the JSON can be imported and re-applied
+      api: r.api ?? null,
+      expected: r.expected ?? null,
+      canApply: r.canApply ?? false,
     })),
   };
 
