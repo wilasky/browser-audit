@@ -299,8 +299,7 @@ const TRANSLATIONS = {
   'settings.deep_revoked':        { es: 'Permiso revocado.',        en: 'Permission revoked.' },
 
   'settings.plan':             { es: 'Plan',                        en: 'Plan' },
-  'settings.plan_intro':       { es: 'La extensión es <strong>gratis</strong> y siempre lo será en sus funciones core.', en: 'The extension is <strong>free</strong> and always will be for core features.' },
-  'settings.plan_pro_soon':    { es: '✦ <strong>Próximamente versión Pro</strong> con threat intelligence en tiempo real, análisis con IA preempaquetada (sin necesidad de tu propia key), reglas YARA y export profesional. Si te interesa, dale follow al proyecto en GitHub.', en: '✦ <strong>Pro version coming soon</strong> with real-time threat intelligence, AI analysis with bundled key (no need for your own), YARA rules and professional export. If interested, follow the project on GitHub.' },
+  'settings.plan_intro':       { es: 'Lucent es <strong>gratis</strong> y open source. Toda la funcionalidad está disponible sin pagos ni cuentas.', en: 'Lucent is <strong>free</strong> and open source. All functionality is available without payments or accounts.' },
 
   'settings.import_export':    { es: 'Importar / Exportar configuración', en: 'Import / Export config' },
   'settings.import_export_hint': { es: 'Guarda y restaura tus preferencias entre dispositivos. La API key de IA NO se exporta por seguridad — debes pegarla manualmente en cada equipo.', en: 'Save and restore preferences across devices. The AI API key is NOT exported for security — paste it manually on each device.' },

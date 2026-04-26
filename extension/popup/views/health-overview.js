@@ -344,7 +344,6 @@ export async function renderHealthOverview(audit, container) {
       if (!file) { return; }
       try {
         const data = JSON.parse(await file.text());
-        // Accept either: 1) raw audit object 2) export format with .results
         if (!data.results || !Array.isArray(data.results)) {
           throw new Error(t('health.import_invalid'));
         }
@@ -357,6 +356,9 @@ export async function renderHealthOverview(audit, container) {
           results: data.results,
           categories: audit.categories,
         };
+        // Persist as the active audit so it survives popup close/reopen.
+        // User can recover their real audit with the "Refresh" button.
+        await chrome.storage.local.set({ lastAudit: importedAudit });
         renderHealthOverview(importedAudit, container);
       } catch (err) {
         alert(t('health.import_error', { msg: err.message }));

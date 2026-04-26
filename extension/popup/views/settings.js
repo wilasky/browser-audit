@@ -240,16 +240,11 @@ function renderAISection(aiConfig) {
     </section>`;
 }
 
-function renderPlanSection(plan) {
-  const planLabel = plan?.isPro ? 'PRO' : 'FREE';
-  const dev = plan?.devMode ? ' (dev mode)' : '';
+function renderPlanSection() {
   return `
     <section class="settings-section">
       <h3 class="settings-heading">${esc(t('settings.plan'))}</h3>
-      <p class="settings-hint">
-        Plan <strong>${planLabel}</strong>${dev} — ${t('settings.plan_intro')}
-      </p>
-      <p class="settings-hint" style="margin-top:6px">${t('settings.plan_pro_soon')}</p>
+      <p class="settings-hint">${t('settings.plan_intro')}</p>
     </section>`;
 }
 
@@ -302,8 +297,7 @@ function renderAboutSection() {
 // --- Main ---
 
 export async function renderSettings(container) {
-  const [plan, history, prefs, aiConfig, currentLang] = await Promise.all([
-    sendMsg({ type: 'get_plan' }),
+  const [history, prefs, aiConfig, currentLang] = await Promise.all([
     sendMsg({ type: 'get_history' }),
     loadPrefs(),
     getAIConfig(),
@@ -319,7 +313,7 @@ export async function renderSettings(container) {
       ${renderScriptSpySection(prefs)}
       ${renderAlertsSection(prefs)}
       ${renderAISection(aiConfig)}
-      ${renderPlanSection(plan)}
+      ${renderPlanSection()}
       ${renderDataSection()}
       ${renderAboutSection()}
     </div>`;

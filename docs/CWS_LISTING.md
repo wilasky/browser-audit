@@ -53,13 +53,17 @@ Click "View script ↗" to open the source in Chrome's built-in viewer.
 • ScriptSpy only activates when you open the popup — no background monitoring
 • Optional permissions (management, privacy API) requested only when you use those features
 
-📊 PRO PLAN (coming soon)
-• Real-time threat intelligence (URLhaus, MalwareBazaar, PhishTank)
-• SHA256 hash-based lookups — your data stays anonymous
-• PDF/JSON export of audit reports
-• 90-day audit history
+📤 EXPORT & SHARE
+• Export audits as JSON or PDF
+• Pre-filled GitHub issue for bug reports
+• Local audit history
 
-FREE PLAN includes the full Browser Health Check and ScriptSpy with local analysis. No account required.
+🤖 OPTIONAL AI INTEGRATION
+• Bring your own Claude / OpenAI / Ollama API key
+• Summarize privacy policies in 3 bullets
+• 100% opt-in — extension works fully without it
+
+100% free, open source, no account required.
 ```
 
 ---
@@ -101,7 +105,17 @@ Pulsa "Ver script ↗" para abrir el código fuente en Chrome.
 • ScriptSpy solo se activa cuando abres el popup — sin monitorización en segundo plano
 • Los permisos opcionales (gestión, API de privacidad) se solicitan solo al usar esas funciones
 
-El plan gratuito incluye el Browser Health Check completo y ScriptSpy con análisis local. Sin cuenta necesaria.
+📤 EXPORT
+• Descarga auditorías como JSON o PDF
+• Histórico local de auditorías
+• Botón directo para reportar bugs en GitHub
+
+🤖 INTEGRACIÓN IA OPCIONAL
+• Usa tu propia API key de Claude / OpenAI / Ollama
+• Resumen automático de políticas de privacidad en 3 bullets
+• 100% opt-in — la extensión funciona completa sin esto
+
+100% gratis, código abierto, sin cuenta.
 ```
 
 ---
