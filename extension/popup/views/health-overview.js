@@ -1,18 +1,35 @@
 import { exportAuditJSON, exportAuditPDF } from '../export.js';
 import { esc } from '../../shared/sanitize.js';
+import { t } from '../../shared/i18n.js';
 
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
 
-const PROFILES = {
-  all:      { label: 'Estándar',  filter: (r) => !r.advanced },
-  advanced: { label: 'Avanzado',  filter: () => true },
-  basic:    { label: 'Básico',    filter: (r) => ['critical', 'high'].includes(r.severity) && !r.advanced },
-  failed:   { label: 'FAIL',      filter: (r) => r.status === 'fail' || r.status === 'warn' },
-  CIS:      { label: 'CIS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CIS')) },
-  CCN:      { label: 'ENS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CCN')) },
-  NIST:     { label: 'NIST',      filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('NIST')) },
-};
+// Score labels come from audit-engine in Spanish — translate to current locale here
+function translateScoreLabel(label) {
+  const map = {
+    'Excelente': t('score.excellent'),
+    'Bueno': t('score.good'),
+    'Mejorable': t('score.improvable'),
+    'Riesgo moderado': t('score.moderate_risk'),
+    'Riesgo elevado': t('score.high_risk'),
+    'Riesgo crítico': t('score.critical'),
+  };
+  return map[label] ?? label;
+}
+
+function getProfiles() {
+  return {
+    all:      { label: t('profile.standard'), filter: (r) => !r.advanced },
+    advanced: { label: t('profile.advanced'), filter: () => true },
+    basic:    { label: t('profile.basic'),    filter: (r) => ['critical', 'high'].includes(r.severity) && !r.advanced },
+    failed:   { label: t('profile.failed'),   filter: (r) => r.status === 'fail' || r.status === 'warn' },
+    CIS:      { label: 'CIS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CIS')) },
+    CCN:      { label: 'ENS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CCN')) },
+    NIST:     { label: 'NIST',      filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('NIST')) },
+  };
+}
+const PROFILES = getProfiles();
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -50,9 +67,14 @@ function groupByCategory(results, categories) {
 }
 
 function severityLabel(severity) {
-  const labels = { critical: 'CRÍTICO', high: 'ALTO', medium: 'MEDIO', low: 'BAJO' };
+  const labels = {
+    critical: t('severity.critical'),
+    high: t('severity.high'),
+    medium: t('severity.medium'),
+    low: t('severity.low'),
+  };
   const cls = { critical: 'sev-critical', high: 'sev-high', medium: 'sev-medium', low: 'sev-low' };
-  return `<span class="sev-badge ${cls[severity] ?? ''}">${labels[severity] ?? severity}</span>`;
+  return `<span class="sev-badge ${cls[severity] ?? ''}">${esc(labels[severity] ?? severity)}</span>`;
 }
 
 function frameworkBadges(frameworks) {
@@ -74,17 +96,17 @@ function renderCheck(r, fixMap) {
 
   // Fingerprint check always shows a "Ver detalles" button
   const detailBtn = isFingerprintCheck
-    ? `<button class="fix-btn fix-detail" data-check-id="${r.id}">Ver detalles →</button>`
+    ? `<button class="fix-btn fix-detail" data-check-id="${r.id}">${esc(t('health.see_details'))}</button>`
     : '';
 
   let fixBtn = '';
   if (showFix) {
     if (canApply) {
-      fixBtn = `<button class="fix-btn fix-apply" data-check-id="${r.id}">⚡ Aplicar ahora</button>`;
+      fixBtn = `<button class="fix-btn fix-apply" data-check-id="${r.id}">${esc(t('health.apply_now'))}</button>`;
     } else if (fix.type === 'navigate' || fix.type === 'externalLink') {
-      fixBtn = `<button class="fix-btn" data-check-id="${r.id}">Arreglar →</button>`;
+      fixBtn = `<button class="fix-btn" data-check-id="${r.id}">${esc(t('health.fix_btn'))}</button>`;
     } else {
-      fixBtn = `<button class="fix-btn" data-check-id="${r.id}">Ver opciones</button>`;
+      fixBtn = `<button class="fix-btn" data-check-id="${r.id}">${esc(t('health.show_options'))}</button>`;
     }
   }
 
@@ -116,9 +138,9 @@ function renderCategory(cat, fixMap) {
 
   const checks = cat.checks.map((r) => renderCheck(r, fixMap)).join('');
   const statsHtml = [
-    fail > 0 ? `<span class="cat-stat stat-fail">${fail} FAIL</span>` : '',
-    warn > 0 ? `<span class="cat-stat stat-warn">${warn} WARN</span>` : '',
-    pass > 0 ? `<span class="cat-stat stat-pass">${pass} PASS</span>` : '',
+    fail > 0 ? `<span class="cat-stat stat-fail">${fail} ${esc(t('status.fail'))}</span>` : '',
+    warn > 0 ? `<span class="cat-stat stat-warn">${warn} ${esc(t('status.warn'))}</span>` : '',
+    pass > 0 ? `<span class="cat-stat stat-pass">${pass} ${esc(t('status.pass'))}</span>` : '',
   ].filter(Boolean).join('');
 
   return `
@@ -140,7 +162,7 @@ function renderProfileSelector(activeProfile) {
 async function applyFix(fix, api, expected, btn) {
   if (fix?.type === 'apply' || api) {
     btn.disabled = true;
-    btn.textContent = 'Aplicando…';
+    btn.textContent = t('health.applying');
 
     // Auto-request privacy permission if missing
     const hasPrivacy = await new Promise((resolve) =>
@@ -151,7 +173,7 @@ async function applyFix(fix, api, expected, btn) {
     );
 
     if (!hasPrivacy) {
-      btn.textContent = 'Pidiendo permiso…';
+      btn.textContent = t('health.requesting_perm');
       const granted = await new Promise((resolve) =>
         chrome.permissions.request({ permissions: ['privacy'] }, (g) => {
           void chrome.runtime.lastError;
@@ -160,12 +182,12 @@ async function applyFix(fix, api, expected, btn) {
       );
       if (!granted) {
         btn.disabled = false;
-        btn.textContent = '⚡ Aplicar ahora';
+        btn.textContent = t('health.apply_now');
         const item = btn.closest('.check-item');
         if (item) {
           let err = item.querySelector('.apply-error');
           if (!err) { err = document.createElement('div'); err.className = 'apply-error'; item.appendChild(err); }
-          err.textContent = 'Sin permiso "privacy" no se puede aplicar.';
+          err.textContent = t('health.no_perm_apply');
         }
         return;
       }
@@ -173,7 +195,7 @@ async function applyFix(fix, api, expected, btn) {
 
     const res = await sendMsg({ type: 'apply_fix', api, value: expected });
     if (res?.ok) {
-      btn.textContent = '✓ Aplicado';
+      btn.textContent = t('health.applied');
       btn.classList.add('fix-applied');
       const item = btn.closest('.check-item');
       if (item) { item.className = item.className.replace(/check-\w+/, 'check-pass'); }
@@ -181,7 +203,7 @@ async function applyFix(fix, api, expected, btn) {
       if (icon) { icon.textContent = '✓'; }
     } else {
       btn.disabled = false;
-      btn.textContent = '⚡ Aplicar ahora';
+      btn.textContent = t('health.apply_now');
       const item = btn.closest('.check-item');
       if (item) {
         let err = item.querySelector('.apply-error');
@@ -254,23 +276,23 @@ export async function renderHealthOverview(audit, container) {
       <div class="overview-header">
         ${scoreCircleSVG(filteredScore, level)}
         <div class="score-meta">
-          <div class="score-label">${label}</div>
+          <div class="score-label">${esc(translateScoreLabel(label))}</div>
           <div class="score-sub">
-            <strong>${filtered.length}</strong> checks ·
-            <span style="color:#ef4444">${fc} FAIL</span> ·
-            <span style="color:#f59e0b">${wc} WARN</span> ·
-            <span style="color:#22c55e">${pc} PASS</span>${sc + uc > 0 ? ` · ${sc + uc} N/A` : ''}
+            <strong>${filtered.length}</strong> ${esc(t('status.checks'))} ·
+            <span style="color:#ef4444">${fc} ${esc(t('status.fail'))}</span> ·
+            <span style="color:#f59e0b">${wc} ${esc(t('status.warn'))}</span> ·
+            <span style="color:#22c55e">${pc} ${esc(t('status.pass'))}</span>${sc + uc > 0 ? ` · ${sc + uc} ${esc(t('status.na'))}` : ''}
           </div>
-          ${isFiltered ? `<div class="score-sub score-context">Score del filtro <strong>${esc(profileLabel)}</strong> · Global: <strong>${audit.score}</strong></div>` : ''}
-          <div class="score-sub" title="Conjunto de checks de seguridad usados (CIS / NIST / CCN-STIC). v${esc(audit.baselineVersion)} = versión de la lista.">Auditado ${new Date(audit.completedAt).toLocaleTimeString()} · checks v${esc(audit.baselineVersion)}</div>
+          ${isFiltered ? `<div class="score-sub score-context">${esc(t('health.score_filter'))} <strong>${esc(profileLabel)}</strong> · ${esc(t('health.score_global'))}: <strong>${audit.score}</strong></div>` : ''}
+          <div class="score-sub">${esc(t('health.audited_label'))} ${new Date(audit.completedAt).toLocaleTimeString()} · ${esc(t('health.checks_count'))}${esc(audit.baselineVersion)}</div>
           <div class="header-actions">
-            <button id="btn-refresh" class="btn-secondary">↺ Actualizar</button>
-            ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="Concede permisos opcionales para ejecutar los ${sc} checks que requieren management/privacy/contentSettings">+ Activar ${sc} checks</button>` : ''}
-            <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="Restablecer ajustes de Chrome aplicados con ⚡">↶ Restablecer</button>
+            <button id="btn-refresh" class="btn-secondary">${esc(t('health.refresh'))}</button>
+            ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button>` : ''}
+            <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="${esc(t('health.reset_tip'))}">${esc(t('health.reset'))}</button>
             <div class="export-row">
-              <button id="btn-export-json" class="btn-export" title="Descarga JSON con los checks del filtro activo">↓ JSON</button>
-              <button id="btn-export-pdf" class="btn-export" title="Descarga PDF con los checks del filtro activo">↓ PDF</button>
-              <button id="btn-import-json" class="btn-export" title="Cargar un audit JSON previamente exportado">↑ Import</button>
+              <button id="btn-export-json" class="btn-export">↓ JSON</button>
+              <button id="btn-export-pdf" class="btn-export">↓ PDF</button>
+              <button id="btn-import-json" class="btn-export">${esc(t('health.import'))}</button>
               <input type="file" id="input-audit-json" accept="application/json" style="display:none"/>
             </div>
           </div>
@@ -278,7 +300,7 @@ export async function renderHealthOverview(audit, container) {
       </div>
 
       <div class="profile-bar">
-        <span class="profile-label">Vista:</span>
+        <span class="profile-label">${esc(t('profile.label'))}</span>
         ${renderProfileSelector(activeProfile)}
       </div>
 
@@ -286,7 +308,7 @@ export async function renderHealthOverview(audit, container) {
 
     // Events
     container.querySelector('#btn-refresh').addEventListener('click', async () => {
-      container.innerHTML = '<p class="loading">Auditando…</p>';
+      container.innerHTML = `<p class="loading">${esc(t('health.auditing'))}</p>`;
       const freshAudit = await sendMsg({ type: 'run_audit' });
       if (freshAudit) { renderHealthOverview(freshAudit, container); }
     });
@@ -295,7 +317,7 @@ export async function renderHealthOverview(audit, container) {
       chrome.permissions.request({ permissions: ['management', 'privacy', 'contentSettings'] }, async (granted) => {
         void chrome.runtime.lastError;
         if (granted) {
-          container.innerHTML = '<p class="loading">Auditando con todos los permisos…</p>';
+          container.innerHTML = `<p class="loading">${esc(t('health.auditing'))}</p>`;
           const freshAudit = await sendMsg({ type: 'run_audit' });
           if (freshAudit) { renderHealthOverview(freshAudit, container); }
         }
@@ -324,7 +346,7 @@ export async function renderHealthOverview(audit, container) {
         const data = JSON.parse(await file.text());
         // Accept either: 1) raw audit object 2) export format with .results
         if (!data.results || !Array.isArray(data.results)) {
-          throw new Error('Formato no válido — falta el array results');
+          throw new Error(t('health.import_invalid'));
         }
         const importedAudit = {
           score: data.score ?? audit.score,
@@ -337,7 +359,7 @@ export async function renderHealthOverview(audit, container) {
         };
         renderHealthOverview(importedAudit, container);
       } catch (err) {
-        alert(`Error importando JSON: ${err.message}`);
+        alert(t('health.import_error', { msg: err.message }));
       }
       fileInput.value = '';
     });
@@ -349,17 +371,17 @@ export async function renderHealthOverview(audit, container) {
         .filter((r) => r.canApply && r.api)
         .map((r) => r.api);
       if (apis.length === 0) {
-        alert('No hay ajustes restablecibles en esta auditoría.');
+        alert(t('health.reset_no_changes'));
         return;
       }
-      if (!confirm(`Esto restablecerá ${apis.length} ajustes de Chrome a sus valores por defecto del navegador. ¿Continuar?`)) { return; }
+      if (!confirm(t('health.reset_confirm', { n: apis.length }))) { return; }
       const res = await sendMsg({ type: 'reset_applied_fixes', apis });
       if (res) {
-        container.innerHTML = `<p class="loading">${res.count} ajustes restablecidos. Reauditando…</p>`;
+        container.innerHTML = `<p class="loading">${esc(t('health.reset_done', { n: res.count }))}</p>`;
         const fresh = await sendMsg({ type: 'run_audit' });
         if (fresh) { renderHealthOverview(fresh, container); }
       } else {
-        alert('Error al restablecer.');
+        alert(t('health.reset_error'));
       }
     });
 

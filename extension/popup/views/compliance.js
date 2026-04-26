@@ -1,5 +1,6 @@
 import { esc } from '../../shared/sanitize.js';
 import { isAIConfigured, summarizePrivacyPolicy } from '../../shared/ai-client.js';
+import { t } from '../../shared/i18n.js';
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -276,7 +277,7 @@ function renderReport(r) {
     <div class="comp-overview">
       <div class="comp-host">${esc(r.host)}</div>
       <div class="comp-total" style="color:${totalColor}">${total}<span class="comp-total-suffix">/100</span></div>
-      <div class="comp-total-label">Cumplimiento general</div>
+      <div class="comp-total-label">${esc(t('comp.score_overall'))}</div>
       <div class="comp-summary">
         🍪 ${r.cookies.count} cookies · 🛡 ${r.banners.length > 0 ? 'Banner OK' : 'Sin banner'} ·
         📄 ${r.policyLinks.length} legal ·
@@ -285,10 +286,10 @@ function renderReport(r) {
       </div>
     </div>
 
-    ${renderSection('🍪 Cookies & Consentimiento', cookieScore)}
-    ${renderSection('📋 RGPD / LSSI', gdprScore)}
-    ${renderSection('🔒 Headers de seguridad', secScore)}
-    ${renderSection('🔧 Análisis técnico (pentest)', pentestScore)}
+    ${renderSection(t('comp.section_cookies'), cookieScore)}
+    ${renderSection(t('comp.section_gdpr'), gdprScore)}
+    ${renderSection(t('comp.section_headers'), secScore)}
+    ${renderSection(t('comp.section_pentest'), pentestScore)}
 
     <details class="comp-details">
       <summary>Ver headers HTTP detectados</summary>
@@ -379,46 +380,46 @@ export async function renderCompliance(container) {
   container.innerHTML = `
     <div class="comp-wrap">
       <div class="comp-toolbar">
-        <span class="spy-label">Análisis RGPD / LSSI / Cookies de la página activa</span>
-        <button id="btn-comp-run" class="btn-primary">Analizar página</button>
-        <button id="btn-comp-ai" class="btn-secondary btn-ai" title="${aiReady ? 'Resume con IA la política de privacidad de esta página' : 'Configura una API key en Settings ⚙ para activar el resumen con IA'}">
-          ✨ Resumir con IA
+        <span class="spy-label">${esc(t('comp.title'))}</span>
+        <button id="btn-comp-run" class="btn-primary">${esc(t('comp.analyze'))}</button>
+        <button id="btn-comp-ai" class="btn-secondary btn-ai" title="${aiReady ? esc(t('comp.ai_summarize')) : esc(t('comp.ai_no_config'))}">
+          ${esc(t('comp.ai_summarize'))}
         </button>
       </div>
       <div id="comp-result">
-        <p class="loading">Pulsa <strong>Analizar página</strong> para evaluar la web actual contra criterios de cumplimiento.</p>
+        <p class="loading">${t('comp.intro')}</p>
       </div>
     </div>`;
 
   container.querySelector('#btn-comp-ai').addEventListener('click', async () => {
     if (!tabId) { return; }
     if (!(await isAIConfigured())) {
-      alert('Configura una API key de Claude u OpenAI en la pestaña ⚙ Settings → Asistente IA.');
+      alert(t('comp.ai_no_config'));
       return;
     }
     const result = container.querySelector('#comp-result');
     const btn = container.querySelector('#btn-comp-ai');
     btn.disabled = true;
-    btn.textContent = '✨ Extrayendo texto…';
+    btn.textContent = t('comp.ai_extracting');
 
     try {
       const extracted = await sendMsg({ type: 'extract_page_text', tabId });
       if (!extracted?.ok || !extracted.result?.text) {
-        result.innerHTML = '<p class="error">No se pudo extraer el texto de la página.</p>';
-        btn.disabled = false; btn.textContent = '✨ Resumir con IA';
+        result.innerHTML = `<p class="error">${esc(t('comp.ai_no_text'))}</p>`;
+        btn.disabled = false; btn.textContent = t('comp.ai_summarize');
         return;
       }
       const { text, host, length, title } = extracted.result;
 
-      btn.textContent = `✨ Resumiendo (${length.toLocaleString()} chars)…`;
+      btn.textContent = t('comp.ai_summarizing', { n: length.toLocaleString() });
 
       result.innerHTML = `
         <div class="ai-summary">
           <div class="ai-summary-header">
-            <strong>Análisis IA</strong>
+            <strong>${esc(t('comp.ai_summary'))}</strong>
             <span class="ai-summary-host">${esc(host)} · ${esc(title.slice(0, 60))}</span>
           </div>
-          <p class="loading">Resumiendo política de privacidad…</p>
+          <p class="loading">${esc(t('comp.ai_summarizing_policy'))}</p>
         </div>`;
 
       const summary = await summarizePrivacyPolicy(text, host);
@@ -431,26 +432,26 @@ export async function renderCompliance(container) {
       result.innerHTML = `
         <div class="ai-summary">
           <div class="ai-summary-header">
-            <strong>✨ Resumen IA</strong>
+            <strong>${esc(t('comp.ai_summary'))}</strong>
             <span class="ai-summary-host">${esc(host)}</span>
           </div>
           <div class="ai-summary-body">${formatted}</div>
           <div class="ai-summary-foot">
-            <span>El contenido pasó por tu API key de IA. No por nuestros servidores.</span>
-            <button id="btn-ai-back" class="btn-secondary">Volver</button>
+            <span>${esc(t('comp.ai_pass_through'))}</span>
+            <button id="btn-ai-back" class="btn-secondary">${esc(t('btn.back'))}</button>
           </div>
         </div>`;
 
       result.querySelector('#btn-ai-back').addEventListener('click', () => {
-        result.innerHTML = '<p class="loading">Pulsa <strong>Analizar página</strong> para evaluar cumplimiento.</p>';
+        result.innerHTML = `<p class="loading">${t('comp.intro')}</p>`;
       });
 
       btn.disabled = false;
-      btn.textContent = '✨ Resumir con IA';
+      btn.textContent = t('comp.ai_summarize');
     } catch (err) {
-      result.innerHTML = `<p class="error">Error IA: ${esc(err.message)}</p>`;
+      result.innerHTML = `<p class="error">${esc(t('common.error'))}: ${esc(err.message)}</p>`;
       btn.disabled = false;
-      btn.textContent = '✨ Resumir con IA';
+      btn.textContent = t('comp.ai_summarize');
     }
   });
 
@@ -459,23 +460,23 @@ export async function renderCompliance(container) {
     const btn = container.querySelector('#btn-comp-run');
     const result = container.querySelector('#comp-result');
     btn.disabled = true;
-    btn.textContent = 'Analizando…';
-    result.innerHTML = '<p class="loading">Inspeccionando cookies, headers, formularios y scripts…</p>';
+    btn.textContent = t('comp.analyzing');
+    result.innerHTML = `<p class="loading">${esc(t('comp.analyzing_detail'))}</p>`;
 
     const res = await sendMsg({ type: 'run_compliance_probe', tabId });
     btn.disabled = false;
-    btn.textContent = 'Volver a analizar';
+    btn.textContent = t('comp.analyze_again');
 
     if (!res?.ok) {
       const p = document.createElement('p');
       p.className = 'error';
-      p.textContent = res?.reason ?? 'Error al analizar la página.';
+      p.textContent = res?.reason ?? t('common.error');
       result.replaceChildren(p);
       return;
     }
 
     if (!res.result) {
-      result.innerHTML = '<p class="error">La página no devolvió datos. ¿Es una página del sistema?</p>';
+      result.innerHTML = `<p class="error">${esc(t('comp.ai_no_data'))}</p>`;
       return;
     }
 

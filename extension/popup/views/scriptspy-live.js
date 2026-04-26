@@ -1,69 +1,115 @@
 import { esc } from '../../shared/sanitize.js';
+import { t } from '../../shared/i18n.js';
 
 const RISK_LABEL = (s) =>
-  s >= 70 ? ['ALTO', 'risk-high'] : s >= 35 ? ['MEDIO', 'risk-med'] : ['BAJO', 'risk-low'];
+  s >= 70 ? [t('risk.high'), 'risk-high'] : s >= 35 ? [t('risk.med'), 'risk-med'] : [t('risk.low'), 'risk-low'];
 
-const EVENT_LABELS = {
-  fetch: 'Fetch', xhr: 'XHR', beacon: 'Beacon', websocket: 'WebSocket',
-  'cookie-read': 'Cookie R', 'cookie-write': 'Cookie W',
-  'storage-read': 'Storage R', 'storage-write': 'Storage W',
-  listen: 'Input listener', 'mouse-listen': 'Mouse', 'read-input': 'Form read',
-  'fp-canvas': 'Canvas FP', 'fp-audio': 'Audio FP', 'fp-webgl': 'WebGL FP',
-  'fp-navigator': 'Navigator FP', 'fp-screen': 'Screen FP', 'fp-fonts': 'Fonts FP',
-  'fp-battery': 'Battery FP', 'script-inject': 'Script inject', 'page-start': 'Page',
-};
+function evtLabel(type) {
+  const map = {
+    fetch: t('evt.fetch'), xhr: t('evt.xhr'), beacon: t('evt.beacon'), websocket: t('evt.websocket'),
+    'cookie-read': t('evt.cookie_read'), 'cookie-write': t('evt.cookie_write'),
+    'storage-read': t('evt.storage_read'), 'storage-write': t('evt.storage_write'),
+    listen: t('evt.listen'), 'mouse-listen': t('evt.mouse_listen'), 'read-input': t('evt.read_input'),
+    'fp-canvas': t('evt.fp_canvas'), 'fp-audio': t('evt.fp_audio'), 'fp-webgl': t('evt.fp_webgl'),
+    'fp-navigator': t('evt.fp_navigator'), 'fp-screen': t('evt.fp_screen'), 'fp-fonts': t('evt.fp_fonts'),
+    'fp-battery': t('evt.fp_battery'), 'script-inject': t('evt.script_inject'),
+  };
+  return map[type] ?? type;
+}
 
 const FP_TYPES = new Set(['fp-canvas', 'fp-audio', 'fp-webgl', 'fp-navigator', 'fp-screen', 'fp-fonts', 'fp-battery']);
 const NET_TYPES = new Set(['fetch', 'xhr', 'beacon', 'websocket']);
 
-const LEGEND_ITEMS = [
-  { section: 'Origen', items: [
-    ['1st party', 'Script del mismo dominio que la página'],
-    ['3rd party', 'Script externo — puede rastrearte entre sitios'],
-  ]},
-  { section: 'Riesgo', items: [
-    ['ALTO ≥70', 'Comportamiento muy sospechoso'],
-    ['MEDIO ≥35', 'Actividad que merece atención'],
-    ['BAJO <35', 'Sin señales de alerta'],
-  ]},
-  { section: 'Red', items: [
-    ['Fetch / XHR', 'Petición HTTP enviada por el script'],
-    ['Beacon', 'Envío silencioso de datos al servidor (no espera respuesta)'],
-    ['WebSocket', 'Conexión persistente bidireccional'],
-    ['→ dominio', 'Destinos de red contactados'],
-  ]},
-  { section: 'Almacenamiento', items: [
-    ['Cookie R/W', 'Lectura / escritura de cookies'],
-    ['Storage R/W', 'Lectura / escritura de localStorage o sessionStorage'],
-  ]},
-  { section: 'Inputs', items: [
-    ['Input listener', 'El script escucha eventos de teclado o formulario'],
-    ['Mouse', 'El script sigue el movimiento del ratón o clicks'],
-    ['Form read', 'El script leyó el contenido de un formulario (FormData)'],
-    ['Script inject', 'El script inyectó dinámicamente otro script en la página'],
-  ]},
-  { section: 'Fingerprinting (FP)', items: [
-    ['Canvas FP', 'Lee el renderizado del canvas para identificar la GPU/fuentes'],
-    ['Audio FP', 'Mide el procesado de audio para obtener un identificador único'],
-    ['WebGL FP', 'Lee parámetros de la GPU via WebGL'],
-    ['Navigator FP', 'Lee userAgent, idioma, CPU, memoria del dispositivo'],
-    ['Screen FP', 'Lee resolución y profundidad de color de la pantalla'],
-    ['Fonts FP', 'Detecta las fuentes instaladas en el sistema'],
-    ['Battery FP', 'Lee el estado de la batería (identificador muy preciso)'],
-  ]},
-];
+function getLegendItems() {
+  const isEs = t('btn.save') === 'Guardar';
+  // Bilingual definitions — switch by detection of current language
+  if (isEs) {
+    return [
+      { section: 'Origen', items: [
+        ['1st party', 'Script del mismo dominio que la página'],
+        ['3rd party', 'Script externo — puede rastrearte entre sitios'],
+      ]},
+      { section: 'Riesgo', items: [
+        ['ALTO ≥70', 'Comportamiento muy sospechoso'],
+        ['MEDIO ≥35', 'Actividad que merece atención'],
+        ['BAJO <35', 'Sin señales de alerta'],
+      ]},
+      { section: 'Red', items: [
+        ['Fetch / XHR', 'Petición HTTP enviada por el script'],
+        ['Beacon', 'Envío silencioso de datos al servidor (no espera respuesta)'],
+        ['WebSocket', 'Conexión persistente bidireccional'],
+        ['→ dominio', 'Destinos de red contactados'],
+      ]},
+      { section: 'Almacenamiento', items: [
+        ['Cookie R/W', 'Lectura / escritura de cookies'],
+        ['Storage R/W', 'Lectura / escritura de localStorage o sessionStorage'],
+      ]},
+      { section: 'Inputs', items: [
+        ['Input listener', 'El script escucha eventos de teclado o formulario'],
+        ['Mouse', 'El script sigue el movimiento del ratón o clicks'],
+        ['Form read', 'El script leyó el contenido de un formulario (FormData)'],
+        ['Script inject', 'El script inyectó dinámicamente otro script en la página'],
+      ]},
+      { section: 'Fingerprinting (FP)', items: [
+        ['Canvas FP', 'Lee el renderizado del canvas para identificar la GPU/fuentes'],
+        ['Audio FP', 'Mide el procesado de audio para obtener un identificador único'],
+        ['WebGL FP', 'Lee parámetros de la GPU via WebGL'],
+        ['Navigator FP', 'Lee userAgent, idioma, CPU, memoria del dispositivo'],
+        ['Screen FP', 'Lee resolución y profundidad de color de la pantalla'],
+        ['Fonts FP', 'Detecta las fuentes instaladas en el sistema'],
+        ['Battery FP', 'Lee el estado de la batería (identificador muy preciso)'],
+      ]},
+    ];
+  }
+  return [
+    { section: 'Origin', items: [
+      ['1st party', 'Script from same domain as the page'],
+      ['3rd party', 'External script — can track you across sites'],
+    ]},
+    { section: 'Risk', items: [
+      ['HIGH ≥70', 'Highly suspicious behavior'],
+      ['MED ≥35', 'Activity that deserves attention'],
+      ['LOW <35', 'No warning signs'],
+    ]},
+    { section: 'Network', items: [
+      ['Fetch / XHR', 'HTTP request made by the script'],
+      ['Beacon', 'Silent data send (no response expected)'],
+      ['WebSocket', 'Persistent bidirectional connection'],
+      ['→ domain', 'Network destinations contacted'],
+    ]},
+    { section: 'Storage', items: [
+      ['Cookie R/W', 'Cookie read / write'],
+      ['Storage R/W', 'localStorage or sessionStorage read / write'],
+    ]},
+    { section: 'Inputs', items: [
+      ['Input listener', 'Script listens to keyboard or form events'],
+      ['Mouse', 'Script tracks mouse movement or clicks'],
+      ['Form read', 'Script read form content (FormData)'],
+      ['Script inject', 'Script dynamically injected another script'],
+    ]},
+    { section: 'Fingerprinting (FP)', items: [
+      ['Canvas FP', 'Reads canvas rendering to identify GPU/fonts'],
+      ['Audio FP', 'Measures audio processing for unique identifier'],
+      ['WebGL FP', 'Reads GPU parameters via WebGL'],
+      ['Navigator FP', 'Reads userAgent, language, CPU, device memory'],
+      ['Screen FP', 'Reads resolution and color depth'],
+      ['Fonts FP', 'Detects installed system fonts'],
+      ['Battery FP', 'Reads battery state (very precise identifier)'],
+    ]},
+  ];
+}
 
 function renderLegend() {
-  const sections = LEGEND_ITEMS.map(({ section, items }) => {
+  const sections = getLegendItems().map(({ section, items }) => {
     const rows = items.map(([term, def]) =>
-      `<tr><td class="leg-term">${term}</td><td class="leg-def">${def}</td></tr>`
+      `<tr><td class="leg-term">${esc(term)}</td><td class="leg-def">${esc(def)}</td></tr>`
     ).join('');
-    return `<tr class="leg-section-row"><td colspan="2" class="leg-section">${section}</td></tr>${rows}`;
+    return `<tr class="leg-section-row"><td colspan="2" class="leg-section">${esc(section)}</td></tr>${rows}`;
   }).join('');
 
   return `
     <details class="legend-wrap">
-      <summary class="legend-toggle">? Leyenda de términos</summary>
+      <summary class="legend-toggle">${esc(t('spy.legend'))}</summary>
       <table class="legend-table">${sections}</table>
     </details>`;
 }
@@ -82,14 +128,14 @@ function shortUrl(url) {
 function riskExplanation(s) {
   const reasons = [];
   const c = s.eventCounts;
-  const fpTotal = [...FP_TYPES].reduce((acc, t) => acc + (c[t] ?? 0), 0);
-  if (fpTotal > 0) { reasons.push(`${fpTotal} técnica(s) de fingerprinting`); }
-  if ((c['beacon'] ?? 0) > 0) { reasons.push(`${c['beacon']} beacon silencioso`); }
-  if ((c['mouse-listen'] ?? 0) > 0) { reasons.push('tracking de ratón'); }
-  if (s.isThirdParty && (c['read-input'] ?? 0) > 0) { reasons.push('lectura de formularios (3rd party)'); }
-  if (s.targetsContacted.length > 2) { reasons.push(`${s.targetsContacted.length} destinos de red`); }
-  if (s.threatIntelMatch) { reasons.push('⚠ en lista de amenazas'); }
-  return reasons.length ? reasons.join(' · ') : 'sin comportamiento sospechoso';
+  const fpTotal = [...FP_TYPES].reduce((acc, type) => acc + (c[type] ?? 0), 0);
+  if (fpTotal > 0) { reasons.push(t('risk.fp_techniques', { n: fpTotal })); }
+  if ((c['beacon'] ?? 0) > 0) { reasons.push(t('risk.silent_beacon', { n: c['beacon'] })); }
+  if ((c['mouse-listen'] ?? 0) > 0) { reasons.push(t('risk.mouse_tracking')); }
+  if (s.isThirdParty && (c['read-input'] ?? 0) > 0) { reasons.push(t('risk.form_reading')); }
+  if (s.targetsContacted.length > 2) { reasons.push(t('risk.targets', { n: s.targetsContacted.length })); }
+  if (s.threatIntelMatch) { reasons.push(t('risk.threat_match')); }
+  return reasons.length ? reasons.join(' · ') : t('risk.no_suspicious');
 }
 
 function buildLookupLinks(url) {
@@ -117,8 +163,8 @@ function renderScript(s, idx) {
   const [riskText, riskCls] = RISK_LABEL(s.riskScore);
   const isInline = s.url === 'inline';
   const thirdPartyBadge = s.isThirdParty
-    ? '<span class="badge badge-3p">3rd party</span>'
-    : '<span class="badge badge-1p">1st party</span>';
+    ? `<span class="badge badge-3p">${esc(t('badge.third_party'))}</span>`
+    : `<span class="badge badge-1p">${esc(t('badge.first_party'))}</span>`;
 
   // Threat Intel badge (only shown when real backend confirms a match)
   const tieBadge = s.threatIntelMatch && s.threatIntelSource !== 'demo'
@@ -126,18 +172,18 @@ function renderScript(s, idx) {
     : '';
 
   const netEvents = Object.entries(s.eventCounts)
-    .filter(([t, n]) => NET_TYPES.has(t) && n > 0)
-    .map(([t, n]) => `<span class="evt-chip evt-net">${EVENT_LABELS[t]} ×${n}</span>`)
+    .filter(([type, n]) => NET_TYPES.has(type) && n > 0)
+    .map(([type, n]) => `<span class="evt-chip evt-net">${esc(evtLabel(type))} ×${n}</span>`)
     .join('');
 
   const fpEvents = Object.entries(s.eventCounts)
-    .filter(([t, n]) => FP_TYPES.has(t) && n > 0)
-    .map(([t, n]) => `<span class="evt-chip evt-fp">${EVENT_LABELS[t]} ×${n}</span>`)
+    .filter(([type, n]) => FP_TYPES.has(type) && n > 0)
+    .map(([type, n]) => `<span class="evt-chip evt-fp">${esc(evtLabel(type))} ×${n}</span>`)
     .join('');
 
   const otherEvents = Object.entries(s.eventCounts)
-    .filter(([t, n]) => !NET_TYPES.has(t) && !FP_TYPES.has(t) && t !== 'page-start' && n > 0)
-    .map(([t, n]) => `<span class="evt-chip">${EVENT_LABELS[t] ?? t} ×${n}</span>`)
+    .filter(([type, n]) => !NET_TYPES.has(type) && !FP_TYPES.has(type) && type !== 'page-start' && n > 0)
+    .map(([type, n]) => `<span class="evt-chip">${esc(evtLabel(type))} ×${n}</span>`)
     .join('');
 
   const targets = s.targetsContacted.length
@@ -145,8 +191,8 @@ function renderScript(s, idx) {
     : '';
 
   const viewBtn = !isInline
-    ? `<button class="view-script-btn" data-script-idx="${idx}">Ver código fuente ↗</button>
-       <button class="analyze-script-btn" data-script-idx="${idx}">🔬 Análisis profundo</button>`
+    ? `<button class="view-script-btn" data-script-idx="${idx}">${esc(t('spy.view_source'))}</button>
+       <button class="analyze-script-btn" data-script-idx="${idx}">${esc(t('spy.deep_analysis'))}</button>`
     : '';
 
   const lookups = buildLookupLinks(s.url);
@@ -220,16 +266,16 @@ export async function renderScriptSpyLive(container) {
 
   const hostBanner = !hasHostPerm
     ? `<div class="spy-host-banner">
-        <span>🔬 Para análisis profundo (descarga de scripts, hash SHA256, detección de obfuscación) activa el permiso de host.</span>
-        <button id="btn-grant-host" class="btn-primary btn-grant-host">Activar</button>
+        <span>${esc(t('spy.host_banner'))}</span>
+        <button id="btn-grant-host" class="btn-primary btn-grant-host">${esc(t('spy.activate_host'))}</button>
        </div>`
     : '';
 
   container.innerHTML = `
     <div class="spy-toolbar">
-      <span class="spy-label">Página: <strong class="spy-page">—</strong></span>
-      <button id="btn-spy-refresh" class="btn-secondary">Actualizar</button>
-      <button id="btn-spy-inject" class="btn-primary">Activar ScriptSpy</button>
+      <span class="spy-label">${esc(t('spy.page'))}: <strong class="spy-page">—</strong></span>
+      <button id="btn-spy-refresh" class="btn-secondary">${esc(t('spy.refresh'))}</button>
+      <button id="btn-spy-inject" class="btn-primary">${esc(t('spy.activate'))}</button>
     </div>
     ${hostBanner}
     <div id="spy-summary-area"></div>
@@ -279,7 +325,7 @@ export async function renderScriptSpyLive(container) {
     const data = await sendMsg({ type: 'get_scriptspy', tabId });
     refreshInFlight = false;
     if (refreshBtn && container.querySelector('#btn-spy-refresh')) {
-      container.querySelector('#btn-spy-refresh').textContent = 'Actualizar';
+      container.querySelector('#btn-spy-refresh').textContent = t('spy.refresh');
     }
     if (!data) { return; }
 
@@ -331,7 +377,7 @@ export async function renderScriptSpyLive(container) {
           if (!has) {
             const granted = await requestHostPermission();
             if (!granted) {
-              alert('Sin permiso de host no se puede descargar el código del script para analizarlo.');
+              alert(t('spy.no_perm_alert'));
               return;
             }
           }
@@ -345,7 +391,7 @@ export async function renderScriptSpyLive(container) {
       });
     } else {
       summaryArea.innerHTML = '';
-      list.innerHTML = '<li><p class="loading">Sin datos. Navega en la página activa, activa ScriptSpy y pulsa Actualizar.</p></li>';
+      list.innerHTML = `<li><p class="loading">${esc(t('spy.no_data'))}</p></li>`;
     }
   }
 
@@ -362,7 +408,7 @@ export async function renderScriptSpyLive(container) {
 
   if (wasActive) {
     const btn = container.querySelector('#btn-spy-inject');
-    btn.textContent = 'ScriptSpy activo ✓';
+    btn.textContent = t('spy.active');
     btn.disabled = true;
     refresh();
     startAutoRefresh();
@@ -372,20 +418,20 @@ export async function renderScriptSpyLive(container) {
     if (!tabId) { return; }
     const btn = container.querySelector('#btn-spy-inject');
     btn.disabled = true;
-    btn.textContent = '⌛ Inyectando…';
+    btn.textContent = t('spy.activating');
     const res = await sendMsg({ type: 'inject_scriptspy', tabId });
     if (res?.ok) {
-      btn.textContent = 'ScriptSpy activo ✓';
+      btn.textContent = t('spy.active');
       await chrome.storage.local.set({ [stateKey]: Date.now() }).catch(() => {});
       setTimeout(() => { refresh(); startAutoRefresh(); }, 600);
     } else {
       btn.disabled = false;
-      btn.textContent = 'Activar ScriptSpy';
+      btn.textContent = t('spy.activate');
       const list = container.querySelector('.script-list');
       const li = document.createElement('li');
       const p = document.createElement('p');
       p.className = 'error';
-      p.textContent = res?.reason ?? 'Error al inyectar.';
+      p.textContent = res?.reason ?? t('spy.error_inject');
       li.appendChild(p);
       list.replaceChildren(li);
     }

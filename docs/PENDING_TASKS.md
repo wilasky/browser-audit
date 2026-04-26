@@ -94,6 +94,16 @@ Después, en local hacer `git pull` para sincronizar.
 
 ---
 
+## 🐛 Bugs conocidos para v0.2
+
+1. **Importar config en Health** — el JSON importado no persiste como audit en storage,
+   solo se renderiza una vez. Tras refresh se pierde. Solución: guardar el audit
+   importado en chrome.storage.local con clave separada.
+2. **Cookie banner detection mejorada** — cuando el usuario acepta cookies, la extensión
+   sigue marcando "cookies cargadas sin banner detectado" porque el banner desaparece.
+   Mejora: detectar si hubo banner aceptado mediante storage/cookies de consentimiento típicas
+   (cookieConsent, OptanonAlertBoxClosed, etc.) o detectar marca de tiempo del consent.
+
 ## 📝 Mejoras planificadas para v0.2 (post-lanzamiento)
 
 Pediste en su día y no entraron en v0.1:

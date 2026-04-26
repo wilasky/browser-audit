@@ -1,5 +1,6 @@
 import { esc } from '../../shared/sanitize.js';
 import { listProviders, getAIConfig, saveAIConfig } from '../../shared/ai-client.js';
+import { getLanguagePreference, setLanguage, t } from '../../shared/i18n.js';
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -87,11 +88,11 @@ function renderHistoryChart(history) {
 function renderHistorySection(history) {
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Histórico de score</h3>
+      <h3 class="settings-heading">${esc(t('settings.history'))}</h3>
       ${renderHistoryChart(history ?? [])}
       ${history.length > 0 ? `
         <div class="settings-row">
-          <button id="btn-clear-history" class="btn-secondary">Limpiar histórico</button>
+          <button id="btn-clear-history" class="btn-secondary">${esc(t('settings.history_clear'))}</button>
         </div>
       ` : ''}
     </section>`;
@@ -100,67 +101,67 @@ function renderHistorySection(history) {
 function renderAuditSection(prefs) {
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Auditoría automática</h3>
+      <h3 class="settings-heading">${esc(t('settings.audit_auto'))}</h3>
       <label class="settings-toggle">
         <input type="checkbox" id="pref-auto-audit" ${prefs.autoAudit ? 'checked' : ''}/>
-        <span>Re-auditar automáticamente</span>
+        <span>${esc(t('settings.audit_re'))}</span>
       </label>
       <div class="settings-row settings-indent">
-        <label class="settings-label">Intervalo:</label>
+        <label class="settings-label">${esc(t('settings.audit_interval'))}</label>
         <select id="pref-interval" class="settings-select">
-          <option value="1" ${prefs.auditInterval === 1 ? 'selected' : ''}>Cada hora</option>
-          <option value="6" ${prefs.auditInterval === 6 ? 'selected' : ''}>Cada 6h</option>
-          <option value="12" ${prefs.auditInterval === 12 ? 'selected' : ''}>Cada 12h</option>
-          <option value="24" ${prefs.auditInterval === 24 ? 'selected' : ''}>Cada 24h (recomendado)</option>
-          <option value="168" ${prefs.auditInterval === 168 ? 'selected' : ''}>Semanal</option>
+          <option value="1" ${prefs.auditInterval === 1 ? 'selected' : ''}>${esc(t('settings.audit_hourly'))}</option>
+          <option value="6" ${prefs.auditInterval === 6 ? 'selected' : ''}>${esc(t('settings.audit_6h'))}</option>
+          <option value="12" ${prefs.auditInterval === 12 ? 'selected' : ''}>${esc(t('settings.audit_12h'))}</option>
+          <option value="24" ${prefs.auditInterval === 24 ? 'selected' : ''}>${esc(t('settings.audit_daily'))}</option>
+          <option value="168" ${prefs.auditInterval === 168 ? 'selected' : ''}>${esc(t('settings.audit_weekly'))}</option>
         </select>
       </div>
       <label class="settings-toggle">
         <input type="checkbox" id="pref-fp-auto" ${prefs.fingerprintAutoCalc ? 'checked' : ''}/>
-        <span>Calcular huella digital al abrir el popup</span>
+        <span>${esc(t('settings.audit_fp'))}</span>
       </label>
-      <p class="settings-hint">Desactivar acelera la apertura del popup (~300ms más rápido).</p>
+      <p class="settings-hint">${esc(t('settings.audit_fp_hint'))}</p>
     </section>`;
 }
 
-function renderLanguageSection() {
-  // i18n full UI translation deferred to v0.2.
-  // The Chrome Web Store listing IS shown in EN/ES based on Chrome locale (manifest _locales).
+function renderLanguageSection(currentLang) {
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Idioma · Language</h3>
-      <p class="settings-hint">
-        🇪🇸 La interfaz está en español. La traducción completa al inglés llegará en la versión 0.2.
-      </p>
-      <p class="settings-hint" style="margin-top:4px">
-        🇬🇧 Full English UI translation coming in v0.2. The Chrome Web Store listing is already
-        available in English.
-      </p>
+      <h3 class="settings-heading">${esc(t('settings.lang_title'))}</h3>
+      <div class="settings-row">
+        <label class="settings-label">${esc(t('settings.lang_label'))}</label>
+        <select id="pref-lang" class="settings-select">
+          <option value="auto" ${currentLang === 'auto' ? 'selected' : ''}>${esc(t('settings.lang_auto'))}</option>
+          <option value="es" ${currentLang === 'es' ? 'selected' : ''}>${esc(t('settings.lang_es'))}</option>
+          <option value="en" ${currentLang === 'en' ? 'selected' : ''}>${esc(t('settings.lang_en'))}</option>
+        </select>
+      </div>
+      <p class="settings-hint">${esc(t('settings.lang_hint'))}</p>
     </section>`;
 }
 
 function renderViewSection(prefs) {
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Vista del Health Check</h3>
+      <h3 class="settings-heading">${esc(t('settings.view_health'))}</h3>
       <div class="settings-row">
-        <label class="settings-label">Perfil por defecto:</label>
+        <label class="settings-label">${esc(t('settings.default_profile'))}</label>
         <select id="pref-default-profile" class="settings-select">
-          <option value="all" ${prefs.defaultProfile === 'all' ? 'selected' : ''}>Estándar</option>
-          <option value="advanced" ${prefs.defaultProfile === 'advanced' ? 'selected' : ''}>Avanzado</option>
-          <option value="basic" ${prefs.defaultProfile === 'basic' ? 'selected' : ''}>Básico</option>
-          <option value="failed" ${prefs.defaultProfile === 'failed' ? 'selected' : ''}>Solo FAIL</option>
+          <option value="all" ${prefs.defaultProfile === 'all' ? 'selected' : ''}>${esc(t('profile.standard'))}</option>
+          <option value="advanced" ${prefs.defaultProfile === 'advanced' ? 'selected' : ''}>${esc(t('profile.advanced'))}</option>
+          <option value="basic" ${prefs.defaultProfile === 'basic' ? 'selected' : ''}>${esc(t('profile.basic'))}</option>
+          <option value="failed" ${prefs.defaultProfile === 'failed' ? 'selected' : ''}>${esc(t('profile.failed'))}</option>
           <option value="CIS" ${prefs.defaultProfile === 'CIS' ? 'selected' : ''}>CIS Benchmark</option>
           <option value="CCN" ${prefs.defaultProfile === 'CCN' ? 'selected' : ''}>ENS (CCN-STIC)</option>
           <option value="NIST" ${prefs.defaultProfile === 'NIST' ? 'selected' : ''}>NIST SP 800-53</option>
         </select>
       </div>
       <div class="settings-row">
-        <label class="settings-label">Mostrar explicación:</label>
+        <label class="settings-label">${esc(t('settings.show_rationale'))}</label>
         <select id="pref-rationale" class="settings-select">
-          <option value="click" ${prefs.showRationale === 'click' ? 'selected' : ''}>Al hacer click</option>
-          <option value="always" ${prefs.showRationale === 'always' ? 'selected' : ''}>Siempre visible</option>
-          <option value="never" ${prefs.showRationale === 'never' ? 'selected' : ''}>Nunca</option>
+          <option value="click" ${prefs.showRationale === 'click' ? 'selected' : ''}>${esc(t('settings.rationale_click'))}</option>
+          <option value="always" ${prefs.showRationale === 'always' ? 'selected' : ''}>${esc(t('settings.rationale_always'))}</option>
+          <option value="never" ${prefs.showRationale === 'never' ? 'selected' : ''}>${esc(t('settings.rationale_never'))}</option>
         </select>
       </div>
     </section>`;
@@ -169,34 +170,34 @@ function renderViewSection(prefs) {
 function renderScriptSpySection(prefs) {
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">ScriptSpy</h3>
+      <h3 class="settings-heading">${esc(t('settings.scriptspy'))}</h3>
       <label class="settings-toggle">
         <input type="checkbox" id="pref-spy-auto" ${prefs.scriptSpyAutoStart ? 'checked' : ''}/>
-        <span>Activar automáticamente al abrir el popup</span>
+        <span>${esc(t('settings.spy_auto'))}</span>
       </label>
-      <p class="settings-hint">Solo se activa en pestañas web reales (no en chrome:// ni extensiones).</p>
+      <p class="settings-hint">${esc(t('settings.spy_auto_hint'))}</p>
       <label class="settings-toggle">
         <input type="checkbox" id="pref-show-1p" ${prefs.showFirstParty ? 'checked' : ''}/>
-        <span>Mostrar también scripts de primer partido (1st party)</span>
+        <span>${esc(t('settings.spy_show_1p'))}</span>
       </label>
-      <p class="settings-hint">Por defecto solo se muestran 3rd party (más relevantes para privacidad).</p>
+      <p class="settings-hint">${esc(t('settings.spy_show_1p_hint'))}</p>
     </section>`;
 }
 
 function renderAlertsSection(prefs) {
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Alertas</h3>
+      <h3 class="settings-heading">${esc(t('settings.alerts'))}</h3>
       <label class="settings-toggle">
         <input type="checkbox" id="pref-alert-drop" ${prefs.alertOnScoreDrop ? 'checked' : ''}/>
-        <span>Avisar si el score baja drásticamente</span>
+        <span>${esc(t('settings.alert_drop'))}</span>
       </label>
       <div class="settings-row settings-indent">
-        <label class="settings-label">Umbral:</label>
+        <label class="settings-label">${esc(t('settings.alert_threshold'))}</label>
         <select id="pref-threshold" class="settings-select">
-          <option value="5" ${prefs.scoreDropThreshold === 5 ? 'selected' : ''}>−5 puntos</option>
-          <option value="10" ${prefs.scoreDropThreshold === 10 ? 'selected' : ''}>−10 puntos (recomendado)</option>
-          <option value="20" ${prefs.scoreDropThreshold === 20 ? 'selected' : ''}>−20 puntos</option>
+          <option value="5" ${prefs.scoreDropThreshold === 5 ? 'selected' : ''}>${esc(t('settings.alert_5'))}</option>
+          <option value="10" ${prefs.scoreDropThreshold === 10 ? 'selected' : ''}>${esc(t('settings.alert_10'))}</option>
+          <option value="20" ${prefs.scoreDropThreshold === 20 ? 'selected' : ''}>${esc(t('settings.alert_20'))}</option>
         </select>
       </div>
     </section>`;
@@ -208,19 +209,13 @@ function renderAISection(aiConfig) {
 
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Asistente IA</h3>
+      <h3 class="settings-heading">${esc(t('settings.ai'))}</h3>
       <div class="api-info-box">
-        <p class="settings-hint">
-          Activa funciones IA usando <strong>tu propia API key</strong>. El contenido se envía
-          directamente al proveedor — nunca pasa por nuestros servidores.
-        </p>
-        <p class="settings-hint" style="margin-top:6px">
-          <strong>Funciones disponibles:</strong> Resumen de políticas de privacidad en RGPD.
-          (Más en futuras versiones.)
-        </p>
+        <p class="settings-hint">${t('settings.ai_intro')}</p>
+        <p class="settings-hint" style="margin-top:6px">${t('settings.ai_features')}</p>
       </div>
       <div class="settings-row">
-        <label class="settings-label">Proveedor:</label>
+        <label class="settings-label">${esc(t('settings.ai_provider'))}</label>
         <select id="pref-ai-provider" class="settings-select">
           ${providers.map((p) =>
             `<option value="${esc(p.id)}" ${aiConfig.provider === p.id ? 'selected' : ''}>${esc(p.name)}</option>`
@@ -230,91 +225,76 @@ function renderAISection(aiConfig) {
       <div class="api-key-row">
         <input id="input-ai-key" type="password" class="api-key-input"
           placeholder="${esc(current.keyPlaceholder)}" />
-        <button id="btn-save-ai" class="btn-secondary">Guardar</button>
+        <button id="btn-save-ai" class="btn-secondary">${esc(t('btn.save'))}</button>
       </div>
       <div class="settings-row">
-        <label class="settings-label" style="font-size:10px">Modelo:</label>
+        <label class="settings-label" style="font-size:10px">${esc(t('settings.ai_model'))}</label>
         <input id="input-ai-model" type="text" class="settings-input"
           placeholder="${esc(current.defaultModel)}" />
       </div>
       <p id="ai-status" class="settings-hint"></p>
       <p class="settings-hint">
-        Conseguir API key:
+        ${esc(t('settings.ai_get_key'))}
         ${providers.map((p) => `<a href="${esc(p.signupUrl)}" data-link class="link-btn">${esc(p.name)}</a>`).join(' · ')}
       </p>
     </section>`;
 }
 
 function renderPlanSection(plan) {
+  const planLabel = plan?.isPro ? 'PRO' : 'FREE';
+  const dev = plan?.devMode ? ' (dev mode)' : '';
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Plan</h3>
+      <h3 class="settings-heading">${esc(t('settings.plan'))}</h3>
       <p class="settings-hint">
-        Plan <strong>${plan?.isPro ? 'PRO' : 'FREE'}</strong>${plan?.devMode ? ' (modo dev)' : ''}
-        — La extensión es <strong>gratis</strong> y siempre lo será en sus funciones core.
+        Plan <strong>${planLabel}</strong>${dev} — ${t('settings.plan_intro')}
       </p>
-      <p class="settings-hint" style="margin-top:6px">
-        ✦ <strong>Próximamente versión Pro</strong> con threat intelligence en tiempo real,
-        análisis con IA preempaquetada (sin necesidad de tu propia key), reglas YARA y
-        export profesional. Si te interesa, dale follow al proyecto en GitHub.
-      </p>
+      <p class="settings-hint" style="margin-top:6px">${t('settings.plan_pro_soon')}</p>
     </section>`;
 }
 
 function renderDataSection() {
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Importar / Exportar configuración</h3>
-      <p class="settings-hint">
-        Guarda y restaura tus preferencias entre dispositivos. La API key de IA NO se exporta
-        por seguridad — debes pegarla manualmente en cada equipo.
-      </p>
+      <h3 class="settings-heading">${esc(t('settings.import_export'))}</h3>
+      <p class="settings-hint">${esc(t('settings.import_export_hint'))}</p>
       <div class="settings-row">
-        <button id="btn-export-config" class="btn-secondary">↓ Exportar config (.json)</button>
-        <button id="btn-import-config" class="btn-secondary">↑ Importar config (.json)</button>
+        <button id="btn-export-config" class="btn-secondary">${esc(t('settings.export_btn'))}</button>
+        <button id="btn-import-config" class="btn-secondary">${esc(t('settings.import_btn'))}</button>
         <input type="file" id="input-import-file" accept="application/json" style="display:none"/>
       </div>
       <p id="config-status" class="settings-hint"></p>
     </section>
 
     <section class="settings-section">
-      <h3 class="settings-heading">Análisis profundo de scripts</h3>
-      <p class="settings-hint">
-        Para descargar y analizar el código fuente de scripts (hash SHA256, detección de obfuscación,
-        APIs sospechosas, URLs hardcoded), la extensión necesita acceso a las URLs de los scripts.
-      </p>
+      <h3 class="settings-heading">${esc(t('settings.deep_analysis'))}</h3>
+      <p class="settings-hint">${esc(t('settings.deep_analysis_intro'))}</p>
       <div class="settings-row">
-        <button id="btn-grant-hosts" class="btn-secondary btn-grant">+ Permitir descarga de scripts</button>
-        <button id="btn-revoke-hosts" class="btn-secondary">Revocar</button>
+        <button id="btn-grant-hosts" class="btn-secondary btn-grant">${esc(t('settings.deep_grant'))}</button>
+        <button id="btn-revoke-hosts" class="btn-secondary">${esc(t('settings.deep_revoke'))}</button>
       </div>
       <p id="hosts-status" class="settings-hint"></p>
     </section>
 
     <section class="settings-section">
-      <h3 class="settings-heading">Datos y privacidad</h3>
+      <h3 class="settings-heading">${esc(t('settings.data_privacy'))}</h3>
       <div class="settings-row">
-        <button id="btn-clear-cache" class="btn-secondary">Limpiar caché TI</button>
-        <button id="btn-clear-prefs" class="btn-secondary btn-reset">Restablecer preferencias</button>
+        <button id="btn-clear-cache" class="btn-secondary">${esc(t('settings.clear_cache'))}</button>
+        <button id="btn-clear-prefs" class="btn-secondary btn-reset">${esc(t('settings.clear_prefs'))}</button>
       </div>
-      <p class="settings-hint">
-        Toda la configuración se guarda en chrome.storage.local. Se borra automáticamente
-        al desinstalar la extensión. Nunca se transmite a ningún servidor.
-      </p>
+      <p class="settings-hint">${esc(t('settings.privacy_note'))}</p>
     </section>`;
 }
 
 function renderAboutSection() {
   return `
     <section class="settings-section">
-      <h3 class="settings-heading">Acerca de</h3>
-      <p class="settings-hint">
-        Lucent v0.1 · Browser security & privacy<br>
-        Cliente open source · MIT License
-      </p>
+      <h3 class="settings-heading">${esc(t('settings.about'))}</h3>
+      <p class="settings-hint">${t('settings.about_text')}</p>
       <div class="settings-row">
         <a href="https://github.com/wilasky/browser-audit" data-link class="link-btn">GitHub</a>
-        <a href="https://github.com/wilasky/browser-audit/blob/main/docs/PRIVACY_POLICY.md" data-link class="link-btn">Política privacidad</a>
-        <button id="btn-feedback" class="link-btn" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0">💬 Reportar bug / sugerencia</button>
+        <a href="https://github.com/wilasky/browser-audit/blob/main/docs/PRIVACY_POLICY.md" data-link class="link-btn">${esc(t('settings.privacy_link'))}</a>
+        <button id="btn-feedback" class="link-btn" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0">${esc(t('settings.feedback'))}</button>
       </div>
     </section>`;
 }
@@ -322,16 +302,17 @@ function renderAboutSection() {
 // --- Main ---
 
 export async function renderSettings(container) {
-  const [plan, history, prefs, aiConfig] = await Promise.all([
+  const [plan, history, prefs, aiConfig, currentLang] = await Promise.all([
     sendMsg({ type: 'get_plan' }),
     sendMsg({ type: 'get_history' }),
     loadPrefs(),
     getAIConfig(),
+    getLanguagePreference(),
   ]);
 
   container.innerHTML = `
     <div class="settings-wrap">
-      ${renderLanguageSection()}
+      ${renderLanguageSection(currentLang)}
       ${renderHistorySection(history ?? [])}
       ${renderAuditSection(prefs)}
       ${renderViewSection(prefs)}
@@ -356,6 +337,12 @@ export async function renderSettings(container) {
       await savePrefs({ ...cur, [key]: val });
     });
   }
+
+  // Language change → reload popup to apply
+  container.querySelector('#pref-lang').addEventListener('change', async (e) => {
+    await setLanguage(e.target.value);
+    location.reload();
+  });
 
   bindPref('pref-auto-audit', 'autoAudit');
   bindPref('pref-interval', 'auditInterval', 'number');
@@ -382,14 +369,14 @@ export async function renderSettings(container) {
     const model = container.querySelector('#input-ai-model').value.trim();
     await saveAIConfig({ provider, apiKey, model });
     const status = container.querySelector('#ai-status');
-    status.textContent = '✓ Guardado. Prueba en la pestaña RGPD → "Resumir con IA".';
+    status.textContent = t('settings.ai_saved');
     status.style.color = '#22c55e';
     setTimeout(() => { status.textContent = ''; status.style.color = ''; }, 4000);
   });
 
   // --- Data actions ---
   container.querySelector('#btn-clear-history')?.addEventListener('click', async () => {
-    if (confirm('¿Borrar todo el histórico de auditorías?')) {
+    if (confirm(t('settings.history_confirm'))) {
       await chrome.storage.local.remove('auditHistory');
       renderSettings(container);
     }
@@ -434,7 +421,7 @@ export async function renderSettings(container) {
         updates.aiConfig = { provider: data.aiConfig.provider, model: data.aiConfig.model ?? '', apiKey: cur.apiKey };
       }
       await chrome.storage.local.set(updates);
-      status.textContent = '✓ Configuración importada correctamente.';
+      status.textContent = t('settings.import_ok');
       status.style.color = '#22c55e';
       setTimeout(() => renderSettings(container), 1500);
     } catch (err) {
@@ -448,7 +435,7 @@ export async function renderSettings(container) {
     chrome.permissions.request({ origins: ['<all_urls>'] }, (granted) => {
       void chrome.runtime.lastError;
       const status = container.querySelector('#hosts-status');
-      status.textContent = granted ? '✓ Permiso concedido. Ya puedes analizar scripts en profundidad.' : 'Permiso denegado.';
+      status.textContent = granted ? t('settings.deep_granted') : t('settings.deep_denied');
       status.style.color = granted ? '#22c55e' : '#ef4444';
     });
   });
@@ -457,18 +444,18 @@ export async function renderSettings(container) {
     chrome.permissions.remove({ origins: ['<all_urls>'] }, (removed) => {
       void chrome.runtime.lastError;
       const status = container.querySelector('#hosts-status');
-      status.textContent = removed ? 'Permiso revocado.' : 'No se pudo revocar.';
+      status.textContent = removed ? t('settings.deep_revoked') : '—';
       status.style.color = '#888';
     });
   });
 
   container.querySelector('#btn-clear-cache').addEventListener('click', async () => {
     await chrome.storage.local.remove('tiCache');
-    alert('Caché de threat intelligence limpiada.');
+    alert(t('settings.cache_cleared'));
   });
 
   container.querySelector('#btn-clear-prefs').addEventListener('click', async () => {
-    if (confirm('¿Restablecer todas las preferencias a valores por defecto?')) {
+    if (confirm(t('settings.prefs_confirm'))) {
       await chrome.storage.local.remove('userPrefs');
       renderSettings(container);
     }

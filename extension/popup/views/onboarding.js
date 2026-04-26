@@ -1,20 +1,26 @@
-const STEPS = [
-  {
-    icon: '◆',
-    title: 'Browser Health Check',
-    body: 'Audita la configuración de Chrome contra una baseline de seguridad. Recibes un score 0-100 y pasos concretos para mejorar cada punto.',
-    cta: 'Siguiente →',
-  },
-  {
-    icon: '⌖',
-    title: 'ScriptSpy',
-    body: 'Inspecciona en tiempo real qué hacen los scripts de cualquier web: qué datos envían, si hacen fingerprinting, qué cookies leen. Actívalo en la pestaña ScriptSpy.',
-    cta: 'Activar permisos y empezar',
-  },
-];
+import { esc } from '../../shared/sanitize.js';
+import { t } from '../../shared/i18n.js';
+
+function getSteps() {
+  return [
+    {
+      icon: '⌖',
+      title: t('ob.step1_title'),
+      body: t('ob.step1_body'),
+      cta: t('ob.step1_cta'),
+    },
+    {
+      icon: '◆',
+      title: t('ob.step2_title'),
+      body: t('ob.step2_body'),
+      cta: t('ob.step2_cta'),
+    },
+  ];
+}
 
 export function renderOnboarding(container, onDone) {
   let step = 0;
+  const STEPS = getSteps();
 
   function render() {
     const s = STEPS[step];
@@ -24,12 +30,12 @@ export function renderOnboarding(container, onDone) {
 
     container.innerHTML = `
       <div class="ob-wrap">
-        <div class="ob-icon">${s.icon}</div>
-        <h2 class="ob-title">${s.title}</h2>
-        <p class="ob-body">${s.body}</p>
+        <div class="ob-icon">${esc(s.icon)}</div>
+        <h2 class="ob-title">${esc(s.title)}</h2>
+        <p class="ob-body">${esc(s.body)}</p>
         <div class="ob-dots">${dots}</div>
-        <button class="ob-cta btn-primary">${s.cta}</button>
-        <button class="ob-skip">Saltar introducción</button>
+        <button class="ob-cta btn-primary">${esc(s.cta)}</button>
+        <button class="ob-skip">${esc(t('ob.skip'))}</button>
       </div>`;
 
     container.querySelector('.ob-cta').addEventListener('click', () => {

@@ -1,12 +1,16 @@
 import { calculateFingerprintDetail } from '../../shared/fingerprint.js';
 import { esc } from '../../shared/sanitize.js';
+import { t } from '../../shared/i18n.js';
 
-const UNIQ = {
-  common: { text: 'Común',  cls: 'fp-common', icon: '●' },
-  rare:   { text: 'Único',  cls: 'fp-rare',   icon: '◆' },
-};
+function getUniq() {
+  return {
+    common: { text: t('fp.uniqueness_common'), cls: 'fp-common', icon: '●' },
+    rare:   { text: t('fp.uniqueness_rare'),   cls: 'fp-rare',   icon: '◆' },
+  };
+}
 
 function renderSignal(s) {
+  const UNIQ = getUniq();
   const u = UNIQ[s.uniqueness] ?? UNIQ.common;
   const bits = s.entropyBits.toFixed(1);
   const barPct = Math.min(100, (s.entropyBits / 10) * 100);
@@ -26,7 +30,7 @@ function renderSignal(s) {
 }
 
 export async function renderFingerprintDetail(container) {
-  container.innerHTML = '<p class="loading">Calculando huella digital…</p>';
+  container.innerHTML = `<p class="loading">${esc(t('fp.calculating'))}</p>`;
 
   try {
     const d = await calculateFingerprintDetail();
@@ -34,19 +38,22 @@ export async function renderFingerprintDetail(container) {
     const rare = d.signals.filter((s) => s.uniqueness === 'rare').length;
     const barPct = Math.min(100, (d.totalEntropy / 40) * 100);
 
+    // Translate the level text from background ('green'/'amber'/'red')
+    const levelKey = d.level === 'green' ? 'fp.level_low' : d.level === 'amber' ? 'fp.level_medium' : 'fp.level_high';
+
     container.innerHTML = `
       <div class="fp-wrap">
         <div class="fp-header">
-          <button id="btn-fp-back" class="link-btn">← Volver</button>
-          <span class="fp-title">Análisis de huella digital</span>
+          <button id="btn-fp-back" class="link-btn">${esc(t('btn.back'))}</button>
+          <span class="fp-title">${esc(t('fp.title'))}</span>
         </div>
 
         <div class="fp-score-row">
           <div class="fp-total" style="color:${color}">${d.totalEntropy}</div>
           <div>
-            <div class="fp-bits-label">bits de entropía</div>
-            <div class="fp-level-text" style="color:${color}">${esc(d.levelText)}</div>
-            <div class="fp-stats">${rare} señal${rare !== 1 ? 'es únicas' : ' única'} de ${d.signals.length}</div>
+            <div class="fp-bits-label">${esc(t('fp.bits_label'))}</div>
+            <div class="fp-level-text" style="color:${color}">${esc(t(levelKey))}</div>
+            <div class="fp-stats">${esc(t('fp.unique_signals', { n: rare, total: d.signals.length }))}</div>
           </div>
         </div>
 
@@ -54,13 +61,13 @@ export async function renderFingerprintDetail(container) {
           <div class="fp-entropy-bar" style="width:${barPct}%;background:${color}"></div>
         </div>
         <div class="fp-entropy-scale">
-          <span>0</span><span style="margin-left:50%">22 · moderado</span><span style="margin-left:auto">40+ bits</span>
+          <span>0</span><span style="margin-left:50%">22 · ~</span><span style="margin-left:auto">40+ bits</span>
         </div>
 
         <div class="fp-hash-row">
-          <span class="fp-hash-label">ID de tu navegador:</span>
+          <span class="fp-hash-label">${esc(t('fp.id_label'))}</span>
           <span class="fp-hash-val" id="fp-hash">${esc(d.fingerprintHash)}</span>
-          <button id="btn-copy-hash" class="btn-export" title="Copiar hash">⎘</button>
+          <button id="btn-copy-hash" class="btn-export" title="${esc(t('fp.copy_hash_tip'))}">⎘</button>
         </div>
 
         <div class="fp-signals">
@@ -68,76 +75,56 @@ export async function renderFingerprintDetail(container) {
         </div>
 
         <div class="fp-actions-block">
-          <h3 class="fp-actions-title">⚙ Cómo reducir tu huella</h3>
+          <h3 class="fp-actions-title">${esc(t('fp.actions_title'))}</h3>
 
           <div class="fp-action">
             <div class="fp-action-head">
-              <strong>1. Activar User-Agent reducido (Chrome)</strong>
-              <button class="fp-action-btn" data-flag="chrome://flags/#reduce-user-agent">Abrir flag →</button>
+              <strong>${esc(t('fp.action1_title'))}</strong>
+              <button class="fp-action-btn" data-flag="chrome://flags/#reduce-user-agent">${esc(t('fp.action_btn1'))}</button>
             </div>
-            <p class="fp-action-desc">
-              Chrome puede reducir la información del User-Agent automáticamente.
-              Esto reduce ~3 bits de entropía. Activa <code>Reduce User-Agent string</code>.
-            </p>
+            <p class="fp-action-desc">${t('fp.action1_desc')}</p>
           </div>
 
           <div class="fp-action">
             <div class="fp-action-head">
-              <strong>2. Bloquear canvas con extensión</strong>
-              <button class="fp-action-btn" data-flag="https://chromewebstore.google.com/search/canvas%20blocker">Buscar →</button>
+              <strong>${esc(t('fp.action2_title'))}</strong>
+              <button class="fp-action-btn" data-flag="https://chromewebstore.google.com/search/canvas%20blocker">${esc(t('fp.action_btn2'))}</button>
             </div>
-            <p class="fp-action-desc">
-              Chrome no bloquea canvas nativamente. Instala una extensión como
-              <code>Canvas Blocker</code> o <code>Trace</code> que añadan ruido aleatorio.
-              Reduce ~8 bits de entropía.
-            </p>
+            <p class="fp-action-desc">${t('fp.action2_desc')}</p>
           </div>
 
           <div class="fp-action">
             <div class="fp-action-head">
-              <strong>3. Cambiar a Brave o Firefox</strong>
-              <button class="fp-action-btn" data-flag="https://brave.com/download/">Brave →</button>
+              <strong>${esc(t('fp.action3_title'))}</strong>
+              <button class="fp-action-btn" data-flag="https://brave.com/download/">${esc(t('fp.action_btn3'))}</button>
             </div>
-            <p class="fp-action-desc">
-              <strong>Brave</strong> bloquea canvas, WebGL y audio fingerprinting por defecto.
-              <strong>Firefox</strong> con "Strict tracking protection" también lo hace.
-              Cero configuración necesaria.
-            </p>
+            <p class="fp-action-desc">${t('fp.action3_desc')}</p>
           </div>
 
           <div class="fp-action">
             <div class="fp-action-head">
-              <strong>4. Tor Browser (máxima privacidad)</strong>
-              <button class="fp-action-btn" data-flag="https://www.torproject.org/download/">Descargar →</button>
+              <strong>${esc(t('fp.action4_title'))}</strong>
+              <button class="fp-action-btn" data-flag="https://www.torproject.org/download/">${esc(t('fp.action_btn4'))}</button>
             </div>
-            <p class="fp-action-desc">
-              Para casos extremos: Tor Browser estandariza todas las señales para que
-              todos los usuarios tengan el mismo fingerprint (~10 bits de entropía total).
-              Más lento pero indistinguible.
-            </p>
+            <p class="fp-action-desc">${t('fp.action4_desc')}</p>
           </div>
 
           ${d.canvasBlocked
-            ? '<div class="fp-success">✓ Tu navegador YA está bloqueando el canvas fingerprint. Buen trabajo.</div>'
+            ? `<div class="fp-success">${esc(t('fp.canvas_blocked'))}</div>`
             : ''}
         </div>
 
         <div class="fp-footer">
-          <p><strong>¿Qué es esto?</strong> Cada señal es un dato que tu navegador revela a las webs que visitas.
-          Combinadas forman un identificador casi único aunque borres las cookies. El hash de arriba representa
-          tu "huella" actual — sería el ID con el que te seguiría un tracker.</p>
+          <p>${t('fp.what_is')}</p>
 
-          <p style="margin-top:8px"><strong>Comparar contra otros usuarios</strong> (sitios externos):</p>
+          <p style="margin-top:8px"><strong>${esc(t('fp.compare_title'))}</strong>:</p>
           <div class="fp-compare-links">
             <button class="fp-action-btn" data-flag="https://coveryourtracks.eff.org/">EFF Cover Your Tracks</button>
             <button class="fp-action-btn" data-flag="https://amiunique.org/fp">amiunique.org</button>
             <button class="fp-action-btn" data-flag="https://browserleaks.com/">BrowserLeaks</button>
             <button class="fp-action-btn" data-flag="https://abrahamjuliot.github.io/creepjs/">CreepJS</button>
           </div>
-          <p style="margin-top:6px;font-size:9px;color:#444">
-            Estos sitios tienen base de datos para decir si tu huella es única entre millones.
-            Nuestra extensión calcula los mismos valores que ellos pero sin la comparación poblacional.
-          </p>
+          <p style="margin-top:6px;font-size:9px;color:#444">${esc(t('fp.compare_note'))}</p>
         </div>
       </div>`;
 
@@ -161,7 +148,7 @@ export async function renderFingerprintDetail(container) {
   } catch (err) {
     const p = document.createElement('p');
     p.className = 'error';
-    p.textContent = `Error calculando huella: ${err.message}`;
+    p.textContent = t('fp.error_calc', { msg: err.message });
     container.replaceChildren(p);
   }
 }

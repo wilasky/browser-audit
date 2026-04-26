@@ -5,6 +5,7 @@ import { renderSettings } from './views/settings.js';
 import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
 import { renderFingerprintDetail } from './views/fingerprint-detail.js';
 import { renderScriptDetail } from './views/script-detail.js';
+import { initI18n, t } from '../shared/i18n.js';
 
 const root = document.getElementById('view-root');
 const tabs = document.querySelectorAll('.tab-btn');
@@ -30,7 +31,7 @@ function setActiveTab(view) {
 }
 
 async function loadHealthView() {
-  root.innerHTML = '<p class="loading">Calculando huella digital…</p>';
+  root.innerHTML = `<p class="loading">${t('health.calc_fingerprint')}</p>`;
 
   try {
     const { calculateFingerprintDetail } = await import('../shared/fingerprint.js');
@@ -43,7 +44,7 @@ async function loadHealthView() {
     // Non-fatal
   }
 
-  root.innerHTML = '<p class="loading">Cargando auditoría…</p>';
+  root.innerHTML = `<p class="loading">${t('health.loading_audit')}</p>`;
   const audit = await sendMsg({ type: 'get_audit' });
 
   if (audit) {
@@ -54,12 +55,12 @@ async function loadHealthView() {
       root.addEventListener('fp-back', () => loadHealthView().catch(console.error), { once: true });
     }, { once: true });
   } else {
-    root.innerHTML = '<p class="loading">Ejecutando primera auditoría…</p>';
+    root.innerHTML = `<p class="loading">${t('health.auditing_first')}</p>`;
     const freshAudit = await sendMsg({ type: 'run_audit' });
     if (freshAudit) {
       renderHealthOverview(freshAudit, root);
     } else {
-      root.innerHTML = '<p class="error">No se pudo completar la auditoría.</p>';
+      root.innerHTML = `<p class="error">${t('health.audit_failed')}</p>`;
     }
   }
 }
@@ -86,8 +87,19 @@ tabs.forEach((btn) => {
   btn.addEventListener('click', () => setView(btn.dataset.view));
 });
 
+function localizeStaticUI() {
+  document.querySelectorAll('[data-view]').forEach((btn) => {
+    const view = btn.dataset.view;
+    if (view === 'scriptspy') { btn.textContent = t('tab.scriptspy'); }
+    else if (view === 'compliance') { btn.textContent = t('tab.compliance'); }
+    else if (view === 'health') { btn.textContent = t('tab.health'); }
+  });
+}
+
 // Boot: show onboarding on first install, otherwise load default view (ScriptSpy)
 async function boot() {
+  await initI18n();
+  localizeStaticUI();
   const showOnboarding = await shouldShowOnboarding();
   if (showOnboarding) {
     setActiveTab('scriptspy');
