@@ -101,6 +101,41 @@ Después, en local hacer `git pull` para sincronizar.
    Mejora: detectar si hubo banner aceptado mediante storage/cookies de consentimiento típicas
    (cookieConsent, OptanonAlertBoxClosed, etc.) o detectar marca de tiempo del consent.
 
+2. **i18n parcial: detalles de checks siguen en español** — el chrome (botones, headers,
+   tabs, secciones) está traducido pero las DESCRIPCIONES y RAZONES siguen en español:
+
+   **Health Check** — strings hardcoded en español:
+   - `extension/data/baseline.v1.json` — ~40 checks con `rationale`, `fix.instructions`,
+     y `detail` que devuelven los handlers (~120 strings)
+   - `extension/background/audit-engine.js` — mensajes de detail tipo "X extensión(es) en
+     lista negra", "Sin extensiones MV2", etc. (~30 strings)
+
+   **GDPR / Compliance** — strings hardcoded en `extension/popup/views/compliance.js`:
+   - calcCookieScore: "Cookies cargadas sin banner...", "Banner con 'Aceptar' pero sin
+     'Rechazar' — no cumple RGPD", etc.
+   - calcGdprScore: "No se encontró link a política de privacidad", "Formulario con
+     contraseña usando GET", etc.
+   - calcSecurityScore: "La página NO usa HTTPS", header explanations, etc.
+   - calcPentestScore: "iframe(s) cross-origin sin sandbox", "scripts externos SIN
+     Subresource Integrity", "jQuery X obsoleto", etc.
+   - Total: ~50 strings hardcoded en compliance.js
+
+   **Script analyzer** — strings hardcoded en `extension/shared/script-analyzer.js`:
+   - 17 SUSPICIOUS_APIS con `desc` en español
+   - 3 OBFUSCATION_PATTERNS con `desc` en español
+   - 4 verdict text en español
+   - Total: ~25 strings
+
+   **Plan de implementación v0.2:**
+   - Para baseline: añadir `rationale_en` y `instructions_en` a cada check, función
+     `getCheckText(check, field)` en helper que selecciona según idioma actual
+   - Para compliance.js: cada `issues.push({ s, t })` pasa por `t('comp.issue.X')` con
+     ~50 nuevas keys en i18n.js
+   - Para script-analyzer.js: descs de patterns van por `t('analyzer.X')`
+   - audit-engine: detail strings van por `t('audit.X', { n })`
+
+   **Esfuerzo estimado:** ~3-4h. Total ~200 strings adicionales.
+
 ## 📝 Mejoras planificadas para v0.2 (post-lanzamiento)
 
 Pediste en su día y no entraron en v0.1:
