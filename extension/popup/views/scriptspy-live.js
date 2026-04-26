@@ -334,10 +334,40 @@ export async function renderScriptSpyLive(container) {
 
     currentScripts = data.scripts;
 
-    const pageHost = data.pageUrl
-      ? (() => { try { return new URL(data.pageUrl).hostname; } catch { return data.pageUrl; } })()
-      : '—';
-    pageEl.textContent = pageHost;
+    if (data.pageUrl) {
+      let host = data.pageUrl;
+      let isHttps = false;
+      let isSystem = false;
+      try {
+        const u = new URL(data.pageUrl);
+        host = u.hostname || u.pathname;
+        isHttps = u.protocol === 'https:';
+        isSystem = ['chrome:', 'chrome-extension:', 'about:', 'edge:'].includes(u.protocol);
+      } catch { /* keep raw */ }
+      const lock = isSystem ? '⚙' : isHttps ? '🔒' : '⚠';
+      pageEl.textContent = '';
+      // Build interactive content: lock icon + hostname (clickable to open in new tab)
+      const lockSpan = document.createElement('span');
+      lockSpan.textContent = lock + ' ';
+      lockSpan.title = isSystem ? 'Página del sistema'
+        : isHttps ? 'Conexión HTTPS segura'
+        : 'Conexión HTTP sin cifrar';
+      pageEl.appendChild(lockSpan);
+      const link = document.createElement('a');
+      link.textContent = host;
+      link.href = '#';
+      link.style.color = 'inherit';
+      link.style.textDecoration = 'underline';
+      link.style.cursor = 'pointer';
+      link.title = (data.pageTitle || data.pageUrl).slice(0, 200);
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: data.pageUrl });
+      });
+      pageEl.appendChild(link);
+    } else {
+      pageEl.textContent = '—';
+    }
 
     const summaryArea = container.querySelector('#spy-summary-area');
     const list = container.querySelector('.script-list');

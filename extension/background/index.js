@@ -207,10 +207,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'get_scriptspy') {
     const tabId = msg.tabId;
     if (!tabId) { sendResponse({ scripts: [], pageUrl: '' }); return; }
-    // Enrich with TI then respond (non-blocking if TI fails)
     enrichWithThreatIntel(tabId)
       .catch((err) => console.warn('[BrowserAudit] TI enrichment failed:', err.message))
-      .finally(() => sendResponse(getAggregatedData(tabId)));
+      .finally(async () => {
+        const data = getAggregatedData(tabId);
+        // If pageUrl is empty (ScriptSpy activated after page load),
+        // read URL directly from the active tab
+        if (!data.pageUrl) {
+          try {
+            const tab = await chrome.tabs.get(tabId);
+            data.pageUrl = tab?.url ?? '';
+            data.pageTitle = tab?.title ?? '';
+          } catch { /* tab gone */ }
+        } else {
+          try {
+            const tab = await chrome.tabs.get(tabId);
+            data.pageTitle = tab?.title ?? '';
+          } catch { /* tab gone */ }
+        }
+        sendResponse(data);
+      });
     return true;
   }
 
