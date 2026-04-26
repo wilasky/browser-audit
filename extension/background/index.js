@@ -230,6 +230,43 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'apply_batch') {
+    // Apply multiple fixes at once (used by import-and-apply flow)
+    const fixes = msg.fixes ?? []; // [{api, value}]
+    let applied = 0;
+    const errors = [];
+
+    Promise.all(fixes.map((f) =>
+      new Promise((resolve) => {
+        const [namespace, key] = f.api.split('.');
+        const setting = chrome.privacy?.[namespace]?.[key];
+        if (!setting || f.value === undefined || f.value === null) { resolve(); return; }
+        setting.set({ value: f.value }, () => {
+          if (chrome.runtime.lastError) {
+            errors.push(`${f.api}: ${chrome.runtime.lastError.message}`);
+          } else {
+            applied++;
+          }
+          resolve();
+        });
+      })
+    )).then(async () => {
+      // Persist all applied fixes so they survive SW death and get re-applied
+      const stored = await chrome.storage.local.get('appliedFixes');
+      const existing = (stored.appliedFixes ?? []).map((a) =>
+        typeof a === 'string' ? { api: a, value: null } : a
+      );
+      for (const f of fixes) {
+        const idx = existing.findIndex((e) => e.api === f.api);
+        if (idx >= 0) { existing[idx] = { api: f.api, value: f.value }; }
+        else { existing.push({ api: f.api, value: f.value }); }
+      }
+      await chrome.storage.local.set({ appliedFixes: existing });
+      sendResponse({ ok: errors.length === 0, applied, errors });
+    });
+    return true;
+  }
+
   if (msg.type === 'apply_fix') {
     const { api, value } = msg;
     const [namespace, key] = api.split('.');

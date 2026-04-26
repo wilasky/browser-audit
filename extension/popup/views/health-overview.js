@@ -348,19 +348,68 @@ export async function renderHealthOverview(audit, container) {
         if (!data.results || !Array.isArray(data.results)) {
           throw new Error(t('health.import_invalid'));
         }
-        const importedAudit = {
-          score: data.score ?? audit.score,
-          label: data.label ?? audit.label,
-          level: data.level ?? audit.level,
-          completedAt: data.completedAt ? new Date(data.completedAt).getTime() : Date.now(),
-          baselineVersion: data.baselineVersion ?? 'imported',
-          results: data.results,
-          categories: audit.categories,
-        };
-        // Persist as the active audit so it survives popup close/reopen.
-        // User can recover their real audit with the "Refresh" button.
-        await chrome.storage.local.set({ lastAudit: importedAudit });
-        renderHealthOverview(importedAudit, container);
+
+        // Detect applicable settings (pass + canApply + expected defined)
+        const applicableFixes = data.results
+          .filter((r) => r.status === 'pass' && r.api && r.expected !== undefined && r.expected !== null)
+          .map((r) => ({ api: r.api, value: r.expected }));
+
+        let shouldApply = false;
+        if (applicableFixes.length > 0) {
+          shouldApply = confirm(
+            `Este archivo contiene ${applicableFixes.length} ajustes hardenizados.\n\n` +
+            '¿Aplicarlos a tu Chrome ahora?\n\n' +
+            'OK = Aplicar (sube el score real)\n' +
+            'Cancelar = Solo ver el audit (no aplica nada)'
+          );
+        }
+
+        if (shouldApply) {
+          // Request privacy permission if needed
+          const hasPrivacy = await new Promise((resolve) =>
+            chrome.permissions.contains({ permissions: ['privacy'] }, (has) => {
+              void chrome.runtime.lastError;
+              resolve(has);
+            })
+          );
+          if (!hasPrivacy) {
+            const granted = await new Promise((resolve) =>
+              chrome.permissions.request({ permissions: ['privacy'] }, (g) => {
+                void chrome.runtime.lastError;
+                resolve(g);
+              })
+            );
+            if (!granted) {
+              alert(t('health.no_perm_apply'));
+              shouldApply = false;
+            }
+          }
+        }
+
+        if (shouldApply) {
+          container.innerHTML = `<p class="loading">Aplicando ${applicableFixes.length} ajustes…</p>`;
+          const res = await sendMsg({ type: 'apply_batch', fixes: applicableFixes });
+          // After applying, re-run a real audit to show actual current state
+          container.innerHTML = `<p class="loading">${esc(t('health.auditing'))}</p>`;
+          const fresh = await sendMsg({ type: 'run_audit' });
+          if (fresh) {
+            renderHealthOverview(fresh, container);
+            setTimeout(() => alert(`✓ ${res?.applied ?? 0} ajustes aplicados.`), 100);
+          }
+        } else {
+          // Just visualize the imported audit
+          const importedAudit = {
+            score: data.score ?? audit.score,
+            label: data.label ?? audit.label,
+            level: data.level ?? audit.level,
+            completedAt: data.completedAt ? new Date(data.completedAt).getTime() : Date.now(),
+            baselineVersion: data.baselineVersion ?? 'imported',
+            results: data.results,
+            categories: audit.categories,
+          };
+          await chrome.storage.local.set({ lastAudit: importedAudit });
+          renderHealthOverview(importedAudit, container);
+        }
       } catch (err) {
         alert(t('health.import_error', { msg: err.message }));
       }
