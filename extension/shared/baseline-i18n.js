@@ -254,3 +254,152 @@ export function checkText(checkId, fieldEs, field) {
   // Wrap in {es, en} so localized() picks the right one
   return localized({ es: fieldEs, en });
 }
+
+// Category labels (from baseline.v1.json) — translated by id
+const CATEGORY_LABELS = {
+  updates:     { es: 'Actualizaciones', en: 'Updates' },
+  privacy:     { es: 'Privacidad',      en: 'Privacy' },
+  security:    { es: 'Seguridad',       en: 'Security' },
+  extensions:  { es: 'Extensiones',     en: 'Extensions' },
+  fingerprint: { es: 'Huella digital',  en: 'Fingerprint' },
+  leaks:       { es: 'Fugas',           en: 'Leaks' },
+};
+
+export function categoryLabel(catId) {
+  const entry = CATEGORY_LABELS[catId];
+  return entry ? localized(entry) : catId;
+}
+
+// Translate detail strings that come from audit-engine.js (background returns ES)
+export function translateDetail(detail) {
+  if (!detail || typeof detail !== 'string') { return detail; }
+
+  // Exact matches
+  const EXACT = {
+    'Configurado correctamente': 'Configured correctly',
+    'API no disponible': 'API not available',
+    'Sin extensiones Manifest V2': 'No Manifest V2 extensions',
+    'Sin fugas de IP por WebRTC': 'No WebRTC IP leaks',
+    'Aislamiento de sitios activo': 'Site isolation active',
+    'SharedArrayBuffer no disponible — posible configuración inusual':
+      'SharedArrayBuffer not available — possibly unusual configuration',
+    'Sin permiso "privacy" no se puede aplicar.':
+      'Cannot apply without "privacy" permission.',
+    'Sin extensiones gestionadas por política':
+      'No policy-managed extensions',
+    'Permiso management no concedido':
+      'management permission not granted',
+    'Ninguna extensión con permisos excesivos':
+      'No extensions with excessive permissions',
+    'Todas las extensiones provienen de Chrome Web Store':
+      'All extensions are from Chrome Web Store',
+    'Pendiente de cálculo (abre una página web)':
+      'Calculation pending (open a web page)',
+    'Revisa manualmente en chrome://settings/content':
+      'Review manually in chrome://settings/content',
+  };
+  if (EXACT[detail]) { return localized({ es: detail, en: EXACT[detail] }); }
+
+  // Patterns with values
+  const PATTERNS = [
+    // "No aplicable en tu Chrome (la API privacy.X.Y no está expuesta a extensiones en esta versión o plataforma)"
+    [/^No aplicable en tu Chrome \(la API privacy\.(.+) no está expuesta a extensiones en esta versión o plataforma\)$/,
+     (m) => `Not applicable in your Chrome (privacy.${m[1]} API is not exposed to extensions in this version or platform)`],
+    // "Verifica manualmente en X — Chrome no expone esta opción a extensiones"
+    [/^Verifica manualmente en (.+) — Chrome no expone esta opción a extensiones$/,
+     (m) => `Verify manually in ${m[1]} — Chrome does not expose this option to extensions`],
+    // "Verifica manualmente en chrome://flags#..."
+    [/^Verifica manualmente en (chrome:\/\/flags.+)$/,
+     (m) => `Verify manually in ${m[1]}`],
+    // "Verifica en chrome://settings/downloads que esté activado..."
+    [/^Verifica en (chrome:\/\/settings\S+) que esté activado "Preguntar dónde guardar"$/,
+     (m) => `Verify in ${m[1]} that "Ask where to save" is enabled`],
+    // "Chrome v136"
+    [/^Chrome v(\d+)$/, (m) => `Chrome v${m[1]}`],
+    // "Brave v136 (motor Chromium 136)"
+    [/^(\w+) v(\d+) \(motor Chromium (\d+)\)$/,
+     (m) => `${m[1]} v${m[2]} (Chromium engine ${m[3]})`],
+    // "Chrome v130 — considera actualizar (Chromium mínimo recomendado: v134)"
+    [/^(\w+) v(\d+) — considera actualizar \(Chromium mínimo recomendado: v(\d+)\)$/,
+     (m) => `${m[1]} v${m[2]} — consider updating (Chromium recommended minimum: v${m[3]})`],
+    // "Chrome v120 — versión antigua con vulnerabilidades conocidas (Chromium mínimo: v134)"
+    [/^(\w+) v(\d+) — versión antigua con vulnerabilidades conocidas \(Chromium mínimo: v(\d+)\)$/,
+     (m) => `${m[1]} v${m[2]} — outdated version with known vulnerabilities (Chromium minimum: v${m[3]})`],
+    // "5 extensión(es) revisada(s), ninguna en lista negra"
+    [/^(\d+) extensión\(es\) revisada\(s\), ninguna en lista negra$/,
+     (m) => `${m[1]} extension(s) reviewed, none on blacklist`],
+    // "5 extensión(es) en lista negra"
+    [/^(\d+) extensión\(es\) en lista negra$/,
+     (m) => `${m[1]} extension(s) on blacklist`],
+    // "5 extensiones activas (recomendado: máximo 10)"
+    [/^(\d+) extensiones activas \(recomendado: máximo (\d+)\)$/,
+     (m) => `${m[1]} active extensions (recommended max: ${m[2]})`],
+    // "5 extensión(es) activa(s)"
+    [/^(\d+) extensión\(es\) activa\(s\)$/,
+     (m) => `${m[1]} active extension(s)`],
+    // "Modo desarrollador activo (3 extensión(es) sin verificar)"
+    [/^Modo desarrollador activo \((\d+) extensión\(es\) sin verificar\)$/,
+     (m) => `Developer mode active (${m[1]} unverified extension(s))`],
+    // "5 extensión(es) instalada(s) manualmente"
+    [/^(\d+) extensión\(es\) instalada\(s\) manualmente$/,
+     (m) => `${m[1]} manually installed extension(s)`],
+    // "5 extensión(es) gestionada(s) por política — verifica que sean tuyas"
+    [/^(\d+) extensión\(es\) gestionada\(s\) por política — verifica que sean tuyas$/,
+     (m) => `${m[1]} policy-managed extension(s) — verify they are yours`],
+    // "5 extensión(es) con 2+ permisos sensibles"
+    [/^(\d+) extensión\(es\) con (\d+)\+ permisos sensibles$/,
+     (m) => `${m[1]} extension(s) with ${m[2]}+ sensitive permissions`],
+    // "5 extensión(es) en Manifest V2 (obsoleto)"
+    [/^(\d+) extensión\(es\) en Manifest V2 \(obsoleto\)$/,
+     (m) => `${m[1]} extension(s) on Manifest V2 (obsolete)`],
+    // "Política WebRTC: default"
+    [/^Política WebRTC: (.+)$/, (m) => `WebRTC policy: ${m[1]}`],
+    // "WebRTC en modo más restrictivo"
+    [/^WebRTC en modo más restrictivo$/, () => 'WebRTC in most restrictive mode'],
+    // "WebRTC policy: X (necesita: disable_non_proxied_udp)"
+    [/^WebRTC policy: (.+) \(necesita: (.+)\)$/,
+     (m) => `WebRTC policy: ${m[1]} (needs: ${m[2]})`],
+    // "Valor actual: X"
+    [/^Valor actual: (.+)$/, (m) => `Current value: ${m[1]}`],
+    // "12.5 bits — navegador común"
+    [/^([\d.]+) bits — navegador común$/, (m) => `${m[1]} bits — common browser`],
+    [/^([\d.]+) bits — moderadamente único$/, (m) => `${m[1]} bits — moderately unique`],
+    [/^([\d.]+) bits — altamente identificable$/, (m) => `${m[1]} bits — highly identifiable`],
+    // "Canvas fingerprint bloqueado por el navegador"
+    [/^Canvas fingerprint bloqueado por el navegador$/, () => 'Canvas fingerprint blocked by browser'],
+    // "Canvas fingerprint NO bloqueado — rastreable por cualquier web"
+    [/^Canvas fingerprint NO bloqueado — rastreable por cualquier web$/,
+     () => 'Canvas fingerprint NOT blocked — trackable by any website'],
+    // "Default: ask"
+    [/^Default: (.+)$/, (m) => `Default: ${m[1]}`],
+    // "No se pudo leer la versión del navegador"
+    [/^No se pudo leer la versión del navegador$/, () => 'Could not read browser version'],
+    // "Controlado por política corporativa"
+    [/^Controlado por política corporativa$/, () => 'Controlled by corporate policy'],
+    // "Otra extensión controla este ajuste — desactívala o revoca su acceso"
+    [/^Otra extensión controla este ajuste — desactívala o revoca su acceso$/,
+     () => 'Another extension controls this setting — disable it or revoke its access'],
+    // "Política corporativa o sistema bloquea este cambio"
+    [/^Política corporativa o sistema bloquea este cambio$/,
+     () => 'Corporate policy or system blocks this change'],
+    // "Cambio aplicado pero el valor sigue siendo "X". El navegador puede no soportar este valor."
+    [/^Cambio aplicado pero el valor sigue siendo "(.+)"\. El navegador puede no soportar este valor\.$/,
+     (m) => `Change applied but value remains "${m[1]}". The browser may not support this value.`],
+    // "Requiere permiso "X""
+    [/^Requiere permiso "(.+)"$/, (m) => `Requires "${m[1]}" permission`],
+    // "Handler "X" no implementado"
+    [/^Handler "(.+)" no implementado$/, (m) => `Handler "${m[1]}" not implemented`],
+    // "Error: X"
+    [/^Error: (.+)$/, (m) => `Error: ${m[1]}`],
+  ];
+
+  for (const [pattern, fn] of PATTERNS) {
+    const m = detail.match(pattern);
+    if (m) {
+      const en = fn(m);
+      return localized({ es: detail, en });
+    }
+  }
+
+  return detail; // No translation found, return original
+}

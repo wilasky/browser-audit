@@ -1,7 +1,7 @@
 import { exportAuditJSON, exportAuditPDF } from '../export.js';
 import { esc } from '../../shared/sanitize.js';
 import { t } from '../../shared/i18n.js';
-import { checkText } from '../../shared/baseline-i18n.js';
+import { checkText, categoryLabel, translateDetail } from '../../shared/baseline-i18n.js';
 import baseline from '../../data/baseline.v1.json';
 
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
@@ -122,7 +122,7 @@ function renderCheck(r, fixMap) {
             ${severityLabel(r.severity)}
             ${frameworkBadges(r.frameworks)}
           </div>
-          <span class="check-detail">${esc(r.detail ?? '')}</span>
+          <span class="check-detail">${esc(translateDetail(r.detail ?? ''))}</span>
         </div>
         <div class="check-actions">${detailBtn}${fixBtn}</div>
       </div>
@@ -148,7 +148,7 @@ function renderCategory(cat, fixMap) {
   return `
     <section class="category">
       <div class="cat-header">
-        <h2 class="cat-title">${cat.icon} ${cat.label}</h2>
+        <h2 class="cat-title">${esc(cat.icon)} ${esc(categoryLabel(cat.id) || cat.label)}</h2>
         <div class="cat-stats">${statsHtml}</div>
       </div>
       <ul class="check-list">${checks}</ul>
