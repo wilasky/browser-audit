@@ -176,6 +176,57 @@ const TRANSLATIONS = {
   'comp.section_pentest':  { es: '🔧 Análisis técnico (pentest)', en: '🔧 Technical analysis (pentest)' },
   'comp.score_overall':    { es: 'Cumplimiento general',       en: 'Overall compliance' },
 
+  // Compliance issues — Cookies section
+  'compi.cookies_no_banner':    { es: 'Cookies cargadas sin banner de consentimiento detectado', en: 'Cookies loaded without consent banner detected' },
+  'compi.cookies_consent_done': { es: 'Consentimiento ya aceptado por el usuario', en: 'Consent already accepted by user' },
+  'compi.banner_no_reject':     { es: 'Banner con "Aceptar" pero sin "Rechazar" — no cumple RGPD', en: 'Banner with "Accept" but no "Reject" — non-GDPR compliant' },
+  'compi.banner_both_btn':      { es: 'Banner con opciones Aceptar y Rechazar visibles', en: 'Banner with Accept and Reject options visible' },
+  'compi.banner_no_config':     { es: 'Banner sin botón de "Configurar preferencias"', en: 'Banner without "Configure preferences" button' },
+  'compi.no_cookies':           { es: 'No se cargan cookies en esta página', en: 'No cookies loaded on this page' },
+  'compi.many_cookies':         { es: '{n} cookies activas — revisa cuáles son realmente necesarias', en: '{n} active cookies — check which are really necessary' },
+
+  // Compliance issues — GDPR section
+  'compi.no_policy_link':       { es: 'No se encontró link a política de privacidad', en: 'No privacy policy link found' },
+  'compi.policy_linked':        { es: 'Política de privacidad enlazada ({n} link{s})', en: 'Privacy policy linked ({n} link{s})' },
+  'compi.many_third_party':     { es: '{n} dominios de terceros cargando scripts — revisa que estén declarados', en: '{n} third-party domains loading scripts — check they are declared' },
+  'compi.form_get_password':    { es: 'Formulario con contraseña usando GET (envía datos en la URL)', en: 'Form with password using GET (sends data in URL)' },
+  'compi.form_autocomplete':    { es: 'Formulario con autocomplete activo en campo password', en: 'Form with autocomplete enabled on password field' },
+
+  // Compliance issues — Headers section
+  'compi.no_https':             { es: 'La página NO usa HTTPS', en: 'Page does NOT use HTTPS' },
+  'compi.https_active':         { es: 'HTTPS activo', en: 'HTTPS active' },
+  'compi.mixed_content':        { es: '{n} recursos por HTTP en página HTTPS ({parts})', en: '{n} resources via HTTP on HTTPS page ({parts})' },
+  'compi.header_configured':    { es: '{name}: configurado', en: '{name}: configured' },
+  'compi.header_missing':       { es: '{name}: no presente — {hint}', en: '{name}: missing — {hint}' },
+  'compi.powered_by':           { es: 'X-Powered-By revela tecnología: "{val}"', en: 'X-Powered-By leaks technology: "{val}"' },
+  'compi.server_version':       { es: 'Server header revela versión: "{val}"', en: 'Server header leaks version: "{val}"' },
+  'compi.xss_deprecated':       { es: 'X-XSS-Protection presente (deprecated, mejor CSP)', en: 'X-XSS-Protection present (deprecated, prefer CSP)' },
+  'compi.csp_report_only':      { es: 'CSP en modo Report-Only únicamente — no bloquea ataques', en: 'CSP in Report-Only mode only — does not block attacks' },
+
+  // Compliance issues — Pentest section
+  'compi.iframes_no_sandbox':   { es: '{n} iframe(s) cross-origin sin atributo sandbox', en: '{n} cross-origin iframe(s) without sandbox attribute' },
+  'compi.iframes_safe':         { es: 'Todos los iframes tienen sandbox o son same-origin', en: 'All iframes have sandbox or are same-origin' },
+  'compi.scripts_sri_ok':       { es: '{n} scripts externos, todos con SRI', en: '{n} external scripts, all with SRI' },
+  'compi.scripts_no_sri':       { es: '{noSri} de {total} scripts externos SIN Subresource Integrity', en: '{noSri} of {total} external scripts WITHOUT Subresource Integrity' },
+  'compi.css_no_sri':           { es: '{n} CSS externos sin SRI', en: '{n} external CSS without SRI' },
+  'compi.inline_handlers':      { es: '{n} elementos con event handlers inline (incompatible con CSP estricta)', en: '{n} elements with inline event handlers (incompatible with strict CSP)' },
+  'compi.form_no_csrf':         { es: 'Formulario POST con campos sensibles sin token CSRF detectado', en: 'POST form with sensitive fields without detected CSRF token' },
+  'compi.form_cross_origin':    { es: 'Formulario envía datos a otro dominio: {action}', en: 'Form sends data to another domain: {action}' },
+  'compi.jquery_old':           { es: 'jQuery {v} obsoleto (XSS conocidos en 1.x/2.x)', en: 'jQuery {v} obsolete (known XSS in 1.x/2.x)' },
+  'compi.jquery_modern':        { es: 'jQuery {v} (versión moderna)', en: 'jQuery {v} (modern version)' },
+  'compi.cookies_http':         { es: 'Cookies en página HTTP (interceptables en red)', en: 'Cookies on HTTP page (interceptable on network)' },
+  'compi.localstorage_big':     { es: 'localStorage con {kb} KB de datos', en: 'localStorage with {kb} KB of data' },
+  'compi.service_worker':       { es: 'Service Worker registrado: {url}', en: 'Service Worker registered: {url}' },
+  'compi.no_issues':            { es: 'Sin problemas técnicos detectados en esta página', en: 'No technical issues detected on this page' },
+
+  // Header explanation hints
+  'compi.hint_hsts':       { es: 'Protege contra downgrade attacks', en: 'Protects against downgrade attacks' },
+  'compi.hint_csp':        { es: 'Bloquea XSS y recursos no autorizados', en: 'Blocks XSS and unauthorized resources' },
+  'compi.hint_xfo':        { es: 'Previene clickjacking', en: 'Prevents clickjacking' },
+  'compi.hint_xcto':       { es: 'Previene MIME sniffing', en: 'Prevents MIME sniffing' },
+  'compi.hint_referrer':   { es: 'Controla qué Referer envías', en: 'Controls what Referer you send' },
+  'compi.hint_permissions':{ es: 'Restringe APIs disponibles', en: 'Restricts available APIs' },
+
   // ---- Script detail (deep analysis) ----
   'sd.title':              { es: 'Análisis profundo de script', en: 'Deep script analysis' },
   'sd.downloading':        { es: 'Descargando y analizando código fuente…', en: 'Downloading and analyzing source code…' },
@@ -356,6 +407,16 @@ export async function setLanguage(lang) {
 export async function getLanguagePreference() {
   const stored = await chrome.storage.local.get(STORAGE_KEY);
   return stored[STORAGE_KEY] ?? 'auto';
+}
+
+// Pick from a {es, en} object based on current language. Falls back to ES then to the value itself.
+export function localized(value) {
+  if (value === null || value === undefined) { return ''; }
+  if (typeof value === 'string') { return value; }
+  if (typeof value === 'object') {
+    return value[_currentLang] ?? value.es ?? value.en ?? String(value);
+  }
+  return String(value);
 }
 
 // Synchronous t() — must call initI18n() first

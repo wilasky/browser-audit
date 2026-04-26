@@ -1,6 +1,7 @@
 import { exportAuditJSON, exportAuditPDF } from '../export.js';
 import { esc } from '../../shared/sanitize.js';
 import { t } from '../../shared/i18n.js';
+import { checkText } from '../../shared/baseline-i18n.js';
 
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
@@ -116,7 +117,7 @@ function renderCheck(r, fixMap) {
         <span class="check-icon">${esc(icon)}</span>
         <div class="check-main">
           <div class="check-title-row">
-            <span class="check-title">${esc(r.title)}</span>
+            <span class="check-title">${esc(checkText(r.id, r.title, 'title'))}</span>
             ${severityLabel(r.severity)}
             ${frameworkBadges(r.frameworks)}
           </div>
@@ -125,8 +126,8 @@ function renderCheck(r, fixMap) {
         <div class="check-actions">${detailBtn}${fixBtn}</div>
       </div>
       <div class="check-rationale" id="rationale-${esc(r.id)}" style="display:none">
-        ${esc(r.rationale ?? '')}
-        ${fix?.instructions ? `<div class="fix-instructions">${esc(fix.instructions)}</div>` : ''}
+        ${esc(checkText(r.id, r.rationale, 'rationale'))}
+        ${fix?.instructions ? `<div class="fix-instructions">${esc(checkText(r.id, fix.instructions, 'instructions'))}</div>` : ''}
       </div>
     </li>`;
 }
@@ -402,7 +403,9 @@ export async function renderHealthOverview(audit, container) {
         const fix = fixMap[checkId];
         const api = apiMap[checkId];
         const expected = expectedMap[checkId];
-        applyFix(fix, api, expected, btn);
+        // Localize instructions for the inline panel
+        const localFix = fix ? { ...fix, instructions: fix.instructions ? checkText(checkId, fix.instructions, 'instructions') : fix.instructions } : fix;
+        applyFix(localFix, api, expected, btn);
       });
     });
 

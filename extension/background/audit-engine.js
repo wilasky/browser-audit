@@ -41,18 +41,28 @@ async function hasPermission(perm) {
 async function runUserAgent(check) {
   const ua = navigator.userAgent;
   const m = ua.match(/Chrome\/(\d+)\./);
-  if (!m) {return { status: 'unknown', detail: 'No se pudo leer la versión de Chrome' };}
+  if (!m) { return { status: 'unknown', detail: 'No se pudo leer la versión del navegador' }; }
+
+  // Detect chromium-based browser
+  let browser = 'Chrome';
+  let isChromiumDerivative = false;
+  if (/Edg\//.test(ua)) { browser = 'Edge'; isChromiumDerivative = true; }
+  else if (/OPR\//.test(ua)) { browser = 'Opera'; isChromiumDerivative = true; }
+  else if (/Vivaldi\//.test(ua)) { browser = 'Vivaldi'; isChromiumDerivative = true; }
+  // Brave hides itself in UA — detect via navigator.brave or absence of telemetry
+  else if (typeof navigator.brave?.isBrave === 'function') { browser = 'Brave'; isChromiumDerivative = true; }
 
   const current = parseInt(m[1], 10);
   const min = check.method.minMajorVersion ?? 120;
 
   if (current >= min) {
-    return { status: 'pass', detail: `Chrome v${current}` };
+    const note = isChromiumDerivative ? ` (motor Chromium ${current})` : '';
+    return { status: 'pass', detail: `${browser} v${current}${note}` };
   }
   if (current >= min - 4) {
-    return { status: 'warn', detail: `Chrome v${current} — considera actualizar (mínimo recomendado: v${min})` };
+    return { status: 'warn', detail: `${browser} v${current} — considera actualizar (Chromium mínimo recomendado: v${min})` };
   }
-  return { status: 'fail', detail: `Chrome v${current} — versión antigua con vulnerabilidades conocidas (mínimo: v${min})` };
+  return { status: 'fail', detail: `${browser} v${current} — versión antigua con vulnerabilidades conocidas (Chromium mínimo: v${min})` };
 }
 
 async function runChromePrivacy(check) {

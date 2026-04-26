@@ -22,31 +22,37 @@ function calcCookieScore(r) {
   const issues = [];
   let pts = 100;
 
-  // Cookies cargadas y no hay banner detectado
+  const consentAccepted = r.consentAccepted ?? false;
+
+  // Cookies cargadas y no hay banner detectado — pero si hay consent aceptado, OK
   if (r.cookies.count > 0 && r.banners.length === 0) {
-    issues.push({ s: 'fail', t: 'Cookies cargadas sin banner de consentimiento detectado' });
-    pts -= 30;
+    if (consentAccepted) {
+      issues.push({ s: 'pass', t: t('compi.cookies_consent_done') });
+    } else {
+      issues.push({ s: 'fail', t: t('compi.cookies_no_banner') });
+      pts -= 30;
+    }
   }
 
   if (r.banners.length > 0) {
     const b = r.banners[0];
     if (b.hasAcceptBtn && !b.hasRejectBtn) {
-      issues.push({ s: 'fail', t: 'Banner con "Aceptar" pero sin "Rechazar" — no cumple RGPD' });
+      issues.push({ s: 'fail', t: t('compi.banner_no_reject') });
       pts -= 25;
     }
     if (b.hasRejectBtn && b.hasAcceptBtn) {
-      issues.push({ s: 'pass', t: 'Banner con opciones Aceptar y Rechazar visibles' });
+      issues.push({ s: 'pass', t: t('compi.banner_both_btn') });
     }
     if (!b.hasConfigBtn) {
-      issues.push({ s: 'warn', t: 'Banner sin botón de "Configurar preferencias"' });
+      issues.push({ s: 'warn', t: t('compi.banner_no_config') });
       pts -= 10;
     }
   } else if (r.cookies.count === 0) {
-    issues.push({ s: 'pass', t: 'No se cargan cookies en esta página' });
+    issues.push({ s: 'pass', t: t('compi.no_cookies') });
   }
 
   if (r.cookies.count > 20) {
-    issues.push({ s: 'warn', t: `${r.cookies.count} cookies activas — revisa cuáles son realmente necesarias` });
+    issues.push({ s: 'warn', t: t('compi.many_cookies', { n: r.cookies.count }) });
     pts -= 5;
   }
 
@@ -58,28 +64,27 @@ function calcGdprScore(r) {
   let pts = 100;
 
   if (r.policyLinks.length === 0) {
-    issues.push({ s: 'fail', t: 'No se encontró link a política de privacidad' });
+    issues.push({ s: 'fail', t: t('compi.no_policy_link') });
     pts -= 30;
   } else {
-    issues.push({ s: 'pass', t: `Política de privacidad enlazada (${r.policyLinks.length} link${r.policyLinks.length > 1 ? 's' : ''})` });
+    issues.push({ s: 'pass', t: t('compi.policy_linked', { n: r.policyLinks.length }) });
   }
 
   if (r.thirdPartyScripts.length > 5) {
-    issues.push({ s: 'warn', t: `${r.thirdPartyScripts.length} dominios de terceros cargando scripts — revisa que estén declarados` });
+    issues.push({ s: 'warn', t: t('compi.many_third_party', { n: r.thirdPartyScripts.length }) });
     pts -= 15;
   }
 
-  // Forms con campos sensibles
   for (const form of r.forms) {
     if (form.method === 'GET' && form.sensitive.some((s) => s.type === 'password')) {
-      issues.push({ s: 'fail', t: 'Formulario con contraseña usando GET (envía datos en la URL)' });
+      issues.push({ s: 'fail', t: t('compi.form_get_password') });
       pts -= 30;
     }
-    const noAutocomplete = form.sensitive.filter((s) =>
+    const hasAutocomplete = form.sensitive.some((s) =>
       s.type === 'password' && (s.autocomplete === 'on (default)' || s.autocomplete === 'on')
     );
-    if (noAutocomplete.length > 0) {
-      issues.push({ s: 'warn', t: `Formulario con autocomplete activo en campo password` });
+    if (hasAutocomplete) {
+      issues.push({ s: 'warn', t: t('compi.form_autocomplete') });
       pts -= 5;
     }
   }
@@ -92,56 +97,56 @@ function calcSecurityScore(r) {
   let pts = 100;
 
   if (!r.isHttps) {
-    issues.push({ s: 'fail', t: 'La página NO usa HTTPS' });
+    issues.push({ s: 'fail', t: t('compi.no_https') });
     pts -= 50;
   } else {
-    issues.push({ s: 'pass', t: 'HTTPS activo' });
+    issues.push({ s: 'pass', t: t('compi.https_active') });
   }
 
   const md = r.mixedDetail ?? { total: 0 };
   if (md.total > 0) {
     const parts = [];
-    if (md.images) { parts.push(`${md.images} imágenes`); }
-    if (md.scripts) { parts.push(`${md.scripts} scripts`); }
-    if (md.links) { parts.push(`${md.links} CSS`); }
+    if (md.images) { parts.push(`${md.images} img`); }
+    if (md.scripts) { parts.push(`${md.scripts} js`); }
+    if (md.links) { parts.push(`${md.links} css`); }
     if (md.iframes) { parts.push(`${md.iframes} iframes`); }
-    issues.push({ s: 'fail', t: `${md.total} recursos por HTTP en página HTTPS (${parts.join(', ')})` });
+    issues.push({ s: 'fail', t: t('compi.mixed_content', { n: md.total, parts: parts.join(', ') }) });
     pts -= Math.min(40, md.total * 5);
   }
 
   const h = r.headers ?? {};
 
   const headerChecks = [
-    { key: 'hsts', name: 'HSTS', weight: 10, hint: 'Protege contra downgrade attacks' },
-    { key: 'csp', name: 'Content-Security-Policy', weight: 15, hint: 'Bloquea XSS y recursos no autorizados' },
-    { key: 'xfo', name: 'X-Frame-Options', weight: 5, hint: 'Previene clickjacking' },
-    { key: 'xcto', name: 'X-Content-Type-Options', weight: 3, hint: 'Previene MIME sniffing' },
-    { key: 'referrerPolicy', name: 'Referrer-Policy', weight: 5, hint: 'Controla qué Referer envías' },
-    { key: 'permissionsPolicy', name: 'Permissions-Policy', weight: 3, hint: 'Restringe APIs disponibles' },
+    { key: 'hsts', name: 'HSTS', weight: 10, hintKey: 'compi.hint_hsts' },
+    { key: 'csp', name: 'Content-Security-Policy', weight: 15, hintKey: 'compi.hint_csp' },
+    { key: 'xfo', name: 'X-Frame-Options', weight: 5, hintKey: 'compi.hint_xfo' },
+    { key: 'xcto', name: 'X-Content-Type-Options', weight: 3, hintKey: 'compi.hint_xcto' },
+    { key: 'referrerPolicy', name: 'Referrer-Policy', weight: 5, hintKey: 'compi.hint_referrer' },
+    { key: 'permissionsPolicy', name: 'Permissions-Policy', weight: 3, hintKey: 'compi.hint_permissions' },
   ];
 
   for (const c of headerChecks) {
     if (h[c.key]) {
-      issues.push({ s: 'pass', t: `${c.name}: configurado` });
+      issues.push({ s: 'pass', t: t('compi.header_configured', { name: c.name }) });
     } else {
-      issues.push({ s: 'warn', t: `${c.name}: no presente — ${c.hint}` });
+      issues.push({ s: 'warn', t: t('compi.header_missing', { name: c.name, hint: t(c.hintKey) }) });
       pts -= c.weight;
     }
   }
 
   if (h.poweredBy) {
-    issues.push({ s: 'warn', t: `X-Powered-By revela tecnología: "${h.poweredBy}"` });
+    issues.push({ s: 'warn', t: t('compi.powered_by', { val: h.poweredBy }) });
     pts -= 3;
   }
   if (h.server && /\d/.test(h.server)) {
-    issues.push({ s: 'warn', t: `Server header revela versión: "${h.server}"` });
+    issues.push({ s: 'warn', t: t('compi.server_version', { val: h.server }) });
     pts -= 3;
   }
   if (h.xxss) {
-    issues.push({ s: 'warn', t: 'X-XSS-Protection presente (deprecated, mejor CSP)' });
+    issues.push({ s: 'warn', t: t('compi.xss_deprecated') });
   }
   if (h.cspReportOnly && !h.csp) {
-    issues.push({ s: 'warn', t: 'CSP en modo Report-Only únicamente — no bloquea ataques' });
+    issues.push({ s: 'warn', t: t('compi.csp_report_only') });
     pts -= 5;
   }
 
@@ -152,78 +157,71 @@ function calcPentestScore(r) {
   const issues = [];
   let pts = 100;
 
-  // Iframes inseguros
   const unsafeIframes = (r.iframes ?? []).filter((i) => i.crossOrigin && !i.sandbox);
   if (unsafeIframes.length > 0) {
-    issues.push({ s: 'warn', t: `${unsafeIframes.length} iframe(s) cross-origin sin atributo sandbox` });
+    issues.push({ s: 'warn', t: t('compi.iframes_no_sandbox', { n: unsafeIframes.length }) });
     pts -= Math.min(20, unsafeIframes.length * 5);
   } else if (r.iframes?.length > 0) {
-    issues.push({ s: 'pass', t: 'Todos los iframes tienen sandbox o son same-origin' });
+    issues.push({ s: 'pass', t: t('compi.iframes_safe') });
   }
 
-  // SRI en scripts externos
   if (r.totalThirdPartyScripts > 0) {
     if (r.scriptsWithoutSRI === 0) {
-      issues.push({ s: 'pass', t: `${r.totalThirdPartyScripts} scripts externos, todos con SRI` });
+      issues.push({ s: 'pass', t: t('compi.scripts_sri_ok', { n: r.totalThirdPartyScripts }) });
     } else {
-      issues.push({ s: 'fail', t: `${r.scriptsWithoutSRI} de ${r.totalThirdPartyScripts} scripts externos SIN Subresource Integrity` });
+      issues.push({ s: 'fail', t: t('compi.scripts_no_sri', { noSri: r.scriptsWithoutSRI, total: r.totalThirdPartyScripts }) });
       pts -= Math.min(30, r.scriptsWithoutSRI * 3);
     }
   }
 
   if (r.stylesheetsWithoutSRI > 0) {
-    issues.push({ s: 'warn', t: `${r.stylesheetsWithoutSRI} CSS externos sin SRI` });
+    issues.push({ s: 'warn', t: t('compi.css_no_sri', { n: r.stylesheetsWithoutSRI }) });
     pts -= 5;
   }
 
-  // Inline event handlers (onclick, onerror, etc.)
   if (r.inlineHandlers > 5) {
-    issues.push({ s: 'warn', t: `${r.inlineHandlers} elementos con event handlers inline (incompatible con CSP estricta)` });
+    issues.push({ s: 'warn', t: t('compi.inline_handlers', { n: r.inlineHandlers }) });
     pts -= 5;
   }
 
-  // Forms
   for (const form of r.forms ?? []) {
     if (!form.hasCsrfToken && form.method === 'POST' && form.sensitive.length > 0) {
-      issues.push({ s: 'warn', t: `Formulario POST con campos sensibles sin token CSRF detectado` });
+      issues.push({ s: 'warn', t: t('compi.form_no_csrf') });
       pts -= 5;
     }
     if (form.actionCrossOrigin) {
-      issues.push({ s: 'warn', t: `Formulario envía datos a otro dominio: ${form.action}` });
+      issues.push({ s: 'warn', t: t('compi.form_cross_origin', { action: form.action }) });
       pts -= 5;
     }
   }
 
-  // Outdated libraries
   if (r.libs?.jquery) {
     const v = r.libs.jquery;
     const major = parseInt(v.split('.')[0], 10);
     if (major < 3) {
-      issues.push({ s: 'fail', t: `jQuery ${v} obsoleto (XSS conocidos en 1.x/2.x)` });
+      issues.push({ s: 'fail', t: t('compi.jquery_old', { v }) });
       pts -= 15;
     } else {
-      issues.push({ s: 'pass', t: `jQuery ${v} (versión moderna)` });
+      issues.push({ s: 'pass', t: t('compi.jquery_modern', { v }) });
     }
   }
 
-  // Cookies inseguras
   if (r.cookies.count > 0 && !r.isHttps) {
-    issues.push({ s: 'fail', t: 'Cookies en página HTTP (interceptables en red)' });
+    issues.push({ s: 'fail', t: t('compi.cookies_http') });
     pts -= 20;
   }
 
-  // Storage usage
   if (r.storage.lsSize > 100000) {
-    issues.push({ s: 'warn', t: `localStorage con ${(r.storage.lsSize / 1024).toFixed(1)} KB de datos` });
+    issues.push({ s: 'warn', t: t('compi.localstorage_big', { kb: (r.storage.lsSize / 1024).toFixed(1) }) });
   }
 
-  // Service worker
   if (r.serviceWorker) {
-    issues.push({ s: 'pass', t: `Service Worker registrado: ${r.serviceWorker.scriptURL ?? r.serviceWorker.scope}` });
+    const url = r.serviceWorker.scriptURL ?? r.serviceWorker.scope;
+    issues.push({ s: 'pass', t: t('compi.service_worker', { url }) });
   }
 
   if (issues.length === 0) {
-    issues.push({ s: 'pass', t: 'Sin problemas técnicos detectados en esta página' });
+    issues.push({ s: 'pass', t: t('compi.no_issues') });
   }
 
   return { score: Math.max(0, pts), issues };

@@ -26,6 +26,29 @@
     }
   } catch { /* sandboxed */ }
 
+  // --- Detect already-accepted consent (cookie or storage markers) ---
+  const CONSENT_MARKERS = [
+    'cookieConsent', 'cookie_consent', 'CookieConsent', 'OptanonAlertBoxClosed',
+    'OptanonConsent', 'cmplz_consent', 'didomi_token', 'euconsent', 'euconsent-v2',
+    'cookielawinfo-checkbox', 'CookieControl', 'BCPermissionLevelCookie',
+    '_iub_cs', 'cb-enabled', 'gdpr_consent', 'consent_user_consent_token',
+    'usercentrics', 'tcf_consent',
+  ];
+  const consentInCookies = rawCookies.some((c) =>
+    CONSENT_MARKERS.some((m) => c.toLowerCase().includes(m.toLowerCase()))
+  );
+  let consentInStorage = false;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = (localStorage.key(i) || '').toLowerCase();
+      if (CONSENT_MARKERS.some((m) => k.includes(m.toLowerCase()))) {
+        consentInStorage = true;
+        break;
+      }
+    }
+  } catch { /* sandboxed */ }
+  const consentAccepted = consentInCookies || consentInStorage;
+
   // --- Cookie banner heuristic ---
   const bannerKeywords = [
     'cookie', 'consent', 'rgpd', 'gdpr', 'aceptar', 'accept', 'privacy',
@@ -41,13 +64,14 @@
         tag: el.tagName,
         keywords: matches,
         hasAcceptBtn: !!Array.from(el.querySelectorAll('button, a')).find((b) =>
-          /aceptar|accept|allow|ok|agree|estoy de acuerdo/i.test(b.textContent || '')
+          /aceptar|accept|allow|ok|agree|estoy de acuerdo|i agree|got it/i.test(b.textContent || '')
         ),
         hasRejectBtn: !!Array.from(el.querySelectorAll('button, a')).find((b) =>
-          /rechazar|reject|deny|denegar|no acepto/i.test(b.textContent || '')
+          /rechazar|reject|deny|denegar|no acepto|decline|disagree/i.test(b.textContent || '')
         ),
+        // Wider regex — covers many real-world banner buttons
         hasConfigBtn: !!Array.from(el.querySelectorAll('button, a')).find((b) =>
-          /configurar|preferencias|settings|customize|gestionar/i.test(b.textContent || '')
+          /configurar|preferencias|settings|customize|gestionar|m[aá]s opciones|personalizar|ajustes|opciones|manage|customise|options|choices|more info|m[aá]s info/i.test(b.textContent || '')
         ),
       });
     }
@@ -219,6 +243,7 @@
     url: location.href,
     host: location.hostname,
     isHttps,
+    consentAccepted,
     cookies: {
       count: rawCookies.length,
       details: cookieDetails.slice(0, 30),
