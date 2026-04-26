@@ -55,16 +55,51 @@ async function injectScriptSpy(tabId) {
 
 // --- Lifecycle ---
 
+// Re-apply persisted privacy fixes — Chrome can lose extension ownership
+// when the SW goes idle. This restores the user's intended hardening.
+async function reapplyPersistedFixes() {
+  const stored = await chrome.storage.local.get('appliedFixes');
+  const applied = (stored.appliedFixes ?? []).filter((a) =>
+    typeof a === 'object' && a.api && a.value !== undefined && a.value !== null
+  );
+
+  for (const fix of applied) {
+    const [namespace, key] = fix.api.split('.');
+    const setting = chrome.privacy?.[namespace]?.[key];
+    if (!setting) { continue; }
+    try {
+      await new Promise((resolve) => {
+        setting.set({ value: fix.value }, () => {
+          void chrome.runtime.lastError;
+          resolve();
+        });
+      });
+    } catch { /* skip silently */ }
+  }
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.local.set({ installedAt: Date.now(), planTier: 'free' });
+  await reapplyPersistedFixes();
   await doAudit();
+  // Schedule periodic drift check (every 30 minutes)
+  chrome.alarms.create('reapply-fixes', { periodInMinutes: 30 });
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+  await reapplyPersistedFixes();
   const stored = await chrome.storage.local.get('lastAudit');
   const last = stored.lastAudit?.completedAt ?? 0;
   if (Date.now() - last > AUDIT_INTERVAL_MS) {
     await doAudit();
+  }
+  chrome.alarms.create('reapply-fixes', { periodInMinutes: 30 });
+});
+
+// Periodic drift check — re-apply fixes if Chrome reset them
+chrome.alarms?.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'reapply-fixes') {
+    reapplyPersistedFixes();
   }
 });
 
@@ -191,8 +226,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return;
       }
 
-      // Verify the change actually took effect — chrome.privacy.set can fail silently
-      // if another extension or policy controls the setting
       setting.get({}, async (details) => {
         if (chrome.runtime.lastError) {
           sendResponse({ ok: false, reason: 'No se pudo verificar el cambio' });
@@ -204,15 +237,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const success = currentValue === value;
 
         if (success) {
+          // Store {api, value} so we can re-apply if the setting drifts
+          // (Chrome can lose extension ownership when the SW sleeps)
           const stored = await chrome.storage.local.get('appliedFixes');
-          const applied = stored.appliedFixes ?? [];
-          if (!applied.includes(api)) {
-            applied.push(api);
-            await chrome.storage.local.set({ appliedFixes: applied });
+          const applied = (stored.appliedFixes ?? []).map((a) =>
+            typeof a === 'string' ? { api: a, value: null } : a
+          );
+          const existing = applied.find((a) => a.api === api);
+          if (existing) {
+            existing.value = value;
+          } else {
+            applied.push({ api, value });
           }
+          await chrome.storage.local.set({ appliedFixes: applied });
           sendResponse({ ok: true, verified: true });
         } else {
-          // Setting controlled by other software / extension / policy
           const reason = details.levelOfControl === 'controlled_by_other_extensions'
             ? 'Otra extensión controla este ajuste — desactívala o revoca su acceso'
             : details.levelOfControl === 'not_controllable'
@@ -226,9 +265,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'reset_applied_fixes') {
-    // Reset ALL applicable chrome.privacy settings — user expects "leave it as it was"
-    // even if some changes were made before the tracking was implemented.
-    // Caller passes the list of all (api, value) pairs to reset.
     const apis = msg.apis ?? [];
     const errors = [];
     let cleared = 0;
@@ -248,6 +284,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         });
       })
     )).then(async () => {
+      // Wipe persisted appliedFixes so the periodic alarm doesn't re-apply them
       await chrome.storage.local.set({ appliedFixes: [] });
       sendResponse({ ok: errors.length === 0, count: cleared, errors });
     });
