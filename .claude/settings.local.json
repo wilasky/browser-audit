@@ -17,7 +17,11 @@
       "Bash(grep -rn \"\\\\`.*\\\\$\\\\{\" extension/ popup/views --include=\"*.js\")",
       "Bash(grep -rn \"innerHTML.*\\\\${\" extension/popup/views --include=\"*.js\")",
       "Bash(git push *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(xargs grep *)",
+      "Bash(grep -E \"\\\\.env$|secret|token|credentials\")",
+      "WebFetch(domain:wilasky.github.io)",
+      "Bash(powershell -Command 'Get-ChildItem docs/screenshoots/*.png | ForEach-Object { Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\($_.FullName\\); Write-Host \"$\\($_.Name\\): $\\($img.Width\\) x $\\($img.Height\\)\"; $img.Dispose\\(\\) }')"
     ]
   }
 }

@@ -1,6 +1,5 @@
 import { esc } from '../../shared/sanitize.js';
 import { listProviders, getAIConfig, saveAIConfig } from '../../shared/ai-client.js';
-import { getLanguagePreference, setLanguage } from '../../shared/i18n.js';
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -124,19 +123,19 @@ function renderAuditSection(prefs) {
     </section>`;
 }
 
-function renderLanguageSection(currentLang) {
+function renderLanguageSection() {
+  // i18n full UI translation deferred to v0.2.
+  // The Chrome Web Store listing IS shown in EN/ES based on Chrome locale (manifest _locales).
   return `
     <section class="settings-section">
       <h3 class="settings-heading">Idioma · Language</h3>
-      <div class="settings-row">
-        <label class="settings-label">Idioma de la extensión:</label>
-        <select id="pref-lang" class="settings-select">
-          <option value="auto" ${currentLang === 'auto' ? 'selected' : ''}>Automático (Chrome) / Auto</option>
-          <option value="es" ${currentLang === 'es' ? 'selected' : ''}>Español</option>
-          <option value="en" ${currentLang === 'en' ? 'selected' : ''}>English</option>
-        </select>
-      </div>
-      <p class="settings-hint">Cambia el idioma de la interfaz. Recarga el popup para aplicar.</p>
+      <p class="settings-hint">
+        🇪🇸 La interfaz está en español. La traducción completa al inglés llegará en la versión 0.2.
+      </p>
+      <p class="settings-hint" style="margin-top:4px">
+        🇬🇧 Full English UI translation coming in v0.2. The Chrome Web Store listing is already
+        available in English.
+      </p>
     </section>`;
 }
 
@@ -323,17 +322,16 @@ function renderAboutSection() {
 // --- Main ---
 
 export async function renderSettings(container) {
-  const [plan, history, prefs, aiConfig, currentLang] = await Promise.all([
+  const [plan, history, prefs, aiConfig] = await Promise.all([
     sendMsg({ type: 'get_plan' }),
     sendMsg({ type: 'get_history' }),
     loadPrefs(),
     getAIConfig(),
-    getLanguagePreference(),
   ]);
 
   container.innerHTML = `
     <div class="settings-wrap">
-      ${renderLanguageSection(currentLang)}
+      ${renderLanguageSection()}
       ${renderHistorySection(history ?? [])}
       ${renderAuditSection(prefs)}
       ${renderViewSection(prefs)}
@@ -358,12 +356,6 @@ export async function renderSettings(container) {
       await savePrefs({ ...cur, [key]: val });
     });
   }
-
-  // Language change
-  container.querySelector('#pref-lang').addEventListener('change', async (e) => {
-    await setLanguage(e.target.value);
-    location.reload();
-  });
 
   bindPref('pref-auto-audit', 'autoAudit');
   bindPref('pref-interval', 'auditInterval', 'number');
