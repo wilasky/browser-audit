@@ -18,8 +18,8 @@ function buildLookupLinks(domain, hash) {
 
   return `
     <div class="sd-lookups">
-      <a class="lookup-link" data-href="${esc(vt)}">VT (dominio)</a>
-      ${vthash ? `<a class="lookup-link" data-href="${esc(vthash)}">VT (hash SHA256)</a>` : ''}
+      <a class="lookup-link" data-href="${esc(vt)}">${esc(t('sd.lookup_vt_domain'))}</a>
+      ${vthash ? `<a class="lookup-link" data-href="${esc(vthash)}">${esc(t('sd.lookup_vt_hash'))}</a>` : ''}
       <a class="lookup-link" data-href="${esc(us)}">urlscan</a>
       <a class="lookup-link" data-href="${esc(uh)}">URLhaus</a>
       <a class="lookup-link" data-href="${esc(sb)}">Safe Browsing</a>
@@ -39,7 +39,7 @@ function renderFindings(findings) {
             <td><code>${esc(f.label)}</code></td>
             <td>${f.count}</td>
             <td><span class="sd-score">${f.score}</span></td>
-            <td class="sd-desc">${esc(f.desc)}</td>
+            <td class="sd-desc">${esc(t(f.descKey))}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -49,14 +49,16 @@ function renderFindings(findings) {
 function renderObfuscation(obf) {
   const color = obf.level === 'high' ? '#ef4444' : obf.level === 'medium' ? '#f59e0b' : '#22c55e';
   const findings = obf.findings.length
-    ? obf.findings.map((f) => `<li>${esc(f.label)} <span class="settings-hint">×${f.count} — ${esc(f.desc)}</span></li>`).join('')
+    ? obf.findings.map((f) => `<li>${esc(f.label)} <span class="settings-hint">×${f.count} — ${esc(t(f.descKey))}</span></li>`).join('')
     : `<li class="settings-hint">${esc(t('sd.no_obf'))}</li>`;
+
+  const levelLabel = t(`sa.obf_level_${obf.level}`);
 
   return `
     <div class="sd-obf">
       <div class="sd-obf-head">
-        <strong>Obfuscación: <span style="color:${color}">${obf.score}/100</span> (${esc(obf.level)})</strong>
-        <span class="settings-hint">Escape ratio: ${esc(obf.escapeRatio)}</span>
+        <strong>${esc(t('sd.obf_score_label'))} <span style="color:${color}">${obf.score}/100</span> (${esc(levelLabel)})</strong>
+        <span class="settings-hint">${esc(t('sd.escape_ratio'))} ${esc(obf.escapeRatio)}</span>
       </div>
       <ul>${findings}</ul>
     </div>`;
@@ -142,7 +144,7 @@ export async function renderScriptDetail(container, script) {
         <div class="sd-stat sd-stat-hash">
           <span class="settings-hint">SHA256:</span>
           <code class="sd-hash" title="${esc(analysis.stats.hash)}">${esc(analysis.stats.hash.slice(0, 16))}…</code>
-          <button id="btn-copy-sd-hash" class="btn-export" title="Copiar hash completo">⎘</button>
+          <button id="btn-copy-sd-hash" class="btn-export" title="${esc(t('sd.copy_hash_full'))}">⎘</button>
         </div>
       </div>
 

@@ -295,6 +295,12 @@ export function translateDetail(detail) {
       'All extensions are from Chrome Web Store',
     'Pendiente de cálculo (abre una página web)':
       'Calculation pending (open a web page)',
+    'Pendiente de cálculo (abre una página)':
+      'Calculation pending (open a page)',
+    'Sin extensiones en modo desarrollador':
+      'No extensions in developer mode',
+    'API contentSettings no disponible':
+      'contentSettings API not available',
     'Revisa manualmente en chrome://settings/content':
       'Review manually in chrome://settings/content',
   };

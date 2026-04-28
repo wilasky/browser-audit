@@ -5,31 +5,32 @@ import { sha256 } from './hash.js';
 
 // --- Patterns ---
 
+// label is technical (universal). descKey is i18n-resolved by the popup at render time.
 const SUSPICIOUS_APIS = [
-  { id: 'eval', pattern: /\beval\s*\(/g, weight: 10, label: 'eval()', desc: 'Ejecución dinámica de código (vector clásico de XSS y obfuscación)' },
-  { id: 'function-ctor', pattern: /\bnew\s+Function\s*\(/g, weight: 8, label: 'new Function()', desc: 'Equivalente a eval, suele indicar código generado en runtime' },
-  { id: 'settimeout-str', pattern: /setTimeout\s*\(\s*["'`]/g, weight: 7, label: 'setTimeout(string)', desc: 'setTimeout con string ejecuta como eval' },
-  { id: 'setinterval-str', pattern: /setInterval\s*\(\s*["'`]/g, weight: 7, label: 'setInterval(string)', desc: 'setInterval con string ejecuta como eval' },
-  { id: 'document-write', pattern: /\bdocument\.write(?:ln)?\s*\(/g, weight: 5, label: 'document.write()', desc: 'XSS surface, prácticamente deprecado' },
-  { id: 'innerhtml', pattern: /\.innerHTML\s*=/g, weight: 3, label: 'innerHTML =', desc: 'Asignación directa de HTML sin sanitizar' },
-  { id: 'atob', pattern: /\batob\s*\(/g, weight: 4, label: 'atob()', desc: 'Decodificación base64 — común en obfuscación' },
-  { id: 'unescape', pattern: /\bunescape\s*\(/g, weight: 5, label: 'unescape()', desc: 'Decodificación deprecated, suele indicar obfuscación' },
-  { id: 'fromcharcode', pattern: /String\.fromCharCode/g, weight: 4, label: 'fromCharCode', desc: 'Construcción de strings desde códigos — común en obfuscación' },
-  { id: 'wasm', pattern: /WebAssembly\.(instantiate|compile)/g, weight: 6, label: 'WebAssembly', desc: 'Código binario, opaco al análisis estático' },
-  { id: 'crypto-subtle', pattern: /\bcrypto\.subtle\./g, weight: 2, label: 'crypto.subtle', desc: 'Operaciones criptográficas — pueden ser legítimas o ransomware' },
-  { id: 'webrtc-pc', pattern: /\bnew\s+RTCPeerConnection/g, weight: 3, label: 'RTCPeerConnection', desc: 'WebRTC — puede revelar IPs reales' },
-  { id: 'navigator-clipboard', pattern: /navigator\.clipboard/g, weight: 3, label: 'clipboard API', desc: 'Acceso al portapapeles' },
-  { id: 'geolocation', pattern: /navigator\.geolocation/g, weight: 3, label: 'geolocation', desc: 'Solicita ubicación geográfica' },
-  { id: 'service-worker', pattern: /navigator\.serviceWorker\.register/g, weight: 4, label: 'ServiceWorker.register', desc: 'Registra worker persistente — puede actuar tras cerrar pestaña' },
-  { id: 'crypto-mining', pattern: /\b(coinhive|cryptonight|monero|webminer|cryptojacking)\b/gi, weight: 15, label: 'Cryptominer signature', desc: 'Patrón conocido de cryptominer' },
-  { id: 'beacon', pattern: /navigator\.sendBeacon/g, weight: 4, label: 'sendBeacon', desc: 'Envío silencioso de datos (no espera respuesta)' },
+  { id: 'eval',                pattern: /\beval\s*\(/g,                                            weight: 10, label: 'eval()',                 descKey: 'sa.api.eval' },
+  { id: 'function-ctor',       pattern: /\bnew\s+Function\s*\(/g,                                  weight: 8,  label: 'new Function()',          descKey: 'sa.api.function-ctor' },
+  { id: 'settimeout-str',      pattern: /setTimeout\s*\(\s*["'`]/g,                                weight: 7,  label: 'setTimeout(string)',      descKey: 'sa.api.settimeout-str' },
+  { id: 'setinterval-str',     pattern: /setInterval\s*\(\s*["'`]/g,                               weight: 7,  label: 'setInterval(string)',     descKey: 'sa.api.setinterval-str' },
+  { id: 'document-write',      pattern: /\bdocument\.write(?:ln)?\s*\(/g,                          weight: 5,  label: 'document.write()',        descKey: 'sa.api.document-write' },
+  { id: 'innerhtml',           pattern: /\.innerHTML\s*=/g,                                        weight: 3,  label: 'innerHTML =',             descKey: 'sa.api.innerhtml' },
+  { id: 'atob',                pattern: /\batob\s*\(/g,                                            weight: 4,  label: 'atob()',                  descKey: 'sa.api.atob' },
+  { id: 'unescape',            pattern: /\bunescape\s*\(/g,                                        weight: 5,  label: 'unescape()',              descKey: 'sa.api.unescape' },
+  { id: 'fromcharcode',        pattern: /String\.fromCharCode/g,                                   weight: 4,  label: 'fromCharCode',            descKey: 'sa.api.fromcharcode' },
+  { id: 'wasm',                pattern: /WebAssembly\.(instantiate|compile)/g,                     weight: 6,  label: 'WebAssembly',             descKey: 'sa.api.wasm' },
+  { id: 'crypto-subtle',       pattern: /\bcrypto\.subtle\./g,                                     weight: 2,  label: 'crypto.subtle',           descKey: 'sa.api.crypto-subtle' },
+  { id: 'webrtc-pc',           pattern: /\bnew\s+RTCPeerConnection/g,                              weight: 3,  label: 'RTCPeerConnection',       descKey: 'sa.api.webrtc-pc' },
+  { id: 'navigator-clipboard', pattern: /navigator\.clipboard/g,                                   weight: 3,  label: 'clipboard API',           descKey: 'sa.api.navigator-clipboard' },
+  { id: 'geolocation',         pattern: /navigator\.geolocation/g,                                 weight: 3,  label: 'geolocation',             descKey: 'sa.api.geolocation' },
+  { id: 'service-worker',      pattern: /navigator\.serviceWorker\.register/g,                     weight: 4,  label: 'ServiceWorker.register',  descKey: 'sa.api.service-worker' },
+  { id: 'crypto-mining',       pattern: /\b(coinhive|cryptonight|monero|webminer|cryptojacking)\b/gi, weight: 15, label: 'Cryptominer signature', descKey: 'sa.api.crypto-mining' },
+  { id: 'beacon',              pattern: /navigator\.sendBeacon/g,                                  weight: 4,  label: 'sendBeacon',              descKey: 'sa.api.beacon' },
 ];
 
 // Obfuscation detection — patterns common in obfuscators (jjencode, packer, etc.)
 const OBFUSCATION_PATTERNS = [
-  { id: 'hex-vars', pattern: /_0x[a-f0-9]{4,}/g, label: '_0xABCD vars', desc: 'Variables hexadecimales — obfuscador típico' },
-  { id: 'long-arrays', pattern: /var\s+\w+\s*=\s*\[\s*['"`][^'"`\n]{50,}/g, label: 'Long string arrays', desc: 'Arrays con strings largos codificados' },
-  { id: 'unicode-escapes', pattern: /\\u00[0-9a-f]{2}/gi, label: 'Unicode escapes', desc: 'Caracteres en formato \\uXXXX' },
+  { id: 'hex-vars',        pattern: /_0x[a-f0-9]{4,}/g,                              label: '_0xABCD vars',      descKey: 'sa.obf.hex-vars' },
+  { id: 'long-arrays',     pattern: /var\s+\w+\s*=\s*\[\s*['"`][^'"`\n]{50,}/g,      label: 'Long string arrays', descKey: 'sa.obf.long-arrays' },
+  { id: 'unicode-escapes', pattern: /\\u00[0-9a-f]{2}/gi,                            label: 'Unicode escapes',    descKey: 'sa.obf.unicode-escapes' },
 ];
 
 // Match URLs, IPs and base64 chunks
@@ -61,7 +62,7 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
         label: p.label,
         count: matches.length,
         weight: p.weight,
-        desc: p.desc,
+        descKey: p.descKey,
         score: Math.min(p.weight * matches.length, p.weight * 5),
       });
     }
@@ -73,7 +74,7 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
   for (const p of OBFUSCATION_PATTERNS) {
     const matches = code.match(p.pattern);
     if (matches && matches.length > 0) {
-      obfFindings.push({ id: p.id, label: p.label, count: matches.length, desc: p.desc });
+      obfFindings.push({ id: p.id, label: p.label, count: matches.length, descKey: p.descKey });
     }
   }
 
@@ -113,17 +114,12 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
     Math.floor(obfuscationScore / 4)
   );
 
-  // Verdict
+  // Verdict — popup resolves the human text via t(`verdict.${level}`).
   let verdict;
-  if (totalRiskScore >= 70) {
-    verdict = { level: 'critical', text: 'Patrón altamente sospechoso — investigar urgentemente' };
-  } else if (totalRiskScore >= 40) {
-    verdict = { level: 'high', text: 'Múltiples señales de alerta — analizar manualmente' };
-  } else if (totalRiskScore >= 20) {
-    verdict = { level: 'medium', text: 'Algunas señales típicas, posiblemente código de producción minificado' };
-  } else {
-    verdict = { level: 'low', text: 'Sin patrones especialmente preocupantes' };
-  }
+  if (totalRiskScore >= 70) { verdict = { level: 'critical' }; }
+  else if (totalRiskScore >= 40) { verdict = { level: 'high' }; }
+  else if (totalRiskScore >= 20) { verdict = { level: 'medium' }; }
+  else { verdict = { level: 'low' }; }
 
   return {
     stats,

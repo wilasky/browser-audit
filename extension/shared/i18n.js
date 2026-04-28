@@ -258,6 +258,42 @@ const TRANSLATIONS = {
   'verdict.medium':        { es: 'Algunas señales típicas, posiblemente código de producción minificado', en: 'Some typical patterns, possibly minified production code' },
   'verdict.low':           { es: 'Sin patrones especialmente preocupantes', en: 'No particularly concerning patterns' },
 
+  // Suspicious API descriptions (script-analyzer SUSPICIOUS_APIS)
+  'sa.api.eval':            { es: 'Ejecución dinámica de código (vector clásico de XSS y obfuscación)', en: 'Dynamic code execution (classic XSS and obfuscation vector)' },
+  'sa.api.function-ctor':   { es: 'Equivalente a eval, suele indicar código generado en runtime', en: 'Equivalent to eval, usually indicates runtime-generated code' },
+  'sa.api.settimeout-str':  { es: 'setTimeout con string ejecuta como eval', en: 'setTimeout with a string executes like eval' },
+  'sa.api.setinterval-str': { es: 'setInterval con string ejecuta como eval', en: 'setInterval with a string executes like eval' },
+  'sa.api.document-write':  { es: 'XSS surface, prácticamente deprecado', en: 'XSS surface, effectively deprecated' },
+  'sa.api.innerhtml':       { es: 'Asignación directa de HTML sin sanitizar', en: 'Direct HTML assignment without sanitization' },
+  'sa.api.atob':            { es: 'Decodificación base64 — común en obfuscación', en: 'Base64 decoding — common in obfuscation' },
+  'sa.api.unescape':        { es: 'Decodificación deprecated, suele indicar obfuscación', en: 'Deprecated decoder, often indicates obfuscation' },
+  'sa.api.fromcharcode':    { es: 'Construcción de strings desde códigos — común en obfuscación', en: 'String construction from char codes — common in obfuscation' },
+  'sa.api.wasm':            { es: 'Código binario, opaco al análisis estático', en: 'Binary code, opaque to static analysis' },
+  'sa.api.crypto-subtle':   { es: 'Operaciones criptográficas — pueden ser legítimas o ransomware', en: 'Cryptographic operations — can be legitimate or ransomware' },
+  'sa.api.webrtc-pc':       { es: 'WebRTC — puede revelar IPs reales', en: 'WebRTC — can reveal real IPs' },
+  'sa.api.navigator-clipboard': { es: 'Acceso al portapapeles', en: 'Clipboard access' },
+  'sa.api.geolocation':     { es: 'Solicita ubicación geográfica', en: 'Requests geographic location' },
+  'sa.api.service-worker':  { es: 'Registra worker persistente — puede actuar tras cerrar pestaña', en: 'Registers persistent worker — can act after tab close' },
+  'sa.api.crypto-mining':   { es: 'Patrón conocido de cryptominer', en: 'Known cryptominer pattern' },
+  'sa.api.beacon':          { es: 'Envío silencioso de datos (no espera respuesta)', en: 'Silent data send (no response expected)' },
+
+  // Obfuscation pattern descriptions
+  'sa.obf.hex-vars':        { es: 'Variables hexadecimales — obfuscador típico', en: 'Hexadecimal variables — typical obfuscator' },
+  'sa.obf.long-arrays':     { es: 'Arrays con strings largos codificados', en: 'Arrays with long encoded strings' },
+  'sa.obf.unicode-escapes': { es: 'Caracteres en formato \\uXXXX',         en: 'Characters in \\uXXXX format' },
+
+  // Obfuscation level labels
+  'sa.obf_level_high':      { es: 'alto',                          en: 'high' },
+  'sa.obf_level_medium':    { es: 'medio',                         en: 'medium' },
+  'sa.obf_level_low':       { es: 'bajo',                          en: 'low' },
+
+  // Script detail extra strings
+  'sd.lookup_vt_domain':    { es: 'VT (dominio)',                  en: 'VT (domain)' },
+  'sd.lookup_vt_hash':      { es: 'VT (hash SHA256)',              en: 'VT (hash SHA256)' },
+  'sd.obf_score_label':     { es: 'Obfuscación:',                  en: 'Obfuscation:' },
+  'sd.escape_ratio':        { es: 'Escape ratio:',                 en: 'Escape ratio:' },
+  'sd.copy_hash_full':      { es: 'Copiar hash completo',          en: 'Copy full hash' },
+
   // ---- Fingerprint detail ----
   'fp.title':              { es: 'Análisis de huella digital',   en: 'Fingerprint analysis' },
   'fp.calculating':        { es: 'Calculando huella digital…',   en: 'Calculating fingerprint…' },
