@@ -1,6 +1,6 @@
 # Terms of Service — Browser Audit
 
-**Last updated:** 2026-04-25  
+**Last updated:** 2026-04-28  
 **Contact:** aitorciyo@gmail.com
 
 ---
@@ -24,11 +24,11 @@ Browser Audit is provided under a dual license:
 - **Extension client code:** MIT License (open source)
 - **Pro threat intelligence backend, YARA rules, and curated baseline:** Proprietary
 
-## 4. Pro subscription
+## 4. Pro subscription (future)
 
-The Pro plan is billed monthly (€15/month) or annually (€120/year) via ExtensionPay. Payments are processed by ExtensionPay and subject to their terms. We do not store payment information.
+A Pro plan is **not active in this version**. When the Pro plan is launched, it will be billed via ExtensionPay; payments will be processed by ExtensionPay and subject to their terms. We will not store payment information.
 
-Subscriptions renew automatically. You may cancel at any time through the extension's settings or ExtensionPay's portal. No refunds are provided for partial billing periods, except where required by applicable law.
+If you subscribe to a future Pro plan, subscriptions will renew automatically and you will be able to cancel at any time through the extension's settings or ExtensionPay's portal. No refunds will be provided for partial billing periods, except where required by applicable law. Pricing will be shown at the moment of purchase.
 
 ## 5. Acceptable use
 
@@ -56,7 +56,7 @@ Browser Audit is an informational tool, not a replacement for professional secur
 
 ## 7. Limitation of liability
 
-To the extent permitted by law, our total liability for any claim arising from your use of Browser Audit is limited to the amount you paid for the Pro subscription in the 12 months preceding the claim, or €15, whichever is greater.
+To the extent permitted by law, our total liability for any claim arising from your use of Browser Audit is limited to the amount you paid for any Pro subscription in the 12 months preceding the claim, or €50, whichever is greater. The extension itself is provided free of charge.
 
 ## 8. Governing law
 

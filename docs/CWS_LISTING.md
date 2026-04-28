@@ -22,7 +22,7 @@ Audit your browser's security settings and inspect JavaScript behavior on any we
 Browser Audit gives you two powerful tools in one extension:
 
 🔒 BROWSER HEALTH CHECK
-Get an instant security score (0–100) for your Chrome configuration. Browser Audit checks 16 security and privacy settings against a maintained baseline:
+Get an instant security score (0–100) for your Chrome configuration. Browser Audit runs more than 50 security and privacy checks against public baselines (CIS Benchmark, NIST SP 800-53, CCN-STIC-885 / Spanish ENS), grouped by category:
 
 • Is Chrome up to date?
 • Are third-party cookies blocked?
@@ -74,7 +74,7 @@ Click "View script ↗" to open the source in Chrome's built-in viewer.
 Browser Audit te ofrece dos herramientas potentes en una sola extensión:
 
 🔒 BROWSER HEALTH CHECK
-Obtén un score de seguridad (0-100) para tu configuración de Chrome. Browser Audit comprueba 16 ajustes de seguridad y privacidad contra una baseline mantenida:
+Obtén un score de seguridad (0-100) para tu configuración de Chrome. Browser Audit ejecuta más de 50 chequeos de seguridad y privacidad contra baselines públicas (CIS Benchmark, NIST SP 800-53, CCN-STIC-885 / ENS), agrupados por categoría:
 
 • ¿Chrome está actualizado?
 • ¿Están bloqueadas las cookies de terceros?
@@ -152,10 +152,16 @@ Pulsa "Ver script ↗" para abrir el código fuente en Chrome.
 
 **activeTab:** Run ScriptSpy only on the tab the user is currently viewing, when they explicitly activate it. Does not grant persistent access.
 
-**scripting:** Inject the ScriptSpy instrumentation script on demand when the user activates it in the popup. Required by Manifest V3 for dynamic script injection.
+**scripting:** Inject the analysis content scripts on demand. All scripts are bundled inside the extension package (instrumentation.js, bridge.js, compliance-probe.js, page-text-probe.js); no remotely hosted code is loaded or executed.
 
 **webNavigation:** Detect when the user navigates to a new page so ScriptSpy data can be reset for the new page context. Not used to monitor or record browsing activity.
 
-**management (optional):** Read the list of installed extensions to check against the security blacklist. Only requested when the user enables this feature.
+**alarms:** Schedule two local periodic tasks inside the service worker, with no network calls: (1) re-apply the user's privacy hardening every 30 minutes so the chrome.privacy / contentSettings choices the user explicitly enabled cannot be silently reverted; (2) re-run the local browser health audit once a day to keep the score in the popup up to date.
 
-**privacy (optional):** Read Chrome privacy settings (Safe Browsing, DoH, third-party cookies, etc.) to perform the security audit. Only requested when the user enables this feature.
+**management (optional):** Read the list of installed extensions to check against the security blacklist. Only requested when the user opens that section.
+
+**privacy (optional):** Read and modify Chrome privacy settings (Safe Browsing, DoH, third-party cookies, etc.) to perform and apply fixes from the security audit. Only requested when the user clicks "Apply" on a related check.
+
+**contentSettings (optional):** Read and modify content settings (cookies, JavaScript, etc.) as part of the security audit. Only requested when the user clicks "Apply" on a related check.
+
+**\<all_urls\> (optional host):** Inject the analysis content script on any site the user explicitly chooses to audit. Granted only on user action; the extension does not crawl or fetch URLs in the background.
