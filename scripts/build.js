@@ -1,6 +1,7 @@
 import esbuild from 'esbuild';
 import { copyFile, mkdir, cp } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { stripRemoteCode } from './strip-remote-code.js';
 
 const SRC = 'extension';
 const OUT = 'extension/dist';
@@ -50,6 +51,8 @@ async function build() {
   if (existsSync(`${SRC}/_locales`)) {
     await cp(`${SRC}/_locales`, `${OUT}/_locales`, { recursive: true });
   }
+
+  await stripRemoteCode();
 
   console.warn('Build complete →', OUT);
 }

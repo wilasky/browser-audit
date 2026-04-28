@@ -6,9 +6,23 @@
 
 ## Estado actual
 
-**Fase actual:** FASES 5+7 completadas — pendiente verificación y Fase 8 (lanzamiento)
-**Última actualización:** 2026-04-25
-**Próxima tarea:** Fase 8 — Privacy Policy, screenshots, listing Chrome Web Store
+**Fase actual:** v0.2.0 con fix de Blue Argon — listo para resubir a CWS
+**Última actualización:** 2026-04-28
+**Próxima tarea:** Subir `browser-audit-2026-04-28.zip` al Chrome Web Store
+
+### Incidente CWS (2026-04-28)
+
+v0.1.0 fue **rechazada** por Google con motivo `Blue Argon` (Remotely Hosted Code en MV3).
+Causa real: el bundle de `jspdf` incluye una rama `output('pdfobjectnewwindow')` que carga
+PDFObject desde cdnjs vía `<script src=...>`. La extensión nunca llama a esa rama (solo usa
+`doc.save()`), pero el reviewer estático de CWS detecta la URL en el bundle y rechaza.
+
+**Fix aplicado en v0.2.0:**
+- `scripts/strip-remote-code.js` — neutraliza la URL y la integrity del bundle tras esbuild.
+- Integrado en `scripts/build.js` y `scripts/dev.js` (mismo binario en dev y prod).
+- Aborta el build si quedan patrones `cdnjs/jsdelivr/unpkg` residuales.
+- Verificación: `grep` sobre `extension/dist/popup/popup.js` no encuentra ninguna URL
+  remota cargada vía `script.src`.
 
 ---
 

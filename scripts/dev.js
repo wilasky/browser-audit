@@ -1,6 +1,7 @@
 import esbuild from 'esbuild';
 import { copyFile, mkdir, cp } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { stripRemoteCode } from './strip-remote-code.js';
 
 const SRC = 'extension';
 const OUT = 'extension/dist';
@@ -48,6 +49,7 @@ const ctx = await esbuild.context({
       setup(build) {
         build.onEnd(async () => {
           await copyStatics().catch(console.error);
+          await stripRemoteCode().catch(console.error);
         });
       },
     },
