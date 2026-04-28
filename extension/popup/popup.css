@@ -206,6 +206,41 @@ main { padding: 0 0 16px; }
 .btn-reset { color: #ef6666; }
 .btn-reset:hover { background: #2a1212; color: #ff8888; }
 
+/* Toast stack — anchored bottom-right of the popup viewport */
+.toast-stack {
+  position: fixed; bottom: 12px; right: 12px; left: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none; z-index: 999;
+}
+.toast {
+  font-size: 11px; padding: 8px 12px; border-radius: 6px;
+  background: #16161a; border: 1px solid #2a2a2e; color: #e0e0e4;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: auto;
+}
+.toast-visible { opacity: 1; transform: translateY(0); }
+.toast-success { border-color: #1a5a2a; color: #44ee77; background: #0d2a1a; }
+.toast-error   { border-color: #5a1a1a; color: #ff8888; background: #2a1212; }
+
+/* Per-check pulse animation when an apply succeeds or fails */
+@keyframes pulse-ok {
+  0%   { background: #16161a; box-shadow: inset 0 0 0 0 transparent; }
+  35%  { background: #0d2a1a; box-shadow: inset 0 0 0 2px #1a5a2a; }
+  100% { background: #16161a; box-shadow: inset 0 0 0 0 transparent; }
+}
+@keyframes pulse-err {
+  0%   { background: #16161a; transform: translateX(0); }
+  20%  { background: #2a1212; transform: translateX(-3px); }
+  40%  { background: #2a1212; transform: translateX(3px); }
+  60%  { background: #2a1212; transform: translateX(-2px); }
+  80%  { background: #2a1212; transform: translateX(2px); }
+  100% { background: #16161a; transform: translateX(0); }
+}
+.item-pulse-ok  { animation: pulse-ok  0.85s ease-out; }
+.item-pulse-err { animation: pulse-err 0.55s ease-out; }
+
 /* Hardening toggle button — green when ON, amber/warning when paused */
 .btn-hardening-on  {
   background: #0d2a1a; border-color: #1a5a2a; color: #22c55e;

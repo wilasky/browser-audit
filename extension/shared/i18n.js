@@ -122,6 +122,8 @@ const TRANSLATIONS = {
   'health.import_invalid':     { es: 'Formato no válido — falta el array results', en: 'Invalid format — missing results array' },
   'health.import_error':       { es: 'Error importando JSON: {msg}', en: 'JSON import error: {msg}' },
   'health.audited_label':      { es: 'Auditado',               en: 'Audited' },
+  'health.toast_applied':      { es: '✓ Ajuste aplicado',         en: '✓ Setting applied' },
+  'health.toast_apply_failed': { es: '✗ No se pudo aplicar',      en: '✗ Could not apply' },
   'health.hardening_on':       { es: '🛡 Bastionado: ON',         en: '🛡 Hardening: ON' },
   'health.hardening_off':      { es: '⚠ Bastionado: OFF',         en: '⚠ Hardening: OFF' },
   'health.hardening_tip_on':   { es: 'Lucent re-aplica {n} ajustes cada 30 min. Click para pausar (los ajustes se conservan para reactivar luego).', en: 'Lucent re-applies {n} settings every 30 min. Click to pause (settings are preserved so you can re-enable).' },

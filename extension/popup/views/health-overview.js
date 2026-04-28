@@ -161,6 +161,39 @@ function renderProfileSelector(activeProfile) {
   ).join('');
 }
 
+// Floating notification at the bottom of the popup. Stacks if several fire
+// in quick succession; auto-dismisses after 2.6s.
+function showToast(message, type = 'success') {
+  let stack = document.getElementById('toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  stack.appendChild(toast);
+  // Force a reflow so the entrance transition runs
+  void toast.offsetWidth;
+  toast.classList.add('toast-visible');
+  setTimeout(() => {
+    toast.classList.remove('toast-visible');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, 2600);
+}
+
+function pulseItem(btn, type) {
+  const item = btn?.closest('.check-item');
+  if (!item) { return; }
+  const cls = type === 'success' ? 'item-pulse-ok' : 'item-pulse-err';
+  item.classList.remove(cls);
+  void item.offsetWidth;
+  item.classList.add(cls);
+  setTimeout(() => item.classList.remove(cls), 900);
+}
+
 async function applyFix(fix, api, expected, btn) {
   if (fix?.type === 'apply' || api) {
     btn.disabled = true;
@@ -196,22 +229,27 @@ async function applyFix(fix, api, expected, btn) {
     }
 
     const res = await sendMsg({ type: 'apply_fix', api, value: expected });
+    const item = btn.closest('.check-item');
+    const titleEl = item?.querySelector('.check-title');
+    const checkName = titleEl?.textContent?.trim() ?? api;
     if (res?.ok) {
       btn.textContent = t('health.applied');
       btn.classList.add('fix-applied');
-      const item = btn.closest('.check-item');
       if (item) { item.className = item.className.replace(/check-\w+/, 'check-pass'); }
       const icon = item?.querySelector('.check-icon');
       if (icon) { icon.textContent = '✓'; }
+      pulseItem(btn, 'success');
+      showToast(`${t('health.toast_applied')} · ${checkName}`, 'success');
     } else {
       btn.disabled = false;
       btn.textContent = t('health.apply_now');
-      const item = btn.closest('.check-item');
       if (item) {
         let err = item.querySelector('.apply-error');
         if (!err) { err = document.createElement('div'); err.className = 'apply-error'; item.appendChild(err); }
         err.textContent = res?.reason ?? 'No se pudo aplicar (puede requerir reauditar para verificar).';
       }
+      pulseItem(btn, 'error');
+      showToast(`${t('health.toast_apply_failed')} · ${checkName}`, 'error');
     }
     return;
   }
