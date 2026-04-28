@@ -6,6 +6,7 @@ import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
 import { renderFingerprintDetail } from './views/fingerprint-detail.js';
 import { renderScriptDetail } from './views/script-detail.js';
 import { initI18n, t } from '../shared/i18n.js';
+import { detectBrowser } from '../shared/browser-detect.js';
 
 const root = document.getElementById('view-root');
 const tabs = document.querySelectorAll('.tab-btn');
@@ -100,6 +101,14 @@ function localizeStaticUI() {
 async function boot() {
   await initI18n();
   localizeStaticUI();
+
+  // Persist browser detection — the popup has window context, the background
+  // service worker does not (navigator.brave is window-only). Audit-engine
+  // reads this storage; the popup is the source of truth.
+  detectBrowser()
+    .then((b) => chrome.storage.local.set({ detectedBrowser: b }))
+    .catch(() => {});
+
   const showOnboarding = await shouldShowOnboarding();
   if (showOnboarding) {
     setActiveTab('scriptspy');

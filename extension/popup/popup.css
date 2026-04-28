@@ -781,6 +781,16 @@ main { padding: 0 0 16px; }
 .fp-header { display: flex; align-items: center; gap: 10px; }
 .fp-title { font-size: 13px; font-weight: 700; color: #fff; }
 .fp-back { font-size: 11px; }
+.fp-browser-badge {
+  margin-left: auto; font-size: 10px; color: #88aacc;
+  background: #0d1a2a; border: 1px solid #1a3a5a;
+  padding: 2px 7px; border-radius: 10px; letter-spacing: 0.02em;
+}
+.health-browser-badge {
+  display: inline-block; font-size: 10px; color: #88aacc;
+  background: #0d1a2a; border: 1px solid #1a3a5a;
+  padding: 0 6px; border-radius: 8px; letter-spacing: 0.02em;
+}
 
 .fp-score-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2e; }
 .fp-total { font-size: 32px; font-weight: 800; line-height: 1; }

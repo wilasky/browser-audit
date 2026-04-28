@@ -231,9 +231,10 @@ async function applyFix(fix, api, expected, btn) {
 
 export async function renderHealthOverview(audit, container) {
   // Read user-configured default profile from prefs
-  const stored = await chrome.storage.local.get('userPrefs');
+  const stored = await chrome.storage.local.get(['userPrefs', 'detectedBrowser']);
   const defaultProfile = stored.userPrefs?.defaultProfile ?? 'all';
   let activeProfile = PROFILES[defaultProfile] ? defaultProfile : 'all';
+  const detectedBrowser = stored.detectedBrowser ?? null;
   const { label, level } = audit;
 
   const fixMap = {};
@@ -286,7 +287,7 @@ export async function renderHealthOverview(audit, container) {
             <span style="color:#22c55e">${pc} ${esc(t('status.pass'))}</span>${sc + uc > 0 ? ` · ${sc + uc} ${esc(t('status.na'))}` : ''}
           </div>
           ${isFiltered ? `<div class="score-sub score-context">${esc(t('health.score_filter'))} <strong>${esc(profileLabel)}</strong> · ${esc(t('health.score_global'))}: <strong>${audit.score}</strong></div>` : ''}
-          <div class="score-sub">${esc(t('health.audited_label'))} ${new Date(audit.completedAt).toLocaleTimeString()} · ${esc(t('health.checks_count'))}${esc(audit.baselineVersion)}</div>
+          <div class="score-sub">${esc(t('health.audited_label'))} ${new Date(audit.completedAt).toLocaleTimeString()} · ${esc(t('health.checks_count'))}${esc(audit.baselineVersion)}${detectedBrowser?.chromiumVersion ? ` · <span class="health-browser-badge" title="${esc(t('fp.header_audited_as'))} ${esc(detectedBrowser.name)}">${esc(detectedBrowser.name)} v${detectedBrowser.chromiumVersion}</span>` : ''}</div>
           <div class="header-actions">
             <button id="btn-refresh" class="btn-secondary">${esc(t('health.refresh'))}</button>
             ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button>` : ''}

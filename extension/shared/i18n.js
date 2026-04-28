@@ -325,6 +325,18 @@ const TRANSLATIONS = {
   'fp.level_medium':       { es: 'Huella moderadamente única — identificable con otros datos', en: 'Moderately unique fingerprint — identifiable combined with other data' },
   'fp.level_high':         { es: 'Huella muy única — rastreable sin cookies en la mayoría de sitios', en: 'Highly unique fingerprint — trackable without cookies on most sites' },
 
+  // Browser detection — fingerprint actions adapt per detected browser
+  'fp.action_native_canvas_title': { es: '✓ {browser} ya bloquea canvas fingerprint', en: '✓ {browser} already blocks canvas fingerprinting' },
+  'fp.action_native_canvas_desc':  { es: '<strong>{browser}</strong> añade ruido aleatorio al canvas, audio y WebGL por defecto. No necesitas instalar nada — ya estás protegido frente a esa familia de fingerprinting.', en: '<strong>{browser}</strong> adds random noise to canvas, audio and WebGL by default. No install needed — you are already protected against that fingerprinting family.' },
+  'fp.action_edge_tracking_title': { es: 'Activar Tracking Prevention estricta (Edge)', en: 'Enable strict Tracking Prevention (Edge)' },
+  'fp.action_edge_tracking_desc':  { es: 'Edge tiene su propio sistema de bloqueo de trackers integrado. Pásalo a "Estricto" en <code>edge://settings/privacy</code> para bloquear más fingerprinters por defecto.', en: 'Edge ships with its own built-in tracker blocking. Switch it to "Strict" at <code>edge://settings/privacy</code> to block more fingerprinters by default.' },
+  'fp.action_edge_tracking_btn':   { es: 'Abrir →',                     en: 'Open →' },
+  'fp.action_brave_shields_title': { es: 'Subir Shields a "Agresivo"', en: 'Set Shields to "Aggressive"' },
+  'fp.action_brave_shields_desc':  { es: 'Brave por defecto bloquea trackers en modo "Estándar". Si quieres aún menos exposición, abre el icono del león en la esquina superior derecha y pásalo a "Agresivo".', en: 'Brave blocks trackers in "Standard" mode by default. For even less exposure, open the lion icon in the top-right and switch to "Aggressive".' },
+  'fp.action_vivaldi_shields_title': { es: 'Activar bloqueo de trackers en Vivaldi', en: 'Enable tracker blocking in Vivaldi' },
+  'fp.action_vivaldi_shields_desc':  { es: 'Vivaldi incluye un bloqueador de trackers. Actívalo en <code>vivaldi://settings/privacy</code> en modo "Bloquear trackers".', en: 'Vivaldi ships with a tracker blocker. Enable it at <code>vivaldi://settings/privacy</code> in "Block trackers" mode.' },
+  'fp.header_audited_as':          { es: 'Auditando como',              en: 'Auditing as' },
+
   // ---- Settings ----
   'settings.lang_title':       { es: 'Idioma · Language',           en: 'Language · Idioma' },
   'settings.lang_label':       { es: 'Idioma de la extensión:',     en: 'Extension language:' },

@@ -1,4 +1,5 @@
 import baseline from '../data/baseline.v1.json';
+import { detectBrowser } from '../shared/browser-detect.js';
 
 // --- Score calculation ---
 
@@ -39,30 +40,30 @@ async function hasPermission(perm) {
 // --- Check handlers ---
 
 async function runUserAgent(check) {
-  const ua = navigator.userAgent;
-  const m = ua.match(/Chrome\/(\d+)\./);
-  if (!m) { return { status: 'unknown', detail: 'No se pudo leer la versión del navegador' }; }
+  // Source of truth is the popup (window context detects Brave correctly via
+  // navigator.brave). The SW context cannot see navigator.brave. Use stored
+  // detection when available; fall back to UA-only sniffing only if the popup
+  // has never run yet.
+  const stored = await chrome.storage.local.get('detectedBrowser');
+  const browser = stored.detectedBrowser ?? await detectBrowser();
+  if (!browser.chromiumVersion) {
+    return { status: 'unknown', detail: 'No se pudo leer la versión del navegador' };
+  }
+  if (!stored.detectedBrowser) {
+    await chrome.storage.local.set({ detectedBrowser: browser });
+  }
 
-  // Detect chromium-based browser
-  let browser = 'Chrome';
-  let isChromiumDerivative = false;
-  if (/Edg\//.test(ua)) { browser = 'Edge'; isChromiumDerivative = true; }
-  else if (/OPR\//.test(ua)) { browser = 'Opera'; isChromiumDerivative = true; }
-  else if (/Vivaldi\//.test(ua)) { browser = 'Vivaldi'; isChromiumDerivative = true; }
-  // Brave hides itself in UA — detect via navigator.brave or absence of telemetry
-  else if (typeof navigator.brave?.isBrave === 'function') { browser = 'Brave'; isChromiumDerivative = true; }
-
-  const current = parseInt(m[1], 10);
+  const current = browser.chromiumVersion;
   const min = check.method.minMajorVersion ?? 120;
 
   if (current >= min) {
-    const note = isChromiumDerivative ? ` (motor Chromium ${current})` : '';
-    return { status: 'pass', detail: `${browser} v${current}${note}` };
+    const note = browser.isDerivative ? ` (motor Chromium ${current})` : '';
+    return { status: 'pass', detail: `${browser.name} v${current}${note}` };
   }
   if (current >= min - 4) {
-    return { status: 'warn', detail: `${browser} v${current} — considera actualizar (Chromium mínimo recomendado: v${min})` };
+    return { status: 'warn', detail: `${browser.name} v${current} — considera actualizar (Chromium mínimo recomendado: v${min})` };
   }
-  return { status: 'fail', detail: `${browser} v${current} — versión antigua con vulnerabilidades conocidas (Chromium mínimo: v${min})` };
+  return { status: 'fail', detail: `${browser.name} v${current} — versión antigua con vulnerabilidades conocidas (Chromium mínimo: v${min})` };
 }
 
 async function runChromePrivacy(check) {
