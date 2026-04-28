@@ -57,8 +57,14 @@ async function injectScriptSpy(tabId) {
 
 // Re-apply persisted privacy fixes — Chrome can lose extension ownership
 // when the SW goes idle. This restores the user's intended hardening.
+//
+// Skipped when hardeningEnabled === false: the user has paused the hardening
+// from the Health header. The appliedFixes list is preserved so flipping
+// the switch back ON restores the previous state.
 async function reapplyPersistedFixes() {
-  const stored = await chrome.storage.local.get('appliedFixes');
+  const stored = await chrome.storage.local.get(['appliedFixes', 'hardeningEnabled']);
+  if (stored.hardeningEnabled === false) { return; }
+
   const applied = (stored.appliedFixes ?? []).filter((a) =>
     typeof a === 'object' && a.api && a.value !== undefined && a.value !== null
   );
@@ -74,6 +80,23 @@ async function reapplyPersistedFixes() {
           resolve();
         });
       });
+    } catch { /* skip silently */ }
+  }
+}
+
+// Clear all persisted fixes from Chrome but keep them in storage so the user
+// can flip the toggle back ON and recover the same state.
+async function pauseHardening() {
+  const stored = await chrome.storage.local.get('appliedFixes');
+  const applied = (stored.appliedFixes ?? []).filter((a) =>
+    typeof a === 'object' && a.api
+  );
+  for (const fix of applied) {
+    const [namespace, key] = fix.api.split('.');
+    const setting = chrome.privacy?.[namespace]?.[key];
+    if (!setting) { continue; }
+    try {
+      await new Promise((resolve) => setting.clear({}, () => { void chrome.runtime.lastError; resolve(); }));
     } catch { /* skip silently */ }
   }
 }
@@ -312,7 +335,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (idx >= 0) { existing[idx] = { api: f.api, value: f.value }; }
         else { existing.push({ api: f.api, value: f.value }); }
       }
-      await chrome.storage.local.set({ appliedFixes: existing });
+      // Applying anything implicitly turns hardening back on — otherwise the
+      // alarm would clear this fix again at the next 30-min tick.
+      await chrome.storage.local.set({ appliedFixes: existing, hardeningEnabled: true });
       sendResponse({ ok: errors.length === 0, applied, errors });
     });
     return true;
@@ -353,7 +378,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           } else {
             applied.push({ api, value });
           }
-          await chrome.storage.local.set({ appliedFixes: applied });
+          await chrome.storage.local.set({ appliedFixes: applied, hardeningEnabled: true });
           sendResponse({ ok: true, verified: true });
         } else {
           const reason = details.levelOfControl === 'controlled_by_other_extensions'
@@ -363,6 +388,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             : `Cambio aplicado pero el valor sigue siendo "${currentValue}". El navegador puede no soportar este valor.`;
           sendResponse({ ok: false, reason });
         }
+      });
+    });
+    return true;
+  }
+
+  if (msg.type === 'set_hardening_enabled') {
+    const enabled = !!msg.enabled;
+    (async () => {
+      if (enabled) {
+        await chrome.storage.local.set({ hardeningEnabled: true });
+        await reapplyPersistedFixes();
+      } else {
+        await pauseHardening();
+        await chrome.storage.local.set({ hardeningEnabled: false });
+      }
+      sendResponse({ ok: true, enabled });
+    })();
+    return true;
+  }
+
+  if (msg.type === 'get_hardening_state') {
+    chrome.storage.local.get(['hardeningEnabled', 'appliedFixes']).then((s) => {
+      sendResponse({
+        enabled: s.hardeningEnabled !== false, // default true
+        count: (s.appliedFixes ?? []).length,
       });
     });
     return true;

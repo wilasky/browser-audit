@@ -231,10 +231,15 @@ async function applyFix(fix, api, expected, btn) {
 
 export async function renderHealthOverview(audit, container) {
   // Read user-configured default profile from prefs
-  const stored = await chrome.storage.local.get(['userPrefs', 'detectedBrowser']);
+  const [stored, hardening] = await Promise.all([
+    chrome.storage.local.get(['userPrefs', 'detectedBrowser']),
+    sendMsg({ type: 'get_hardening_state' }),
+  ]);
   const defaultProfile = stored.userPrefs?.defaultProfile ?? 'all';
   let activeProfile = PROFILES[defaultProfile] ? defaultProfile : 'all';
   const detectedBrowser = stored.detectedBrowser ?? null;
+  let hardeningEnabled = hardening?.enabled !== false;
+  const hardeningCount = hardening?.count ?? 0;
   const { label, level } = audit;
 
   const fixMap = {};
@@ -291,6 +296,7 @@ export async function renderHealthOverview(audit, container) {
           <div class="header-actions">
             <button id="btn-refresh" class="btn-secondary">${esc(t('health.refresh'))}</button>
             ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button>` : ''}
+            ${hardeningCount > 0 ? `<button id="btn-hardening-toggle" class="btn-secondary ${hardeningEnabled ? 'btn-hardening-on' : 'btn-hardening-off'}" title="${esc(t(hardeningEnabled ? 'health.hardening_tip_on' : 'health.hardening_tip_off', { n: hardeningCount }))}">${esc(t(hardeningEnabled ? 'health.hardening_on' : 'health.hardening_off'))}</button>` : ''}
             <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="${esc(t('health.reset_tip'))}">${esc(t('health.reset'))}</button>
             <div class="export-row">
               <button id="btn-export-json" class="btn-export">↓ JSON</button>
@@ -314,6 +320,25 @@ export async function renderHealthOverview(audit, container) {
       container.innerHTML = `<p class="loading">${esc(t('health.auditing'))}</p>`;
       const freshAudit = await sendMsg({ type: 'run_audit' });
       if (freshAudit) { renderHealthOverview(freshAudit, container); }
+    });
+
+    container.querySelector('#btn-hardening-toggle')?.addEventListener('click', async () => {
+      const btn = container.querySelector('#btn-hardening-toggle');
+      const wasEnabled = hardeningEnabled;
+      btn.disabled = true;
+      btn.textContent = t(wasEnabled ? 'health.hardening_pausing' : 'health.hardening_resuming');
+      const res = await sendMsg({ type: 'set_hardening_enabled', enabled: !wasEnabled });
+      if (res?.ok) {
+        hardeningEnabled = res.enabled;
+        // Re-audit so the user sees the actual current state of the checks
+        // — pausing the hardening flips many checks from pass back to fail.
+        container.innerHTML = `<p class="loading">${esc(t('health.auditing'))}</p>`;
+        const freshAudit = await sendMsg({ type: 'run_audit' });
+        if (freshAudit) { renderHealthOverview(freshAudit, container); }
+      } else {
+        btn.disabled = false;
+        btn.textContent = t(wasEnabled ? 'health.hardening_on' : 'health.hardening_off');
+      }
     });
 
     container.querySelector('#btn-grant-permissions')?.addEventListener('click', () => {
