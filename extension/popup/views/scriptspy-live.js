@@ -415,7 +415,7 @@ export async function renderScriptSpyLive(container) {
           stopAutoRefresh();
           container.dispatchEvent(new CustomEvent('open-script-detail', {
             bubbles: true,
-            detail: s,
+            detail: { ...s, _tabId: tabId },
           }));
         });
       });

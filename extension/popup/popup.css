@@ -1185,6 +1185,31 @@ main { padding: 0 0 16px; }
 
 .sd-lookups { display: flex; flex-wrap: wrap; gap: 4px; }
 
+/* Runtime fallback view (when source download fails) */
+.sd-rt-banner {
+  background: linear-gradient(180deg, #1f1908 0%, #16161a 100%);
+  border: 1px solid #5a4416; border-radius: 6px;
+  padding: 10px 12px; margin: 6px 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.sd-rt-banner-msg { font-size: 11px; color: #fbbf24; font-weight: 600; }
+.sd-rt-banner-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+.sd-rt-table {
+  width: 100%; font-size: 11px; border-collapse: collapse;
+  background: #16161a; border: 1px solid #2a2a2e; border-radius: 6px; overflow: hidden;
+}
+.sd-rt-table td { padding: 5px 10px; border-top: 1px solid #1a1a1e; }
+.sd-rt-table td:first-child { color: #888; font-size: 10px; width: 40%; }
+.sd-rt-table td:last-child  { color: #ccc; }
+
+.sd-rt-events { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 0; }
+.sd-rt-targets {
+  font-size: 11px; color: #aaa; padding: 4px 0;
+  word-break: break-all;
+}
+.sd-rt-targets strong { color: #ccc; font-size: 10px; }
+
 .sd-table {
   width: 100%;
   font-size: 10px;

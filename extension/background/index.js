@@ -130,6 +130,50 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'get_script_runtime_info') {
+    const { tabId, url } = msg;
+    if (!tabId || !url) {
+      sendResponse({ ok: false, reason: 'missing tabId/url' });
+      return true;
+    }
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: (scriptUrl) => {
+        const entries = performance.getEntriesByType('resource').filter((e) => e.name === scriptUrl);
+        const entry = entries[entries.length - 1];
+        // Find a <script> element pointing at this URL. The src in the DOM
+        // may be relative or absolute; we accept any element whose resolved
+        // src matches.
+        let scriptEl = null;
+        for (const el of document.querySelectorAll('script[src]')) {
+          if (el.src === scriptUrl) { scriptEl = el; break; }
+        }
+        return {
+          timing: entry ? {
+            duration: Math.round(entry.duration),
+            transferSize: entry.transferSize ?? null,
+            encodedBodySize: entry.encodedBodySize ?? null,
+            decodedBodySize: entry.decodedBodySize ?? null,
+            deliveryType: entry.deliveryType ?? null,
+            initiatorType: entry.initiatorType ?? null,
+            nextHopProtocol: entry.nextHopProtocol ?? null,
+            renderBlockingStatus: entry.renderBlockingStatus ?? null,
+          } : null,
+          sri: scriptEl?.integrity || null,
+          async: scriptEl ? !!scriptEl.async : null,
+          defer: scriptEl ? !!scriptEl.defer : null,
+          type: scriptEl?.type || null,
+          crossOrigin: scriptEl?.crossOrigin || null,
+        };
+      },
+      args: [url],
+    })
+      .then((results) => sendResponse({ ok: true, info: results?.[0]?.result ?? null }))
+      .catch((err) => sendResponse({ ok: false, reason: err.message }));
+    return true;
+  }
+
   if (msg.type === 'fetch_script_source') {
     const url = msg.url;
     if (!url) { sendResponse({ ok: false, reason: 'No URL' }); return; }
@@ -150,6 +194,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             return;
           }
           const text = await res.text();
+          if (!text) {
+            // 204 No Content, or some CDNs return 200 with empty body when
+            // they don't want extensions reading them. Raise it specifically
+            // so the popup can offer the runtime fallback view.
+            sendResponse({ ok: false, reason: 'Empty body' });
+            return;
+          }
           sendResponse({ ok: true, text, contentType: res.headers.get('content-type') });
         })
         .catch((err) => sendResponse({ ok: false, reason: err.message }));

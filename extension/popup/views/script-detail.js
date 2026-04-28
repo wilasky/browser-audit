@@ -2,6 +2,151 @@ import { esc } from '../../shared/sanitize.js';
 import { analyzeScriptSource, fetchScriptSource } from '../../shared/script-analyzer.js';
 import { t } from '../../shared/i18n.js';
 
+function sendMsg(msg) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(msg, (r) => {
+      void chrome.runtime.lastError;
+      resolve(r ?? null);
+    });
+  });
+}
+
+function fmtBytes(n) {
+  if (n === null || n === undefined) { return '—'; }
+  if (n < 1024) { return `${n} B`; }
+  if (n < 1024 * 1024) { return `${(n / 1024).toFixed(1)} KB`; }
+  return `${(n / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function fmtMs(n) {
+  if (n === null || n === undefined) { return '—'; }
+  return `${n} ms`;
+}
+
+function deliveryLabel(deliveryType) {
+  if (deliveryType === 'cache')          { return t('sd.runtime_delivery_cache'); }
+  if (deliveryType === 'navigational-prefetch') { return t('sd.runtime_delivery_sw'); }
+  if (!deliveryType || deliveryType === '')     { return t('sd.runtime_delivery_net'); }
+  return deliveryType;
+}
+
+function asyncLabel(info) {
+  if (info.async) { return t('sd.runtime_async_async'); }
+  if (info.defer) { return t('sd.runtime_async_defer'); }
+  return t('sd.runtime_async_sync');
+}
+
+function renderRuntimeTechSheet(info) {
+  if (!info?.timing && info?.sri === null && info?.async === null) {
+    return `<p class="settings-hint">${esc(t('sd.runtime_no_timing'))}</p>`;
+  }
+  const t1 = info.timing;
+  const rows = [];
+  if (t1) {
+    rows.push([t('sd.runtime_size'),
+      t('sd.runtime_size_value', { transferred: fmtBytes(t1.transferSize), decoded: fmtBytes(t1.decodedBodySize) })]);
+    rows.push([t('sd.runtime_duration'), fmtMs(t1.duration)]);
+    if (t1.nextHopProtocol) { rows.push([t('sd.runtime_protocol'), t1.nextHopProtocol]); }
+    rows.push([t('sd.runtime_delivery'), deliveryLabel(t1.deliveryType)]);
+    if (t1.initiatorType) { rows.push([t('sd.runtime_initiator'), t1.initiatorType]); }
+  }
+  if (info.async !== null) { rows.push([t('sd.runtime_async'), asyncLabel(info)]); }
+  if (info.sri !== null) {
+    rows.push([t('sd.runtime_sri'),
+      info.sri ? t('sd.runtime_sri_yes', { hash: info.sri.slice(0, 24) + '…' }) : t('sd.runtime_sri_no')]);
+  }
+  return `<table class="sd-rt-table">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join('')}</table>`;
+}
+
+function renderRuntimeBehavior(script) {
+  const events = Object.entries(script.eventCounts ?? {})
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1]);
+  if (!events.length) {
+    return `<p class="settings-hint">${esc(t('sd.runtime_no_events'))}</p>`;
+  }
+  const eventChips = events.map(([type, n]) =>
+    `<span class="evt-chip">${esc(type)} ×${n}</span>`).join('');
+  const targets = (script.targetsContacted ?? []).slice(0, 12);
+  const targetsRow = targets.length
+    ? `<div class="sd-rt-targets"><strong>${esc(t('sd.runtime_targets'))}:</strong> ${targets.map(esc).join(', ')}</div>`
+    : '';
+  return `
+    <div class="sd-rt-events">${eventChips}</div>
+    ${targetsRow}`;
+}
+
+async function renderRuntimeFallback(container, script, errorReason) {
+  const url = script.url;
+  let domain = '';
+  try { domain = new URL(url).hostname; } catch { domain = url; }
+
+  let info = null;
+  if (script._tabId) {
+    const res = await sendMsg({ type: 'get_script_runtime_info', tabId: script._tabId, url });
+    if (res?.ok) { info = res.info; }
+  }
+
+  container.innerHTML = `
+    <div class="sd-wrap">
+      <div class="sd-header">
+        <button id="btn-sd-back" class="link-btn">${esc(t('btn.back'))}</button>
+        <strong>${esc(t('sd.title'))}</strong>
+      </div>
+
+      <div class="sd-meta">
+        <div class="sd-url" title="${esc(url)}">${esc(url)}</div>
+        <div class="settings-hint">${esc(domain)}</div>
+      </div>
+
+      <div class="sd-rt-banner">
+        <div class="sd-rt-banner-msg">${esc(t('sd.runtime_banner', { reason: errorReason }))}</div>
+        <div class="settings-hint">${esc(t('sd.runtime_subtitle'))}</div>
+        <div class="sd-rt-banner-btns">
+          <button id="btn-rt-retry" class="btn-secondary">${esc(t('sd.runtime_retry'))}</button>
+          <button id="btn-rt-view-source" class="btn-secondary">${esc(t('sd.runtime_view_source'))}</button>
+        </div>
+      </div>
+
+      <h3 class="sd-section-title">${esc(t('sd.runtime_section_tech'))}</h3>
+      ${info ? renderRuntimeTechSheet(info) : `<p class="settings-hint">${esc(t('sd.runtime_no_dom'))}</p>`}
+
+      <h3 class="sd-section-title">${esc(t('sd.runtime_section_behavior'))}</h3>
+      ${renderRuntimeBehavior(script)}
+
+      <h3 class="sd-section-title">${esc(t('sd.runtime_section_lookups'))}</h3>
+      ${buildLookupLinks(domain, null)}
+    </div>`;
+
+  container.querySelector('#btn-sd-back').addEventListener('click', () => {
+    container.dispatchEvent(new CustomEvent('sd-back', { bubbles: true }));
+  });
+  container.querySelector('#btn-rt-retry').addEventListener('click', () => {
+    renderScriptDetail(container, script);
+  });
+  container.querySelector('#btn-rt-view-source').addEventListener('click', async () => {
+    // Chrome blocks tabs.create({url:'view-source:...'}). Copy the prefixed
+    // URL to the clipboard so the user pastes it into the address bar.
+    const btn = container.querySelector('#btn-rt-view-source');
+    try {
+      await navigator.clipboard.writeText(`view-source:${url}`);
+      const orig = btn.textContent;
+      btn.textContent = t('sd.runtime_view_source_copied');
+      setTimeout(() => { btn.textContent = orig; }, 3000);
+    } catch {
+      // Clipboard blocked too — fall back to opening the URL plain.
+      chrome.tabs.create({ url });
+    }
+  });
+  container.querySelectorAll('.lookup-link').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const href = a.dataset.href;
+      if (href) { chrome.tabs.create({ url: href }); }
+    });
+  });
+}
+
 const VERDICT_COLOR = {
   critical: '#ef4444',
   high: '#f59e0b',
@@ -118,8 +263,10 @@ export async function renderScriptDetail(container, script) {
 
   try {
     const code = await fetchScriptSource(url);
-    if (!code) {
-      body.innerHTML = `<p class="error">${esc(t('sd.cant_download'))}</p>`;
+    if (code === null) {
+      // url === 'inline' — there is no source URL to fetch. Show the runtime
+      // fallback so the user still gets behavior + lookups.
+      await renderRuntimeFallback(container, script, t('sd.runtime_inline'));
       return;
     }
 
@@ -193,23 +340,25 @@ export async function renderScriptDetail(container, script) {
   } catch (err) {
     const errMsg = String(err.message || err);
     const isPermIssue = /permiso|permission/i.test(errMsg);
-    const isCorsIssue = /CORS|fetch|HTTP/i.test(errMsg);
 
-    body.innerHTML = `
-      <p class="error">${esc(t('common.error'))}: ${esc(errMsg)}</p>
-      ${isPermIssue ? `
+    // Permission errors are actionable on their own (ask for host permission
+    // and retry). For everything else — CDN block, HTTP error, CORS — fall
+    // through to the runtime fallback so the user gets a useful tech sheet
+    // instead of a dead-end.
+    if (isPermIssue) {
+      body.innerHTML = `
+        <p class="error">${esc(t('common.error'))}: ${esc(errMsg)}</p>
         <p class="settings-hint" style="margin-top:8px">${esc(t('sd.error_perm'))}</p>
-        <button id="btn-grant-now" class="btn-primary" style="margin-top:8px">${esc(t('sd.grant_now'))}</button>
-      ` : ''}
-      ${isCorsIssue && !isPermIssue ? `
-        <p class="settings-hint" style="margin-top:8px">${esc(t('sd.error_cors'))}</p>
-      ` : ''}`;
-
-    body.querySelector('#btn-grant-now')?.addEventListener('click', () => {
-      chrome.permissions.request({ origins: ['<all_urls>'] }, (granted) => {
-        void chrome.runtime.lastError;
-        if (granted) { renderScriptDetail(container, script); }
+        <button id="btn-grant-now" class="btn-primary" style="margin-top:8px">${esc(t('sd.grant_now'))}</button>`;
+      body.querySelector('#btn-grant-now')?.addEventListener('click', () => {
+        chrome.permissions.request({ origins: ['<all_urls>'] }, (granted) => {
+          void chrome.runtime.lastError;
+          if (granted) { renderScriptDetail(container, script); }
+        });
       });
-    });
+      return;
+    }
+
+    await renderRuntimeFallback(container, script, errMsg);
   }
 }
