@@ -393,6 +393,29 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'undo_individual_fix') {
+    const { api } = msg;
+    if (!api) { sendResponse({ ok: false, reason: 'missing api' }); return true; }
+    const [namespace, key] = api.split('.');
+    const setting = chrome.privacy?.[namespace]?.[key];
+    if (!setting) { sendResponse({ ok: false, reason: 'API not available' }); return true; }
+    setting.clear({}, async () => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ ok: false, reason: chrome.runtime.lastError.message });
+        return;
+      }
+      // Drop just this entry from appliedFixes so the 30-min alarm does not
+      // re-apply it; the rest of the hardening stays as it was.
+      const stored = await chrome.storage.local.get('appliedFixes');
+      const next = (stored.appliedFixes ?? []).filter((a) =>
+        typeof a === 'object' ? a.api !== api : a !== api
+      );
+      await chrome.storage.local.set({ appliedFixes: next });
+      sendResponse({ ok: true });
+    });
+    return true;
+  }
+
   if (msg.type === 'set_hardening_enabled') {
     const enabled = !!msg.enabled;
     (async () => {

@@ -1,0 +1,116 @@
+{
+  "version": "1.0.0",
+  "description": "Curated table of hardening settings known to break common website features. Each entry maps a chrome.privacy API + value to a list of typical breakage symptoms and the kind of sites usually affected. Used by the Health diagnose modal to suggest which setting to revert when a user reports a website not working.",
+  "entries": [
+    {
+      "api": "websites.thirdPartyCookiesAllowed",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "Rompe SSO, players embebidos (Vimeo en Notion, Twitch embed) y carritos de compra que usan cookies de terceros para sesión",
+        "en": "Breaks SSO, embedded players (Vimeo in Notion, Twitch embed) and shopping carts using third-party cookies for session"
+      },
+      "affects": ["sso", "embed", "shopping"],
+      "domains": ["notion.so", "atlassian.net", "salesforce.com", "shopify.com", "okta.com", "auth0.com"]
+    },
+    {
+      "api": "network.webRTCIPHandlingPolicy",
+      "brokenWhen": "disable_non_proxied_udp",
+      "symptom": {
+        "es": "Rompe videollamadas: Discord, Google Meet, Microsoft Teams, WhatsApp Web, Zoom Web",
+        "en": "Breaks video calls: Discord, Google Meet, Microsoft Teams, WhatsApp Web, Zoom Web"
+      },
+      "affects": ["webrtc", "video-call"],
+      "domains": ["discord.com", "meet.google.com", "teams.microsoft.com", "web.whatsapp.com", "zoom.us"]
+    },
+    {
+      "api": "network.dnsOverHttpsMode",
+      "brokenWhen": "secure",
+      "symptom": {
+        "es": "Puede romper redes corporativas con DNS interno (intranets, recursos en VPN sin DNS público)",
+        "en": "May break corporate networks with internal DNS (intranets, VPN-only resources)"
+      },
+      "affects": ["intranet", "corporate"],
+      "domains": []
+    },
+    {
+      "api": "websites.referrersEnabled",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "Rompe pasarelas de pago, CDN con protección de hotlink y algunos analíticos esenciales",
+        "en": "Breaks payment gateways, CDNs with hotlink protection, and some essential analytics"
+      },
+      "affects": ["payment", "cdn"],
+      "domains": ["stripe.com", "paypal.com"]
+    },
+    {
+      "api": "websites.protectedContentEnabled",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "Rompe contenido DRM: Netflix, Spotify Web, HBO, Disney+, Apple TV+, Amazon Prime Video",
+        "en": "Breaks DRM content: Netflix, Spotify Web, HBO, Disney+, Apple TV+, Amazon Prime Video"
+      },
+      "affects": ["drm", "video"],
+      "domains": ["netflix.com", "open.spotify.com", "play.hbomax.com", "disneyplus.com", "tv.apple.com", "primevideo.com"]
+    },
+    {
+      "api": "websites.hyperlinkAuditingEnabled",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "Rompe ping de algunos enlaces de email tracking y métricas de click-through",
+        "en": "Breaks ping for some email tracking links and click-through metrics"
+      },
+      "affects": ["analytics"],
+      "domains": []
+    },
+    {
+      "api": "network.networkPredictionEnabled",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "No suele romper nada visible; puede ralentizar la primera carga de páginas con muchos recursos",
+        "en": "Does not usually break anything visible; can slow first load on pages with many resources"
+      },
+      "affects": ["performance"],
+      "domains": []
+    },
+    {
+      "api": "services.alternateErrorPagesEnabled",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "Las páginas de error son más austeras pero no rompe ninguna web",
+        "en": "Error pages are more austere but does not break any website"
+      },
+      "affects": ["ui"],
+      "domains": []
+    },
+    {
+      "api": "services.autofillCreditCardEnabled",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "No rompe ninguna web; solo desactiva el autocompletado de tarjetas de crédito",
+        "en": "Does not break any website; only disables credit card autofill"
+      },
+      "affects": ["ui"],
+      "domains": []
+    },
+    {
+      "api": "services.passwordSavingEnabled",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "No rompe webs; solo desactiva la oferta de Chrome de guardar contraseñas",
+        "en": "Does not break websites; only disables Chrome's password save prompt"
+      },
+      "affects": ["ui"],
+      "domains": []
+    },
+    {
+      "api": "services.searchSuggestEnabled",
+      "brokenWhen": false,
+      "symptom": {
+        "es": "No rompe webs; solo desactiva sugerencias en la barra de direcciones",
+        "en": "Does not break websites; only disables address bar suggestions"
+      },
+      "affects": ["ui"],
+      "domains": []
+    }
+  ]
+}

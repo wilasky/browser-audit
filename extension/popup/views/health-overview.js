@@ -3,6 +3,7 @@ import { esc } from '../../shared/sanitize.js';
 import { t } from '../../shared/i18n.js';
 import { checkText, categoryLabel, translateDetail } from '../../shared/baseline-i18n.js';
 import baseline from '../../data/baseline.v1.json';
+import { openDiagnoseModal } from './health-diagnose.js';
 
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
@@ -341,6 +342,7 @@ export async function renderHealthOverview(audit, container) {
             <button id="btn-refresh" class="btn-secondary">${esc(t('health.refresh'))}</button>
             ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button>` : ''}
             ${hardeningCount > 0 ? `<button id="btn-hardening-toggle" class="btn-secondary ${hardeningEnabled ? 'btn-hardening-on' : 'btn-hardening-off'}" title="${esc(t(hardeningEnabled ? 'health.hardening_tip_on' : 'health.hardening_tip_off', { n: hardeningCount }))}">${esc(t(hardeningEnabled ? 'health.hardening_on' : 'health.hardening_off'))}</button>` : ''}
+            <button id="btn-diagnose" class="btn-secondary btn-diagnose" title="${esc(t('health.diagnose_tip'))}">${esc(t('health.diagnose_btn'))}</button>
             <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="${esc(t('health.reset_tip'))}">${esc(t('health.reset'))}</button>
             <div class="export-row">
               <button id="btn-export-json" class="btn-export">↓ JSON</button>
@@ -365,6 +367,17 @@ export async function renderHealthOverview(audit, container) {
       const freshAudit = await sendMsg({ type: 'run_audit' });
       if (freshAudit) { renderHealthOverview(freshAudit, container); }
     });
+
+    container.querySelector('#btn-diagnose')?.addEventListener('click', () => {
+      openDiagnoseModal(container).catch(console.error);
+    });
+
+    // After an undo from the modal, refresh the overview so the score and
+    // applied list reflect the change.
+    container.addEventListener('diag-undo-done', async () => {
+      const fresh = await sendMsg({ type: 'get_audit' });
+      if (fresh) { renderHealthOverview(fresh, container); }
+    }, { once: true });
 
     container.querySelector('#btn-hardening-toggle')?.addEventListener('click', async () => {
       const btn = container.querySelector('#btn-hardening-toggle');

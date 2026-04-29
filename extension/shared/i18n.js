@@ -157,6 +157,21 @@ const TRANSLATIONS = {
   'health.hardening_pausing':  { es: '⌛ Pausando…',                en: '⌛ Pausing…' },
   'health.hardening_resuming': { es: '⌛ Reactivando…',             en: '⌛ Re-enabling…' },
 
+  // Diagnose modal — "Is this site broken?"
+  'health.diagnose_btn':       { es: '💡 ¿Esta web no funciona?',   en: '💡 Site broken?' },
+  'health.diagnose_tip':       { es: 'Detectar qué setting del bastionado puede estar rompiendo la web actual', en: 'Detect which hardening setting may be breaking the current site' },
+  'health.diagnose_title':     { es: 'Diagnóstico para',             en: 'Diagnosing' },
+  'health.diagnose_no_tab':    { es: 'No hay pestaña web activa.',   en: 'No active web tab.' },
+  'health.diagnose_no_fixes':  { es: 'No tienes ningún ajuste de bastionado aplicado todavía. Si una web no funciona, no es por Lucent.', en: 'No hardening setting is applied yet. If a website does not work, Lucent is not the cause.' },
+  'health.diagnose_paused':    { es: 'El bastionado está pausado · ningún ajuste de Lucent está activo ahora mismo. Si esta web no funciona, no es por el bastionado.', en: 'Hardening is paused · no Lucent setting is active right now. If this site does not work, it is not because of hardening.' },
+  'health.diagnose_no_breakers': { es: 'Tienes {n} ajuste(s) aplicado(s), pero ninguno de los conocidos por romper webs comunes. El problema probablemente no es del bastionado.', en: 'You have {n} setting(s) applied, but none of those known to break common websites. The problem is likely not from hardening.' },
+  'health.diagnose_intro':     { es: 'Estos ajustes activos pueden estar rompiendo esta web:', en: 'These active settings may be breaking this site:' },
+  'health.diagnose_intro_likely': { es: '⭐ Probable culpable para este dominio:', en: '⭐ Likely culprit for this domain:' },
+  'health.diagnose_undo':      { es: '↶ Revertir solo este',         en: '↶ Revert just this' },
+  'health.diagnose_close':     { es: 'Cerrar',                       en: 'Close' },
+  'health.diagnose_reverted':  { es: '✓ Revertido. Recarga la página para verificar.', en: '✓ Reverted. Reload the page to verify.' },
+  'health.diagnose_reverting': { es: '⌛ Revirtiendo…',                en: '⌛ Reverting…' },
+
   // Profiles
   'profile.label':       { es: 'Vista:',         en: 'View:' },
   'profile.standard':    { es: 'Estándar',       en: 'Standard' },
