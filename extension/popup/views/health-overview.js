@@ -163,14 +163,19 @@ function renderCategory(cat, fixMap, appliedApis) {
     pass > 0 ? `<span class="cat-stat stat-pass">${pass} ${esc(t('status.pass'))}</span>` : '',
   ].filter(Boolean).join('');
 
+  // Categories open by default if they have any fail/warn (so the user
+  // sees the issues right away). All-pass categories collapse so the list
+  // stays compact. The user can override with a click either way.
+  const openByDefault = (fail + warn) > 0 ? 'open' : '';
+
   return `
-    <section class="category">
-      <div class="cat-header">
+    <details class="category" ${openByDefault} data-cat-id="${esc(cat.id)}">
+      <summary class="cat-header">
         <h2 class="cat-title">${esc(cat.icon)} ${esc(categoryLabel(cat.id) || cat.label)}</h2>
         <div class="cat-stats">${statsHtml}</div>
-      </div>
+      </summary>
       <ul class="check-list">${checks}</ul>
-    </section>`;
+    </details>`;
 }
 
 function renderProfileSelector(activeProfile) {
@@ -356,11 +361,11 @@ export async function renderHealthOverview(audit, container) {
           ${isFiltered ? `<div class="score-sub score-context">${esc(t('health.score_filter'))} <strong>${esc(profileLabel)}</strong> · ${esc(t('health.score_global'))}: <strong>${audit.score}</strong></div>` : ''}
           <div class="score-sub">${esc(t('health.audited_label'))} ${new Date(audit.completedAt).toLocaleTimeString()} · ${esc(t('health.checks_count'))}${esc(audit.baselineVersion)}${detectedBrowser?.chromiumVersion ? ` · <span class="health-browser-badge" title="${esc(t('fp.header_audited_as'))} ${esc(detectedBrowser.name)}">${esc(detectedBrowser.name)} v${detectedBrowser.chromiumVersion}</span>` : ''}</div>
           <div class="header-actions">
-            <button id="btn-refresh" class="btn-secondary">${esc(t('health.refresh'))}</button>
+            <button id="btn-refresh" class="btn-icon" title="${esc(t('health.refresh'))}">↺</button>
+            ${hardeningCount > 0 ? `<button id="btn-hardening-toggle" class="btn-icon ${hardeningEnabled ? 'btn-hardening-on' : 'btn-hardening-off'}" title="${esc(t(hardeningEnabled ? 'health.hardening_tip_on' : 'health.hardening_tip_off', { n: hardeningCount }))}">🛡</button>` : ''}
+            <button id="btn-reset-fixes" class="btn-icon btn-reset" title="${esc(t('health.reset_tip'))}">↶</button>
             ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button>` : ''}
-            ${hardeningCount > 0 ? `<button id="btn-hardening-toggle" class="btn-secondary ${hardeningEnabled ? 'btn-hardening-on' : 'btn-hardening-off'}" title="${esc(t(hardeningEnabled ? 'health.hardening_tip_on' : 'health.hardening_tip_off', { n: hardeningCount }))}">${esc(t(hardeningEnabled ? 'health.hardening_on' : 'health.hardening_off'))}</button>` : ''}
             <button id="btn-diagnose" class="btn-secondary btn-diagnose" title="${esc(t('health.diagnose_tip'))}">${esc(t('health.diagnose_btn'))}</button>
-            <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="${esc(t('health.reset_tip'))}">${esc(t('health.reset'))}</button>
             <div class="export-row">
               <button id="btn-export-json" class="btn-export">↓ JSON</button>
               <button id="btn-export-pdf" class="btn-export">↓ PDF</button>
@@ -400,7 +405,7 @@ export async function renderHealthOverview(audit, container) {
       const btn = container.querySelector('#btn-hardening-toggle');
       const wasEnabled = hardeningEnabled;
       btn.disabled = true;
-      btn.textContent = t(wasEnabled ? 'health.hardening_pausing' : 'health.hardening_resuming');
+      btn.textContent = '⌛';
       const res = await sendMsg({ type: 'set_hardening_enabled', enabled: !wasEnabled });
       if (res?.ok) {
         hardeningEnabled = res.enabled;
@@ -411,7 +416,7 @@ export async function renderHealthOverview(audit, container) {
         if (freshAudit) { renderHealthOverview(freshAudit, container); }
       } else {
         btn.disabled = false;
-        btn.textContent = t(wasEnabled ? 'health.hardening_on' : 'health.hardening_off');
+        btn.textContent = '🛡';
       }
     });
 

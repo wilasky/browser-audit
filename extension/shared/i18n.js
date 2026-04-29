@@ -250,6 +250,7 @@ const TRANSLATIONS = {
   // Vendor list links
   'comp.sub_vendor_links': { es: 'Lista de partners',             en: 'Partners list' },
   'comp.vendor_links_hint':{ es: 'Enlaces detectados a la lista de socios/vendors:', en: 'Detected links to partner/vendor list:' },
+  'comp.legend':           { es: '? Leyenda de términos',          en: '? Term legend' },
   'comp.analyze':          { es: 'Analizar página',           en: 'Analyze page' },
   'comp.analyze_again':    { es: 'Volver a analizar',         en: 'Re-analyze' },
   'comp.analyzing':        { es: 'Analizando…',               en: 'Analyzing…' },

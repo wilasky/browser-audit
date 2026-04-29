@@ -455,7 +455,7 @@ function renderAdvancedSection(r, classify, cmps, syncs) {
     </div>` : '';
 
   return `
-    <details class="comp-section comp-advanced" open>
+    <details class="comp-section comp-advanced">
       <summary class="comp-section-title">${esc(t('comp.section_advanced'))}</summary>
       <div class="adv-grid">
         ${consentBanner}
@@ -466,6 +466,94 @@ function renderAdvancedSection(r, classify, cmps, syncs) {
         ${depLine}
         ${vendorLinksLine}
       </div>
+    </details>`;
+}
+
+// Compact bilingual glossary covering every term used in the GDPR view.
+// Surfaced as a collapsible details so it does not push the report down.
+function getLegendItems() {
+  const isEs = t('btn.save') === 'Guardar';
+  if (isEs) {
+    return [
+      { section: 'Marcos y CMPs', items: [
+        ['TCF (IAB Europe)', 'Marco de Transparencia y Consentimiento de IAB Europe — estándar de UE'],
+        ['CMP', 'Consent Management Platform — software del banner (OneTrust, Didomi, Cookiebot, Sourcepoint…)'],
+        ['CMP ID', 'Identificador numérico de la CMP en el registro de IAB'],
+        ['TCString', 'Cadena codificada que recoge tus elecciones TCF (compactada en una cookie)'],
+        ['GDPR Applies', 'Indica si la página considera que el RGPD aplica a tu sesión (geolocalización IP)'],
+      ]},
+      { section: 'Propósitos y vendors', items: [
+        ['Propósito', 'Una de las 15 finalidades estándar TCF (P1–P15) que la web declara'],
+        ['Vendor', 'Cada uno de los partners publicitarios/análisis de la Global Vendor List'],
+        ['Interés legítimo', 'Base legal alternativa al consentimiento — no requiere aceptación expresa'],
+      ]},
+      { section: 'Cookies', items: [
+        ['1st party / propias', 'Cookies del mismo dominio que la web que visitas'],
+        ['3rd party / terceros', 'Cookies de otros dominios — típicas de tracking entre sitios'],
+        ['Cookie sensible', 'Nombre típico de sesión/auth/CSRF (sid, jwt, token, …) — debería tener HttpOnly'],
+        ['Cookie syncing', 'Emparejar IDs entre redes publicitarias para identificarte sin cookies propias'],
+        ['Cookie wall', 'Esquema "acepta o paga" — consentimiento dudoso bajo EDPB Guidelines 03/2022'],
+      ]},
+      { section: 'Cabeceras y seguridad', items: [
+        ['HSTS', 'Strict-Transport-Security — fuerza HTTPS, evita downgrade'],
+        ['CSP', 'Content-Security-Policy — bloquea scripts/recursos no autorizados'],
+        ['XFO', 'X-Frame-Options — previene clickjacking'],
+        ['SRI', 'Subresource Integrity — verifica que el código externo no fue manipulado'],
+        ['CSRF token', 'Token oculto en formularios que evita peticiones forjadas'],
+      ]},
+      { section: 'Otros', items: [
+        ['DMP', 'Data Management Platform (BlueKai, Adobe Audience Manager…) — agrega perfiles'],
+        ['Mixed content', 'Recursos http:// servidos en una página https://'],
+        ['Service Worker', 'Script persistente que actúa como proxy entre la página y la red'],
+      ]},
+    ];
+  }
+  return [
+    { section: 'Frameworks & CMPs', items: [
+      ['TCF (IAB Europe)', 'Transparency and Consent Framework — EU standard'],
+      ['CMP', 'Consent Management Platform — the banner software (OneTrust, Didomi, Cookiebot, Sourcepoint…)'],
+      ['CMP ID', 'Numeric ID of the CMP in the IAB registry'],
+      ['TCString', 'Encoded string that captures your TCF choices (compacted into a cookie)'],
+      ['GDPR Applies', 'Whether the page considers GDPR applies to your session (IP geolocation)'],
+    ]},
+    { section: 'Purposes & vendors', items: [
+      ['Purpose', 'One of the 15 standard TCF purposes (P1–P15) declared by the site'],
+      ['Vendor', 'Each advertising/analytics partner from the Global Vendor List'],
+      ['Legitimate interest', 'Alternative legal basis to consent — no explicit acceptance required'],
+    ]},
+    { section: 'Cookies', items: [
+      ['1st party', 'Cookies from the same domain as the page you visit'],
+      ['3rd party', 'Cookies from other domains — typical of cross-site tracking'],
+      ['Sensitive cookie', 'Typical session/auth/CSRF name (sid, jwt, token, …) — should have HttpOnly'],
+      ['Cookie syncing', 'Pairing IDs across ad networks to identify you without first-party cookies'],
+      ['Cookie wall', '"Accept or pay" scheme — questionable consent under EDPB Guidelines 03/2022'],
+    ]},
+    { section: 'Headers & security', items: [
+      ['HSTS', 'Strict-Transport-Security — forces HTTPS, prevents downgrade'],
+      ['CSP', 'Content-Security-Policy — blocks unauthorized scripts/resources'],
+      ['XFO', 'X-Frame-Options — prevents clickjacking'],
+      ['SRI', 'Subresource Integrity — verifies external code was not tampered with'],
+      ['CSRF token', 'Hidden form token that prevents forged requests'],
+    ]},
+    { section: 'Other', items: [
+      ['DMP', 'Data Management Platform (BlueKai, Adobe Audience Manager…) — aggregates profiles'],
+      ['Mixed content', 'http:// resources served on an https:// page'],
+      ['Service Worker', 'Persistent script that acts as a proxy between the page and the network'],
+    ]},
+  ];
+}
+
+function renderLegend() {
+  const sections = getLegendItems().map(({ section, items }) => {
+    const rows = items.map(([term, def]) =>
+      `<tr><td class="leg-term">${esc(term)}</td><td class="leg-def">${esc(def)}</td></tr>`
+    ).join('');
+    return `<tr class="leg-section-row"><td colspan="2" class="leg-section">${esc(section)}</td></tr>${rows}`;
+  }).join('');
+  return `
+    <details class="comp-legend">
+      <summary class="legend-toggle">${esc(t('comp.legend'))}</summary>
+      <table class="legend-table">${sections}</table>
     </details>`;
 }
 
@@ -661,6 +749,8 @@ function renderReport(r) {
         </div>
       </details>
     ` : ''}
+
+    ${renderLegend()}
   `;
 }
 
