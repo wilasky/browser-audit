@@ -203,7 +203,7 @@ const TRANSLATIONS = {
   // Score labels
   'score.excellent':     { es: 'Excelente',          en: 'Excellent' },
   'score.good':          { es: 'Bueno',              en: 'Good' },
-  'score.improvable':    { es: 'Mejorable',          en: 'Improvable' },
+  'score.improvable':    { es: 'Mejorable',          en: 'Needs improvement' },
   'score.moderate_risk': { es: 'Riesgo moderado',    en: 'Moderate risk' },
   'score.high_risk':     { es: 'Riesgo elevado',     en: 'High risk' },
   'score.critical':      { es: 'Riesgo crítico',     en: 'Critical risk' },
