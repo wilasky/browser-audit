@@ -5,6 +5,7 @@ import { renderSettings } from './views/settings.js';
 import { renderOnboarding, shouldShowOnboarding } from './views/onboarding.js';
 import { renderFingerprintDetail } from './views/fingerprint-detail.js';
 import { renderScriptDetail } from './views/script-detail.js';
+import { renderHealthDetail } from './views/health-detail.js';
 import { initI18n, t } from '../shared/i18n.js';
 import { detectBrowser } from '../shared/browser-detect.js';
 
@@ -54,6 +55,11 @@ async function loadHealthView() {
     root.addEventListener('open-fingerprint', () => {
       renderFingerprintDetail(root).catch(console.error);
       root.addEventListener('fp-back', () => loadHealthView().catch(console.error), { once: true });
+    }, { once: true });
+    // Wire generic per-check detail view — fires for any non-fingerprint check
+    root.addEventListener('open-health-detail', (e) => {
+      renderHealthDetail(root, e.detail).catch(console.error);
+      root.addEventListener('hd-back', () => loadHealthView().catch(console.error), { once: true });
     }, { once: true });
   } else {
     root.innerHTML = `<p class="loading">${t('health.auditing_first')}</p>`;

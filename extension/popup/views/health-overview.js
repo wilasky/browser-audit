@@ -136,10 +136,6 @@ function renderCheck(r, fixMap) {
         </div>
         <div class="check-actions">${detailBtn}${fixBtn}${muteBtn}</div>
       </div>
-      <div class="check-rationale" id="rationale-${esc(r.id)}" style="display:none">
-        ${esc(checkText(r.id, r.rationale, 'rationale'))}
-        ${fix?.instructions ? `<div class="fix-instructions">${esc(checkText(r.id, fix.instructions, 'instructions'))}</div>` : ''}
-      </div>
     </li>`;
 }
 
@@ -564,7 +560,9 @@ export async function renderHealthOverview(audit, container) {
       });
     });
 
-    // Click on check title row toggles rationale
+    // Click on check title row opens the detail view (the fingerprint check
+    // has its own dedicated view). The previous inline rationale panel was
+    // replaced by the full Health Detail screen.
     container.querySelectorAll('.check-item').forEach((item) => {
       item.querySelector('.check-title-row')?.addEventListener('click', () => {
         const id = item.dataset.checkId;
@@ -572,8 +570,14 @@ export async function renderHealthOverview(audit, container) {
           container.dispatchEvent(new CustomEvent('open-fingerprint', { bubbles: true }));
           return;
         }
-        const panel = document.getElementById(`rationale-${id}`);
-        if (panel) { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; }
+        const result = audit.results.find((r) => r.id === id);
+        if (!result) { return; }
+        // Pass the matching check definition (for method.type, etc.)
+        const checkDef = baseline.checks.find((c) => c.id === id);
+        container.dispatchEvent(new CustomEvent('open-health-detail', {
+          bubbles: true,
+          detail: { ...result, method: checkDef?.method ?? null },
+        }));
       });
     });
   }
