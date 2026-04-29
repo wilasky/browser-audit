@@ -3,6 +3,7 @@ import { esc } from '../../shared/sanitize.js';
 import { t } from '../../shared/i18n.js';
 import { checkText, categoryLabel, translateDetail } from '../../shared/baseline-i18n.js';
 import baseline from '../../data/baseline.v1.json';
+import { scoreLabel } from '../../background/audit-engine.js';
 import { openDiagnoseModal } from './health-diagnose.js';
 
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
@@ -26,6 +27,10 @@ function translateScoreLabel(label) {
 // every domain you visit). The remaining checks live under Advanced.
 const BASIC_EXTRA_IDS = new Set(['doh-enabled']);
 
+// Build profile labels lazily — t() depends on initI18n() having run, which
+// happens after this module loads. A module-level const PROFILES = getProfiles()
+// would freeze the labels before the language is set, leaving them in
+// Spanish on EN sessions.
 function getProfiles() {
   return {
     basic:    { label: t('profile.basic'),    filter: (r) => (['critical', 'high'].includes(r.severity) || BASIC_EXTRA_IDS.has(r.id)) && !r.advanced },
@@ -36,7 +41,6 @@ function getProfiles() {
     NIST:     { label: 'NIST',      filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('NIST')) },
   };
 }
-const PROFILES = getProfiles();
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -181,8 +185,8 @@ function renderCategory(cat, fixMap, appliedApis, catState) {
     </details>`;
 }
 
-function renderProfileSelector(activeProfile) {
-  return Object.entries(PROFILES).map(([key, p]) =>
+function renderProfileSelector(activeProfile, profiles) {
+  return Object.entries(profiles).map(([key, p]) =>
     `<button class="profile-btn ${key === activeProfile ? 'active' : ''}" data-profile="${key}">${p.label}</button>`
   ).join('');
 }
@@ -305,13 +309,15 @@ export async function renderHealthOverview(audit, container) {
       .map((a) => (typeof a === 'object' ? a.api : a))
       .filter(Boolean)
   );
+  // Build profile labels NOW (post-initI18n). Module-level const would
+  // freeze them in Spanish before the language was set.
+  const PROFILES = getProfiles();
   const defaultProfile = stored.userPrefs?.defaultProfile ?? 'basic';
   // Legacy 'all' (removed in 0.2.1) and any other unknown value fall back to basic
   let activeProfile = PROFILES[defaultProfile] ? defaultProfile : 'basic';
   const detectedBrowser = stored.detectedBrowser ?? null;
   let hardeningEnabled = hardening?.enabled !== false;
   const hardeningCount = hardening?.count ?? 0;
-  const { label, level } = audit;
 
   const fixMap = {};
   const apiMap = {};   // checkId -> api string (for direct apply)
@@ -338,6 +344,10 @@ export async function renderHealthOverview(audit, container) {
       }
       return tw === 0 ? 100 : Math.max(0, Math.round(100 - (lost / tw) * 100));
     })();
+    // Label/level must derive from the FILTERED score, not the global audit.
+    // Otherwise the score circle shows 100 but the text under it still says
+    // the global verdict ("Mejorable") — confusing when switching profiles.
+    const { label, level } = scoreLabel(filteredScore);
 
     const groups = groupByCategory(filtered, audit.categories);
 
@@ -348,7 +358,7 @@ export async function renderHealthOverview(audit, container) {
     const sc = filtered.filter((r) => r.status === 'skipped').length;
     const uc = filtered.filter((r) => r.status === 'unknown').length;
 
-    const isFiltered = activeProfile !== 'all';
+    const isFiltered = activeProfile !== 'advanced';
     const profileLabel = PROFILES[activeProfile].label;
 
     container.innerHTML = `
@@ -381,7 +391,7 @@ export async function renderHealthOverview(audit, container) {
 
       <div class="profile-bar">
         <span class="profile-label">${esc(t('profile.label'))}</span>
-        ${renderProfileSelector(activeProfile)}
+        ${renderProfileSelector(activeProfile, PROFILES)}
       </div>
 
       <div class="categories">${groups.map((c) => renderCategory(c, fixMap, appliedApis, catState)).join('')}</div>`;
