@@ -4,9 +4,11 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 13px;
   width: 400px;
+  max-width: 400px;       /* Prevent oversize children from stretching body */
   min-height: 520px;
   max-height: 600px;
   overflow-y: auto;
+  overflow-x: hidden;     /* Hide horizontal overflow rather than expand */
   background: #0f0f11;
   color: #e8e8ea;
 }
@@ -1569,7 +1571,10 @@ main { padding: 0 0 16px; }
 .exfil-msg { font-size: 11px; color: #ddd; line-height: 1.5; margin: 0; }
 .exfil-msg strong { color: #fbbf24; }
 .exfil-rows { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
-.exfil-rows code { background: #2a1f08; color: #ffd966; padding: 1px 4px; border-radius: 3px; }
+.exfil-rows code {
+  background: #2a1f08; color: #ffd966; padding: 1px 4px; border-radius: 3px;
+  word-break: break-all; display: inline-block; max-width: 100%;
+}
 
 /* Endpoints table in deep analysis (literal URL args to fetch/XHR/WS) */
 .sd-endp-table { font-size: 10px; }

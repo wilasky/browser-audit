@@ -23,16 +23,20 @@ const SUSPICIOUS_APIS = [
   { id: 'geolocation',         pattern: /navigator\.geolocation/g,                                 weight: 3,  label: 'geolocation',             descKey: 'sa.api.geolocation' },
   { id: 'service-worker',      pattern: /navigator\.serviceWorker\.register/g,                     weight: 4,  label: 'ServiceWorker.register',  descKey: 'sa.api.service-worker' },
   { id: 'crypto-mining',       pattern: /\b(coinhive|cryptonight|monero|webminer|cryptojacking)\b/gi, weight: 15, label: 'Cryptominer signature', descKey: 'sa.api.crypto-mining' },
-  { id: 'beacon',              pattern: /navigator\.sendBeacon/g,                                  weight: 4,  label: 'sendBeacon',              descKey: 'sa.api.beacon' },
-  // Network behaviour — low base weight (legitimate code uses these too)
+  { id: 'beacon',              pattern: /navigator\.sendBeacon/g,                                  weight: 2,  label: 'sendBeacon',              descKey: 'sa.api.beacon' },
+  // Network behaviour — very low base weight: legitimate publisher SDKs,
+  // analytics, GTM, GA4 all use these. Score them by sheer volume only,
+  // not as inherently suspicious.
   { id: 'fetch',               pattern: /\bfetch\s*\(/g,                                           weight: 1,  label: 'fetch()',                 descKey: 'sa.api.fetch' },
-  { id: 'xhr',                 pattern: /\bnew\s+XMLHttpRequest/g,                                 weight: 2,  label: 'new XMLHttpRequest',      descKey: 'sa.api.xhr' },
-  { id: 'websocket',           pattern: /\bnew\s+WebSocket/g,                                      weight: 3,  label: 'new WebSocket',           descKey: 'sa.api.websocket' },
-  // DOM injection — hallmark of loaders, ad networks, malvertising
-  { id: 'create-script',       pattern: /createElement\s*\(\s*['"`]script['"`]\s*\)/gi,            weight: 5,  label: "createElement('script')", descKey: 'sa.api.create-script' },
-  { id: 'create-iframe',       pattern: /createElement\s*\(\s*['"`]iframe['"`]\s*\)/gi,            weight: 4,  label: "createElement('iframe')", descKey: 'sa.api.create-iframe' },
-  { id: 'append-head',         pattern: /document\.head\.appendChild/g,                            weight: 3,  label: 'head.appendChild',        descKey: 'sa.api.append-head' },
-  { id: 'form-action-set',     pattern: /\.(action|method)\s*=\s*['"`]/g,                          weight: 3,  label: 'form.action =',           descKey: 'sa.api.form-action-set' },
+  { id: 'xhr',                 pattern: /\bnew\s+XMLHttpRequest/g,                                 weight: 1,  label: 'new XMLHttpRequest',      descKey: 'sa.api.xhr' },
+  { id: 'websocket',           pattern: /\bnew\s+WebSocket/g,                                      weight: 2,  label: 'new WebSocket',           descKey: 'sa.api.websocket' },
+  // DOM injection — present in many legitimate loaders (GTM, ads, AB test
+  // libs). Keep visible but with low weight; truly malicious dynamic
+  // injection is usually paired with eval/atob/unescape which DO score high.
+  { id: 'create-script',       pattern: /createElement\s*\(\s*['"`]script['"`]\s*\)/gi,            weight: 2,  label: "createElement('script')", descKey: 'sa.api.create-script' },
+  { id: 'create-iframe',       pattern: /createElement\s*\(\s*['"`]iframe['"`]\s*\)/gi,            weight: 2,  label: "createElement('iframe')", descKey: 'sa.api.create-iframe' },
+  { id: 'append-head',         pattern: /document\.head\.appendChild/g,                            weight: 1,  label: 'head.appendChild',        descKey: 'sa.api.append-head' },
+  { id: 'form-action-set',     pattern: /\.(action|method)\s*=\s*['"`]/g,                          weight: 2,  label: 'form.action =',           descKey: 'sa.api.form-action-set' },
   // Edge-case eval variants that the plain /eval/ regex misses
   { id: 'window-eval',         pattern: /(?:window|self|globalThis)\s*\[\s*['"`]eval['"`]\s*\]/g,  weight: 12, label: "window['eval']",          descKey: 'sa.api.window-eval' },
   { id: 'fn-constructor',      pattern: /\[\]\s*\.\s*constructor\s*\.\s*constructor/g,             weight: 12, label: '[].constructor.constructor', descKey: 'sa.api.fn-constructor' },
@@ -181,11 +185,15 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
     Math.floor(obfuscationScore / 4)
   );
 
-  // Verdict — popup resolves the human text via t(`verdict.${level}`).
+  // Verdict thresholds tuned to avoid alarming the user on legitimate
+  // SDKs (Marfeel, GTM, GA4) that combine many low-weight patterns. CRITICAL
+  // should require either real obfuscation or unmistakable malware signals
+  // (cryptominer match, eval/Function combo with atob, etc.) — not just a
+  // publisher SDK that uses fetch + createElement legitimately.
   let verdict;
-  if (totalRiskScore >= 70) { verdict = { level: 'critical' }; }
-  else if (totalRiskScore >= 40) { verdict = { level: 'high' }; }
-  else if (totalRiskScore >= 20) { verdict = { level: 'medium' }; }
+  if (totalRiskScore >= 80) { verdict = { level: 'critical' }; }
+  else if (totalRiskScore >= 50) { verdict = { level: 'high' }; }
+  else if (totalRiskScore >= 25) { verdict = { level: 'medium' }; }
   else { verdict = { level: 'low' }; }
 
   return {
