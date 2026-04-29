@@ -151,7 +151,7 @@ function renderCheck(r, fixMap, appliedApis) {
     </li>`;
 }
 
-function renderCategory(cat, fixMap, appliedApis) {
+function renderCategory(cat, fixMap, appliedApis, catState) {
   const pass = cat.checks.filter((c) => c.status === 'pass').length;
   const fail = cat.checks.filter((c) => c.status === 'fail').length;
   const warn = cat.checks.filter((c) => c.status === 'warn').length;
@@ -163,15 +163,14 @@ function renderCategory(cat, fixMap, appliedApis) {
     pass > 0 ? `<span class="cat-stat stat-pass">${pass} ${esc(t('status.pass'))}</span>` : '',
   ].filter(Boolean).join('');
 
-  // Categories open by default if they have any fail/warn (so the user
-  // sees the issues right away). All-pass categories collapse so the list
-  // stays compact. The user can override with a click either way.
-  const openByDefault = (fail + warn) > 0 ? 'open' : '';
+  // All categories collapsed by default. State persists in chrome.storage
+  // under catState — the user re-opens what they care about and it sticks.
+  const isOpen = catState[cat.id] === true;
 
   return `
-    <details class="category" ${openByDefault} data-cat-id="${esc(cat.id)}">
+    <details class="category"${isOpen ? ' open' : ''} data-cat-id="${esc(cat.id)}">
       <summary class="cat-header">
-        <h2 class="cat-title">${esc(cat.icon)} ${esc(categoryLabel(cat.id) || cat.label)}</h2>
+        <span class="cat-title">${esc(cat.icon)} ${esc(categoryLabel(cat.id) || cat.label)}</span>
         <div class="cat-stats">${statsHtml}</div>
       </summary>
       <ul class="check-list">${checks}</ul>
@@ -293,9 +292,10 @@ async function applyFix(fix, api, expected, btn) {
 export async function renderHealthOverview(audit, container) {
   // Read user-configured default profile from prefs
   const [stored, hardening] = await Promise.all([
-    chrome.storage.local.get(['userPrefs', 'detectedBrowser', 'appliedFixes']),
+    chrome.storage.local.get(['userPrefs', 'detectedBrowser', 'appliedFixes', 'catState']),
     sendMsg({ type: 'get_hardening_state' }),
   ]);
+  const catState = stored.catState ?? {};
   const appliedApis = new Set(
     (stored.appliedFixes ?? [])
       .map((a) => (typeof a === 'object' ? a.api : a))
@@ -362,6 +362,7 @@ export async function renderHealthOverview(audit, container) {
           <div class="score-sub">${esc(t('health.audited_label'))} ${new Date(audit.completedAt).toLocaleTimeString()} · ${esc(t('health.checks_count'))}${esc(audit.baselineVersion)}${detectedBrowser?.chromiumVersion ? ` · <span class="health-browser-badge" title="${esc(t('fp.header_audited_as'))} ${esc(detectedBrowser.name)}">${esc(detectedBrowser.name)} v${detectedBrowser.chromiumVersion}</span>` : ''}</div>
           <div class="header-actions">
             <button id="btn-refresh" class="btn-icon" title="${esc(t('health.refresh'))}">↺</button>
+            <button id="btn-expand-all" class="btn-icon" title="${esc(t('health.expand_all'))}">📂</button>
             ${hardeningCount > 0 ? `<button id="btn-hardening-toggle" class="btn-icon ${hardeningEnabled ? 'btn-hardening-on' : 'btn-hardening-off'}" title="${esc(t(hardeningEnabled ? 'health.hardening_tip_on' : 'health.hardening_tip_off', { n: hardeningCount }))}">🛡</button>` : ''}
             <button id="btn-reset-fixes" class="btn-icon btn-reset" title="${esc(t('health.reset_tip'))}">↶</button>
             ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button>` : ''}
@@ -381,7 +382,7 @@ export async function renderHealthOverview(audit, container) {
         ${renderProfileSelector(activeProfile)}
       </div>
 
-      <div class="categories">${groups.map((c) => renderCategory(c, fixMap, appliedApis)).join('')}</div>`;
+      <div class="categories">${groups.map((c) => renderCategory(c, fixMap, appliedApis, catState)).join('')}</div>`;
 
     // Events
     container.querySelector('#btn-refresh').addEventListener('click', async () => {
@@ -392,6 +393,31 @@ export async function renderHealthOverview(audit, container) {
 
     container.querySelector('#btn-diagnose')?.addEventListener('click', () => {
       openDiagnoseModal(container).catch(console.error);
+    });
+
+    // Persist category open/closed state across popup re-opens. The user
+    // pins what they care about; closed by default keeps the view tidy.
+    container.querySelectorAll('.category[data-cat-id]').forEach((det) => {
+      det.addEventListener('toggle', async () => {
+        const id = det.dataset.catId;
+        const s = await chrome.storage.local.get('catState');
+        const next = { ...(s.catState ?? {}), [id]: det.open };
+        await chrome.storage.local.set({ catState: next });
+      });
+    });
+
+    // Expand-all / collapse-all toggle. Looks at the current state of the
+    // visible categories — if any is closed, opens all; otherwise closes all.
+    container.querySelector('#btn-expand-all')?.addEventListener('click', async () => {
+      const cats = container.querySelectorAll('.category[data-cat-id]');
+      const anyClosed = Array.from(cats).some((d) => !d.open);
+      const open = anyClosed; // open all if any was closed; otherwise close all
+      const next = {};
+      cats.forEach((d) => {
+        d.open = open;
+        next[d.dataset.catId] = open;
+      });
+      await chrome.storage.local.set({ catState: next });
     });
 
     // After an undo from the modal, refresh the overview so the score and

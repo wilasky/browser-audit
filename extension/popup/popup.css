@@ -163,6 +163,9 @@ main { padding: 0 0 16px; }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #666;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
 }
 
 .cat-stats { display: flex; gap: 4px; }

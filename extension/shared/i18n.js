@@ -127,6 +127,8 @@ const TRANSLATIONS = {
   'health.default_btn':        { es: '↩ Default',                  en: '↩ Default' },
   'health.default_tip':        { es: 'Devolver este ajuste al valor por defecto de Chrome', en: 'Restore this setting to Chrome default' },
   'health.toast_default_done': { es: '↩ Devuelto a default',       en: '↩ Restored to default' },
+  'health.expand_all':         { es: 'Desplegar todas',              en: 'Expand all' },
+  'health.collapse_all':       { es: 'Plegar todas',                 en: 'Collapse all' },
   'health.mute_btn':           { es: '🔇 Ignorar',                  en: '🔇 Mute' },
   'health.unmute_btn':         { es: '🔉 Restaurar',                en: '🔉 Unmute' },
   'health.mute_tip':           { es: 'No contar este check para el score', en: 'Do not count this check for the score' },
