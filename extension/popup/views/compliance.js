@@ -4,6 +4,7 @@ import { t, localized } from '../../shared/i18n.js';
 import cookiePurposes from '../../data/cookie-purposes.json';
 import cmpVendors from '../../data/cmp-vendors.json';
 import syncVendors from '../../data/sync-vendors.json';
+import tcfPurposes from '../../data/tcf-purposes.json';
 
 // Pre-compile the cookie-purpose regexes once per popup load.
 const COMPILED_PURPOSES = cookiePurposes.patterns.map((p) => ({
@@ -394,6 +395,56 @@ function renderAdvancedSection(r, classify, cmps, syncs) {
       </div>
     </div>`;
 
+  // TCF v2 line — only shown if the page exposes window.__tcfapi
+  let tcfLine = '';
+  if (r.tcf) {
+    const purposesText = t('comp.tcf_purposes', {
+      n: r.tcf.purposesAccepted, total: r.tcf.purposesTotal,
+    });
+    const vendorsText = r.tcf.vendorsTotal > 0
+      ? ` · ${t('comp.tcf_vendors', { n: r.tcf.vendorsAccepted, total: r.tcf.vendorsTotal })}`
+      : '';
+    const liText = r.tcf.legitimateInterestsTotal > 0
+      ? ` · ${t('comp.tcf_li', { n: r.tcf.legitimateInterestsTotal })}`
+      : '';
+    // Render the accepted purpose list as a collapsible details block
+    const acceptedDetail = r.tcf.purposeIdsAccepted.length > 0
+      ? `<details class="tcf-purposes-detail">
+          <summary class="settings-hint">${esc(t('comp.tcf_purposes_detail'))}</summary>
+          <ul class="tcf-purpose-list">
+            ${r.tcf.purposeIdsAccepted.map((id) => `
+              <li><code>P${id}</code> ${esc(localized(tcfPurposes.purposes[id]) || '?')}</li>
+            `).join('')}
+          </ul>
+        </details>`
+      : '';
+    tcfLine = `
+      <div class="adv-line adv-line-stack">
+        <span class="adv-key">${esc(t('comp.sub_tcf'))} <small>(CMP ${r.tcf.cmpId ?? '?'})</small></span>
+        <div class="adv-val tcf-summary">
+          <span class="tcf-pill">${esc(purposesText)}</span>
+          ${vendorsText ? `<span class="settings-hint">${esc(vendorsText.replace(/^\s·\s/, ''))}</span>` : ''}
+          ${liText ? `<span class="settings-hint">${esc(liText.replace(/^\s·\s/, ''))}</span>` : ''}
+        </div>
+        ${acceptedDetail}
+      </div>`;
+  }
+
+  // Vendor list links — page advertised a "View partners" / "Lista de socios"
+  let vendorLinksLine = '';
+  if (r.vendorListLinks?.length > 0) {
+    const links = r.vendorListLinks.map((l) =>
+      `<a class="vendor-link" data-href="${esc(l.href)}" title="${esc(l.href)}">${esc(l.text)}</a>`
+    ).join(' · ');
+    vendorLinksLine = `
+      <div class="adv-line adv-line-stack">
+        <span class="adv-key">${esc(t('comp.sub_vendor_links'))}</span>
+        <div class="adv-val">${links}</div>
+      </div>`;
+  }
+
+  // Cookie wall is rendered separately in renderReport() — outside this function.
+
   // Consent banner reset — visible only if the probe detected an accepted
   // consent (cookie or storage marker). One-click clears CMP markers and
   // reloads so the banner reappears.
@@ -410,10 +461,24 @@ function renderAdvancedSection(r, classify, cmps, syncs) {
         ${consentBanner}
         ${classifyLine}
         ${cmpLine}
+        ${tcfLine}
         ${syncLine}
         ${depLine}
+        ${vendorLinksLine}
       </div>
     </details>`;
+}
+
+// Stand-alone alert for cookie wall pages, rendered above the Advanced
+// section so it is the first thing the user sees after the overview.
+function renderCookieWallAlert(banners) {
+  if (!banners?.length) { return ''; }
+  const maxSignals = Math.max(...banners.map((b) => b.cookieWallSignals ?? 0));
+  if (maxSignals === 0) { return ''; }
+  const isWall = banners.some((b) => b.cookieWall);
+  const cls = isWall ? 'comp-wall comp-wall-strong' : 'comp-wall';
+  const msg = isWall ? t('comp.cookie_wall_warn') : t('comp.cookie_wall_possible');
+  return `<div class="${cls}">${msg}</div>`;
 }
 
 function renderSensitiveSection(sensitive) {
@@ -442,6 +507,10 @@ function buildExportPayload(r, classify, cmps, syncs) {
       sensitive: classify.sensitive,
     },
     cmp: cmps,
+    tcf: r.tcf ?? null,
+    vendorListLinks: r.vendorListLinks ?? [],
+    cookieWall: r.banners?.some((b) => b.cookieWall) ?? false,
+    cookieWallSignals: Math.max(0, ...(r.banners ?? []).map((b) => b.cookieWallSignals ?? 0)),
     syncing: syncs,
     thirdParty: {
       scripts: r.thirdPartyScripts,
@@ -506,6 +575,7 @@ function renderReport(r) {
       </div>
     </div>
 
+    ${renderCookieWallAlert(r.banners)}
     ${renderAdvancedSection(r, classify, cmps, syncs)}
     ${renderSensitiveSection(classify.sensitive)}
 
@@ -720,6 +790,15 @@ export async function renderCompliance(container) {
     const date = new Date().toISOString().slice(0, 10);
     const slug = (lastReport.host || 'page').replace(/[^a-z0-9.-]/gi, '_');
     downloadJSON(`${t('comp.export_filename')}-${slug}-${date}.json`, payload);
+  });
+
+  // Vendor list links (delegated — anchors live inside renderReport output)
+  container.addEventListener('click', (ev) => {
+    const a = ev.target.closest('.vendor-link');
+    if (!a) { return; }
+    ev.preventDefault();
+    const href = a.dataset.href;
+    if (href) { chrome.tabs.create({ url: href }); }
   });
 
   // Reset consent — wired via delegation because the button is rendered

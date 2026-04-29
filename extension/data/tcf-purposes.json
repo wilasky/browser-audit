@@ -1,0 +1,21 @@
+{
+  "version": "TCF v2.2",
+  "description": "Standard purposes from IAB Europe TCF v2.2. Purpose IDs and labels are public and stable. Used to translate the numeric purpose.consents map returned by window.__tcfapi('getTCData', 2, cb) into human-readable text.",
+  "purposes": {
+    "1":  { "es": "Almacenar y/o acceder a información en un dispositivo",                                              "en": "Store and/or access information on a device" },
+    "2":  { "es": "Utilizar datos limitados para seleccionar publicidad",                                               "en": "Use limited data to select advertising" },
+    "3":  { "es": "Crear perfiles para publicidad personalizada",                                                       "en": "Create profiles for personalised advertising" },
+    "4":  { "es": "Utilizar perfiles para seleccionar publicidad personalizada",                                        "en": "Use profiles to select personalised advertising" },
+    "5":  { "es": "Crear perfiles para personalizar contenido",                                                         "en": "Create profiles to personalise content" },
+    "6":  { "es": "Utilizar perfiles para seleccionar contenido personalizado",                                         "en": "Use profiles to select personalised content" },
+    "7":  { "es": "Medir el rendimiento de la publicidad",                                                              "en": "Measure advertising performance" },
+    "8":  { "es": "Medir el rendimiento del contenido",                                                                 "en": "Measure content performance" },
+    "9":  { "es": "Conocer al público mediante estadísticas o combinaciones de datos",                                  "en": "Understand audiences through statistics or combinations of data" },
+    "10": { "es": "Desarrollar y mejorar servicios",                                                                    "en": "Develop and improve services" },
+    "11": { "es": "Utilizar datos limitados para seleccionar contenido",                                                "en": "Use limited data to select content" },
+    "12": { "es": "Utilizar datos de geolocalización precisa",                                                          "en": "Use precise geolocation data" },
+    "13": { "es": "Compartir datos y perfiles para análisis y publicidad personalizada con anunciantes en Internet",    "en": "Sharing data and profiles for personalised advertising with advertisers on the Internet" },
+    "14": { "es": "Compartir datos y perfiles para análisis y publicidad personalizada de anunciantes",                 "en": "Sharing data and profiles for personalised advertising from advertisers for our campaigns" },
+    "15": { "es": "Escaneo activo de características del dispositivo para identificación",                              "en": "Actively scan device characteristics for identification" }
+  }
+}

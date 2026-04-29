@@ -1201,6 +1201,45 @@ main { padding: 0 0 16px; }
   background: #3a2f10; color: #ffd966; border-color: #8a6420;
 }
 .btn-reset-consent:disabled { opacity: 0.7; cursor: default; }
+
+/* TCF v2 summary */
+.tcf-summary { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tcf-pill {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+  background: #1a0d2a; color: #b388dd; border: 1px solid #3a1a5a;
+  letter-spacing: 0.02em;
+}
+.tcf-purposes-detail { margin-top: 2px; }
+.tcf-purposes-detail summary { cursor: pointer; font-size: 10px; }
+.tcf-purposes-detail summary::-webkit-details-marker { display: none; }
+.tcf-purposes-detail summary::before { content: '▸ '; color: #555; }
+.tcf-purposes-detail[open] summary::before { content: '▾ '; }
+.tcf-purpose-list {
+  list-style: none; padding: 4px 0 4px 14px; margin: 4px 0 0; display: flex; flex-direction: column; gap: 2px;
+  font-size: 10px; color: #aaa; line-height: 1.45;
+}
+.tcf-purpose-list code {
+  font-size: 9px; color: #b388dd; background: #1a0d2a;
+  padding: 0 4px; border-radius: 3px; margin-right: 4px;
+}
+
+/* Cookie wall alert — sits above Advanced section */
+.comp-wall {
+  margin: 0 16px 8px; padding: 8px 12px; border-radius: 6px;
+  font-size: 11px; line-height: 1.5;
+  background: #1f1908; color: #fbbf24; border: 1px solid #5a4416;
+}
+.comp-wall-strong {
+  background: #2a1208; color: #ff9966; border-color: #7a2a16;
+}
+
+/* Vendor list links — small pill-style anchors */
+.vendor-link {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  background: #16161a; color: #88aacc; border: 1px solid #2a2a2e;
+  text-decoration: none; cursor: pointer;
+}
+.vendor-link:hover { background: #1a3a5a; color: #aaddff; border-color: #3a5a8a; }
 .adv-line {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   font-size: 11px; padding: 2px 0;

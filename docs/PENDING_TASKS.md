@@ -262,3 +262,31 @@ Esto no requiere permisos nuevos (solo lectura de strings + storage). La DB cura
 puede crecer crowdsourced en un futuro repo aparte (o en `extension/data/known-hashes.json`).
 
 *Actualización 2026-04-29: GDPR Fase A entregada en rama feat/free-v03.*
+
+### GDPR Fase A.5 — TCF v2 consumer + cookie wall + vendor links (entregada)
+
+Implementado sin nuevos permisos:
+- Compliance probe llama `window.__tcfapi('getTCData', 2, cb)` con poll de 2.5s
+  para CMPs que registran el API asíncronamente. Devuelve cmpId, propósitos
+  aceptados, vendors aceptados, interés legítimo, tcString.
+- Cookie wall detector: 4 patrones regex multi-señal en el texto del banner
+  (precio/período en EUR/USD/GBP, "ad-free" multilenguaje, "pay or accept",
+  "subscribe + currency"). Requiere ≥2 señales para clasificar como
+  cookieWall, con 1 señal marca "posible". Heurístico, no garantía legal.
+- Vendor list link extractor: anchors con texto "partners/vendors/socios/
+  proveedores/colabor". Dedupe por href, limit 5.
+- Tabla de 15 propósitos TCF estándar bilingüe en `extension/data/tcf-purposes.json`.
+
+### Caso Marca.com (banner no reaparece tras reset)
+
+Reportado: en `marca.com` el reset de consentimiento no hace reaparecer el
+banner aunque sí elimina las cookies visibles. Causas probables:
+- CMP backend con cookies HttpOnly que `document.cookie = "X=; expires=..."`
+  no puede tocar (necesita `chrome.cookies.remove()` con permiso `cookies`).
+- Consent guardado en IndexedDB (algunas CMPs custom lo usan).
+- Cookies cross-domain con `Domain=.cmp-provider.com` distinto del dominio
+  de la página.
+
+Cubierto en GDPR Fase B (`chrome.cookies` opt-in). Mientras tanto, el reset
+hace lo que puede y deja entries HttpOnly intactas — el usuario ve "✓ Reset
+· 0 cookies, 2 ls, 0 ss" (solo storage limpiado) en estos casos.

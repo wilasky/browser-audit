@@ -233,6 +233,23 @@ const TRANSLATIONS = {
   'comp.reset_consent_doing': { es: '⌛ Reseteando…',                en: '⌛ Resetting…' },
   'comp.reset_consent_done':  { es: '✓ Reseteado · {ck} cookies, {ls} ls, {ss} ss', en: '✓ Reset · {ck} cookies, {ls} ls, {ss} ss' },
   'comp.reset_consent_fail':  { es: '✗ No se pudo resetear · {reason}', en: '✗ Reset failed · {reason}' },
+
+  // TCF v2 consumer
+  'comp.sub_tcf':          { es: 'TCF v2 (IAB)',                  en: 'TCF v2 (IAB)' },
+  'comp.tcf_purposes':     { es: '{n}/{total} propósitos',        en: '{n}/{total} purposes' },
+  'comp.tcf_vendors':      { es: '{n}/{total} vendors',           en: '{n}/{total} vendors' },
+  'comp.tcf_li':           { es: '+{n} interés legítimo',         en: '+{n} legitimate interest' },
+  'comp.tcf_purposes_detail': { es: 'Propósitos aceptados',       en: 'Accepted purposes' },
+  'comp.tcf_none':         { es: 'No detectado',                  en: 'Not detected' },
+  'comp.tcf_cmp':          { es: 'CMP ID',                        en: 'CMP ID' },
+
+  // Cookie wall
+  'comp.cookie_wall_warn': { es: '⚠ Cookie wall detectado · "Aceptar o pagar" — el consent libre es discutible bajo EDPB Guidelines 03/2022', en: '⚠ Cookie wall detected · "Pay or accept" — free consent is questionable under EDPB Guidelines 03/2022' },
+  'comp.cookie_wall_possible':{ es: '⚠ Posible cookie wall · 1 señal de "pagar o aceptar" detectada', en: '⚠ Possible cookie wall · 1 "pay or accept" signal detected' },
+
+  // Vendor list links
+  'comp.sub_vendor_links': { es: 'Lista de partners',             en: 'Partners list' },
+  'comp.vendor_links_hint':{ es: 'Enlaces detectados a la lista de socios/vendors:', en: 'Detected links to partner/vendor list:' },
   'comp.analyze':          { es: 'Analizar página',           en: 'Analyze page' },
   'comp.analyze_again':    { es: 'Volver a analizar',         en: 'Re-analyze' },
   'comp.analyzing':        { es: 'Analizando…',               en: 'Analyzing…' },
@@ -523,7 +540,7 @@ const TRANSLATIONS = {
   'settings.privacy_note':     { es: 'Toda la configuración se guarda en chrome.storage.local. Se borra automáticamente al desinstalar la extensión. Nunca se transmite a ningún servidor.', en: 'All config is stored in chrome.storage.local. Deleted automatically on extension uninstall. Never transmitted to any server.' },
 
   'settings.about':            { es: 'Acerca de',                   en: 'About' },
-  'settings.about_text':       { es: 'Lucent v0.2.1 · Browser security & privacy<br>Cliente open source · MIT License', en: 'Lucent v0.2.1 · Browser security & privacy<br>Open source client · MIT License' },
+  'settings.about_text':       { es: 'Lucent v0.2.2 · Browser security & privacy<br>Cliente open source · MIT License', en: 'Lucent v0.2.2 · Browser security & privacy<br>Open source client · MIT License' },
   'settings.feedback':         { es: '💬 Reportar bug / sugerencia', en: '💬 Report bug / suggestion' },
   'settings.privacy_link':     { es: 'Política privacidad',         en: 'Privacy policy' },
 
