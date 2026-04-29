@@ -174,7 +174,7 @@ export async function renderFingerprintDetail(container) {
         <div class="fp-hash-row">
           <span class="fp-hash-label">${esc(t('fp.id_label'))}</span>
           <span class="fp-hash-val" id="fp-hash">${esc(d.fingerprintHash)}</span>
-          <button id="btn-copy-hash" class="btn-export" title="${esc(t('fp.copy_hash_tip'))}">⎘</button>
+          <button id="btn-copy-hash" class="btn-icon" title="${esc(t('fp.copy_hash_tip'))}">⎘</button>
         </div>
 
         <div class="fp-signals">

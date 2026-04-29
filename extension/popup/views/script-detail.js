@@ -291,7 +291,7 @@ export async function renderScriptDetail(container, script) {
         <div class="sd-stat sd-stat-hash">
           <span class="settings-hint">SHA256:</span>
           <code class="sd-hash" title="${esc(analysis.stats.hash)}">${esc(analysis.stats.hash.slice(0, 16))}…</code>
-          <button id="btn-copy-sd-hash" class="btn-export" title="${esc(t('sd.copy_hash_full'))}">⎘</button>
+          <button id="btn-copy-sd-hash" class="btn-icon" title="${esc(t('sd.copy_hash_full'))}">⎘</button>
         </div>
       </div>
 

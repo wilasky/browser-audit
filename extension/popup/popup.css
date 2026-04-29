@@ -101,13 +101,6 @@ main { padding: 0 0 16px; }
 /* Header actions */
 .header-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
 
-.export-row { display: flex; gap: 4px; }
-.btn-export {
-  background: #1e1e22; border: 1px solid #3a3a3e; color: #666;
-  padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px;
-}
-.btn-export:hover { color: #4f8ef7; border-color: #4f8ef7; }
-
 .score-label { font-size: 18px; font-weight: 700; color: #fff; }
 
 .score-sub { font-size: 11px; color: #666; }
@@ -125,13 +118,13 @@ main { padding: 0 0 16px; }
 }
 .btn-secondary:hover { background: #2a2a2e; color: #e8e8ea; }
 
-/* Header icon-only buttons (refresh / hardening / reset) — compact */
+/* Header buttons — icons or short labels at a unified compact size */
 .btn-icon {
   background: #1e1e22; border: 1px solid #3a3a3e;
   color: #b0b0b8; cursor: pointer;
-  width: 26px; height: 24px; padding: 0; border-radius: 4px;
-  font-size: 12px; line-height: 1; display: inline-flex;
-  align-items: center; justify-content: center;
+  min-width: 26px; height: 24px; padding: 0 6px; border-radius: 4px;
+  font-size: 11px; font-weight: 600; line-height: 1; display: inline-flex;
+  align-items: center; justify-content: center; gap: 3px;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .btn-icon:hover { background: #2a2a2e; color: #e8e8ea; }
