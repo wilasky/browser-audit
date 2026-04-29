@@ -394,10 +394,20 @@ function renderAdvancedSection(r, classify, cmps, syncs) {
       </div>
     </div>`;
 
+  // Consent banner reset — visible only if the probe detected an accepted
+  // consent (cookie or storage marker). One-click clears CMP markers and
+  // reloads so the banner reappears.
+  const consentBanner = r.consentAccepted ? `
+    <div class="adv-consent-banner">
+      <div class="adv-consent-text">${esc(t('comp.consent_status'))}</div>
+      <button id="btn-reset-consent" class="btn-reset-consent" title="${esc(t('comp.reset_consent_tip'))}">${esc(t('comp.reset_consent'))}</button>
+    </div>` : '';
+
   return `
     <details class="comp-section comp-advanced" open>
       <summary class="comp-section-title">${esc(t('comp.section_advanced'))}</summary>
       <div class="adv-grid">
+        ${consentBanner}
         ${classifyLine}
         ${cmpLine}
         ${syncLine}
@@ -710,5 +720,29 @@ export async function renderCompliance(container) {
     const date = new Date().toISOString().slice(0, 10);
     const slug = (lastReport.host || 'page').replace(/[^a-z0-9.-]/gi, '_');
     downloadJSON(`${t('comp.export_filename')}-${slug}-${date}.json`, payload);
+  });
+
+  // Reset consent — wired via delegation because the button is rendered
+  // inside renderReport() output (re-mounted after each scan).
+  container.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('#btn-reset-consent');
+    if (!btn || !tabId) { return; }
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = t('comp.reset_consent_doing');
+    const res = await sendMsg({ type: 'reset_consent', tabId });
+    if (res?.ok) {
+      const s = res.stats ?? {};
+      btn.textContent = t('comp.reset_consent_done', {
+        ck: s.ckRemoved ?? 0, ls: s.lsRemoved ?? 0, ss: s.ssRemoved ?? 0,
+      });
+      // The tab was reloaded — the next scan needs a fresh probe. Disable
+      // re-click and let the user re-run the analysis.
+      setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 4000);
+    } else {
+      btn.disabled = false;
+      btn.textContent = t('comp.reset_consent_fail', { reason: res?.reason ?? '?' });
+      setTimeout(() => { btn.textContent = original; }, 4000);
+    }
   });
 }

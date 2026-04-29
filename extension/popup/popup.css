@@ -1181,6 +1181,26 @@ main { padding: 0 0 16px; }
   border-radius: 0 0 6px 6px;
   padding: 6px 12px; display: flex; flex-direction: column; gap: 6px;
 }
+.adv-consent-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap;
+  padding: 6px 8px; margin-bottom: 2px;
+  background: linear-gradient(90deg, #1f1908 0%, #16161a 100%);
+  border: 1px solid #5a4416; border-radius: 5px;
+}
+.adv-consent-text {
+  font-size: 11px; color: #fbbf24; font-weight: 600; flex: 1; min-width: 140px;
+}
+.btn-reset-consent {
+  font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 4px;
+  background: #2a1f08; color: #fbbf24; border: 1px solid #5a4416;
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-reset-consent:hover:not(:disabled) {
+  background: #3a2f10; color: #ffd966; border-color: #8a6420;
+}
+.btn-reset-consent:disabled { opacity: 0.7; cursor: default; }
 .adv-line {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   font-size: 11px; padding: 2px 0;

@@ -1,6 +1,7 @@
 import { runAudit } from './audit-engine.js';
 import { ingestEvent, getAggregatedData, resetTab, enrichWithThreatIntel } from './event-aggregator.js';
 import { getPlanState, devTogglePro, resetPlan } from './plan-manager.js';
+import consentMarkersFile from '../data/consent-markers.json';
 
 const AUDIT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -228,6 +229,83 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         })
         .catch((err) => sendResponse({ ok: false, reason: err.message }));
     });
+    return true;
+  }
+
+  if (msg.type === 'reset_consent') {
+    const { tabId } = msg;
+    if (!tabId) { sendResponse({ ok: false, reason: 'no tab' }); return true; }
+
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: (markers) => {
+        const lower = markers.map((m) => m.toLowerCase());
+        const matches = (key) => {
+          const k = key.toLowerCase();
+          return lower.some((m) => k.includes(m));
+        };
+        let lsRemoved = 0, ssRemoved = 0, ckRemoved = 0;
+
+        try {
+          const keys = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && matches(k)) { keys.push(k); }
+          }
+          keys.forEach((k) => { localStorage.removeItem(k); lsRemoved++; });
+        } catch { /* sandboxed */ }
+
+        try {
+          const keys = [];
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const k = sessionStorage.key(i);
+            if (k && matches(k)) { keys.push(k); }
+          }
+          keys.forEach((k) => { sessionStorage.removeItem(k); ssRemoved++; });
+        } catch { /* sandboxed */ }
+
+        try {
+          const cookies = document.cookie.split(';').map((c) => c.trim()).filter(Boolean);
+          for (const c of cookies) {
+            const name = c.split('=')[0]?.trim();
+            if (!name || !matches(name)) { continue; }
+            const past = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            const path = 'path=/';
+            const host = location.hostname;
+            // Walk every ascending sub-host so compound TLDs (.co.uk,
+            // .com.au, .gov.es) are covered. parts.slice(-2) would yield
+            // "co.uk" on www.amazon.co.uk and miss "amazon.co.uk".
+            const parts = host.split('.');
+            const domains = new Set();
+            for (let i = 0; i < parts.length - 1; i++) {
+              const d = parts.slice(i).join('.');
+              domains.add(d);
+              domains.add('.' + d);
+            }
+            // Without explicit domain (covers cookies set without Domain attr)
+            document.cookie = `${name}=; ${past}; ${path}`;
+            domains.forEach((d) => {
+              document.cookie = `${name}=; ${past}; ${path}; domain=${d}`;
+            });
+            ckRemoved++;
+          }
+        } catch { /* nothing */ }
+
+        return { lsRemoved, ssRemoved, ckRemoved };
+      },
+      args: [consentMarkersFile.markers],
+    })
+      .then((results) => {
+        const stats = results?.[0]?.result ?? { lsRemoved: 0, ssRemoved: 0, ckRemoved: 0 };
+        // Reload so the consent banner reappears with a clean slate. Plain
+        // reload — the bypassCache flag is MV2-era and not a documented
+        // MV3 option for chrome.tabs.reload.
+        chrome.tabs.reload(tabId)
+          .then(() => sendResponse({ ok: true, stats }))
+          .catch(() => sendResponse({ ok: true, stats }));
+      })
+      .catch((err) => sendResponse({ ok: false, reason: err.message }));
     return true;
   }
 
