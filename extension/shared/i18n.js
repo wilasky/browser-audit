@@ -242,7 +242,7 @@ const TRANSLATIONS = {
   'comp.ai_no_config':     { es: 'Configura una API key de Claude u OpenAI en la pestaña ⚙ Settings → Asistente IA.', en: 'Configure a Claude or OpenAI API key in the ⚙ Settings → AI Assistant tab.' },
   'comp.intro':            { es: 'Pulsa <strong>Analizar página</strong> para evaluar la web actual contra criterios de cumplimiento.', en: 'Click <strong>Analyze page</strong> to evaluate the current site against compliance criteria.' },
   'comp.section_cookies':  { es: '🍪 Cookies & Consentimiento', en: '🍪 Cookies & Consent' },
-  'comp.section_gdpr':     { es: '📋 RGPD / LSSI',             en: '📋 GDPR' },
+  'comp.section_gdpr':     { es: '📋 Política y privacidad',   en: '📋 Policy & privacy' },
   'comp.section_headers':  { es: '🔒 Headers de seguridad',    en: '🔒 Security Headers' },
   'comp.section_pentest':  { es: '🔧 Análisis técnico (pentest)', en: '🔧 Technical analysis (pentest)' },
   'comp.score_overall':    { es: 'Cumplimiento general',       en: 'Overall compliance' },
