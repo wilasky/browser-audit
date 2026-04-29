@@ -192,3 +192,73 @@ Pediste en su día y no entraron en v0.1:
 ---
 
 *Última actualización: 2026-04-25*
+
+---
+
+## 🛣️ Roadmap v0.3 (rama `feat/free-v03`) — extensiones futuras
+
+### GDPR — Fase B (requiere permiso `cookies` opcional)
+
+Fase A entregada en la rama (Phase A = purpose guessing, CMP detector, syncing detector,
+session/auth warning por nombre, third-party dependency score, export JSON). Estas
+features adicionales requieren el permiso `cookies` + `<all_urls>` host permission, lo
+que tras Blue Argon CWS va a mirar con lupa — pedirlas solo cuando estén justificadas
+en privacy-policy y UI:
+
+- **Auditoría completa de atributos por cookie:** Secure, HttpOnly, SameSite,
+  Expires/Max-Age, Domain, Path, Partitioned/CHIPS — vía `chrome.cookies.getAll({url})`.
+- **Detección de cookies peligrosas con criterios completos:** sin Secure, sin HttpOnly,
+  SameSite=None sin Secure, persistentes con expiración larga, cookies 3rd-party
+  publicitarias, cookies accesibles desde JS, nombres sospechosos sin atributos seguros.
+- **Tabla de duración / persistencia:** sesión / <30d / <6m / >6m / >1y con counts y riesgo.
+- **Session/auth warning real con `httpOnly` flag** — el aviso por nombre que entrega
+  Fase A pasa a aviso por atributo real ("cookie de sesión sin HttpOnly = potencial XSS").
+
+Implementación: pedir `cookies` como `optional_permissions` (no required) y disparar
+el prompt solo cuando el usuario activa "Análisis avanzado de cookies" en Settings.
+Justificación tipo: "Solo para inspeccionar atributos de seguridad de cookies de la
+pestaña activa. No sale del navegador."
+
+### GDPR — Fase C (UX refinada)
+
+- **Comparador "Scan before/after consent"** — dos botones: snapshot antes de aceptar
+  banner, snapshot después. Diff: cookies nuevas, dominios nuevos. Esto es valor GDPR
+  real ("¿el sitio carga cookies no necesarias antes del consentimiento?").
+- **Export CSV** además de JSON.
+- **Tabla rica con filtros y orden** por riesgo / dominio / propósito.
+
+### Deep Analysis (ScriptSpy → análisis estático) — mejoras
+
+Hoy `script-analyzer.js` ya cubre `eval`, `new Function()`, `setTimeout(string)`,
+`setInterval(string)`, `document.write`, `innerHTML =`, `atob`, `unescape`, `wasm`,
+`fromCharCode`, `crypto.subtle`, `RTCPeerConnection`, `clipboard`, `geolocation`,
+`serviceWorker.register`, cryptominer signatures, `sendBeacon`. Y el motor runtime
+(content scripts) ya monitoriza eventos en vivo. Pendientes que GPT identifica
+como gap real:
+
+1. **Sinks peligrosos en estático:** ya cubierto en su mayoría (eval/Function/innerHTML/
+   document.write/setTimeout-string/setInterval-string). Validar que las regex pillan
+   los casos edge (`window['eval']('...')`, `setTimeout.call(null, "...")`).
+2. **Network behavior estático:** detectar `fetch(`, `new XMLHttpRequest`, `new WebSocket`,
+   y sobre todo extraer los **endpoints** hardcoded en strings adyacentes a esas llamadas.
+   Pasa de "este script hace fetch" a "este script llama a `https://tracker.example/log`".
+3. **DOM manipulation sospechosa:** `document.createElement('iframe')`,
+   `document.createElement('script')`, `appendChild` sobre `<head>` o `<body>`,
+   modificación dinámica de `<form action>`. Patrón típico de loaders y malvertising.
+4. **Data exfiltration hints:** `document.cookie`, `localStorage.getItem(`,
+   `sessionStorage.getItem(`, combinado con un `fetch`/`sendBeacon` cercano. Marca
+   "lee cookie + envía a externo" como crítico.
+5. **Supply chain risk:**
+   - **Histórico de hashes** — chrome.storage.local guarda hash anterior por URL.
+     Cuando el script cambia: alerta "el código de este script cambió desde la última
+     vista". Util para detectar compromise tras release.
+   - **DB curada de hashes conocidos** — JSON con hashes de versiones de Google Tag
+     Manager, GA, Stripe.js, jQuery por versión, etc. Match → "este es GTM 4.2 oficial,
+     comportamiento conocido". Mismatch → analizar manualmente.
+   - **Diff visual entre visitas** del mismo URL — si una librería normalmente estable
+     cambia tras una visita, flag.
+
+Esto no requiere permisos nuevos (solo lectura de strings + storage). La DB curada
+puede crecer crowdsourced en un futuro repo aparte (o en `extension/data/known-hashes.json`).
+
+*Actualización 2026-04-29: GDPR Fase A entregada en rama feat/free-v03.*

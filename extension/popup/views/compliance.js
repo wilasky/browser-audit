@@ -1,6 +1,75 @@
 import { esc } from '../../shared/sanitize.js';
 import { isAIConfigured, summarizePrivacyPolicy } from '../../shared/ai-client.js';
-import { t } from '../../shared/i18n.js';
+import { t, localized } from '../../shared/i18n.js';
+import cookiePurposes from '../../data/cookie-purposes.json';
+import cmpVendors from '../../data/cmp-vendors.json';
+import syncVendors from '../../data/sync-vendors.json';
+
+// Pre-compile the cookie-purpose regexes once per popup load.
+const COMPILED_PURPOSES = cookiePurposes.patterns.map((p) => ({
+  ...p,
+  rx: new RegExp(p.regex, 'i'),
+}));
+
+function classifyCookie(name) {
+  for (const p of COMPILED_PURPOSES) {
+    if (p.rx.test(name)) {
+      return { purpose: p.purpose, vendor: p.vendor ?? null, sensitive: !!p.sensitive };
+    }
+  }
+  return { purpose: 'unknown', vendor: null, sensitive: false };
+}
+
+function classifyAllCookies(cookies) {
+  const groups = {};
+  const sensitive = [];
+  for (const c of cookies) {
+    const cls = classifyCookie(c.name);
+    const key = cls.purpose;
+    if (!groups[key]) { groups[key] = []; }
+    groups[key].push({ name: c.name, vendor: cls.vendor });
+    if (cls.sensitive) {
+      sensitive.push({ name: c.name, purpose: cls.purpose });
+    }
+  }
+  return { groups, sensitive };
+}
+
+// Match script src + iframe src against a host fragment list.
+function hostMatches(host, fragments) {
+  if (!host) { return false; }
+  return fragments.some((f) => host === f || host.endsWith(`.${f}`));
+}
+
+function detectCMPs(thirdPartyScripts, iframes) {
+  const hits = [];
+  const allHosts = [
+    ...thirdPartyScripts,
+    ...(iframes ?? []).map((i) => i.host).filter(Boolean),
+  ];
+  for (const cmp of cmpVendors.vendors) {
+    if (allHosts.some((h) => hostMatches(h, cmp.domains))) {
+      hits.push({ id: cmp.id, name: cmp.name });
+    }
+  }
+  return hits;
+}
+
+function detectSyncVendors(thirdPartyScripts) {
+  const hits = [];
+  for (const v of syncVendors.vendors) {
+    if (thirdPartyScripts.some((h) => hostMatches(h, [v.domain]))) {
+      hits.push({ name: v.name, type: v.type, domain: v.domain });
+    }
+  }
+  return hits;
+}
+
+function dependencyLevel(thirdPartyCount) {
+  if (thirdPartyCount < 5)  { return { key: 'low',    color: '#22c55e' }; }
+  if (thirdPartyCount < 15) { return { key: 'medium', color: '#f59e0b' }; }
+  return { key: 'high', color: '#ef4444' };
+}
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -70,9 +139,19 @@ function calcGdprScore(r) {
     issues.push({ s: 'pass', t: t('compi.policy_linked', { n: r.policyLinks.length }) });
   }
 
-  if (r.thirdPartyScripts.length > 5) {
-    issues.push({ s: 'warn', t: t('compi.many_third_party', { n: r.thirdPartyScripts.length }) });
-    pts -= 15;
+  // Third-party exposure scales with dependencyLevel (low/med/high). Previously
+  // a flat -15 above 5 domains, which made 6 and 60 score the same.
+  // Now: 0-4 → 0pts, 5-14 (medium) → -15pts, 15+ (high) → -30pts.
+  const tpCount = r.thirdPartyScripts.length;
+  if (tpCount > 0) {
+    const lvl = dependencyLevel(tpCount);
+    if (lvl.key === 'high') {
+      issues.push({ s: 'fail', t: t('compi.many_third_party', { n: tpCount }) });
+      pts -= 30;
+    } else if (lvl.key === 'medium') {
+      issues.push({ s: 'warn', t: t('compi.many_third_party', { n: tpCount }) });
+      pts -= 15;
+    }
   }
 
   for (const form of r.forms) {
@@ -252,11 +331,144 @@ function renderSection(name, scoreData) {
     </section>`;
 }
 
+// Compact "Advanced analysis" section that groups the four Phase A insights
+// (purpose chips, CMP, sync, dependency) into one collapsible block. Keeps
+// the popup short — each subline is one row, the whole section folds via
+// <details>.
+function renderAdvancedSection(r, classify, cmps, syncs) {
+  const labels = cookiePurposes.purposeLabels;
+  const order = ['analytics', 'ads', 'tracking', 'session', 'auth', 'security', 'consent', 'ux', 'unknown'];
+
+  // Classify line
+  let classifyLine = '';
+  if (r.cookies.count === 0) {
+    classifyLine = `<div class="adv-line"><span class="adv-key">${esc(t('comp.sub_classify'))}</span><span class="settings-hint">${esc(t('comp.classify_empty'))}</span></div>`;
+  } else {
+    const chips = order
+      .filter((p) => classify.groups[p])
+      .map((p) => {
+        const items = classify.groups[p];
+        const label = localized(labels[p]);
+        const vendors = [...new Set(items.map((i) => i.vendor).filter(Boolean))];
+        const vendorTip = vendors.length ? ` · ${vendors.join(', ')}` : '';
+        return `<span class="purpose-chip purpose-${p}" title="${esc(label)}${esc(vendorTip)}">${esc(label)} <strong>${items.length}</strong></span>`;
+      }).join('');
+    classifyLine = `
+      <div class="adv-line adv-line-stack">
+        <span class="adv-key">${esc(t('comp.sub_classify'))}</span>
+        <div class="purpose-chips">${chips}</div>
+      </div>`;
+  }
+
+  // CMP line
+  const cmpValue = cmps.length === 0
+    ? `<span class="settings-hint">${esc(t('comp.cmp_none'))}</span>`
+    : cmps.map((c) => `<span class="cmp-chip">${esc(c.name)}</span>`).join(' ');
+  const cmpLine = `<div class="adv-line"><span class="adv-key">${esc(t('comp.sub_cmp'))}</span><div class="adv-val">${cmpValue}</div></div>`;
+
+  // Sync line
+  let syncLine;
+  if (syncs.length === 0) {
+    syncLine = `<div class="adv-line"><span class="adv-key">${esc(t('comp.sub_sync'))}</span><span class="settings-hint">${esc(t('comp.sync_none'))}</span></div>`;
+  } else {
+    const list = syncs.map((s) =>
+      `<span class="sync-chip" title="${esc(s.domain)}">${esc(s.name)}<small> · ${esc(s.type)}</small></span>`
+    ).join('');
+    syncLine = `
+      <div class="adv-line adv-line-stack">
+        <span class="adv-key">${esc(t('comp.sub_sync'))} <small>(${syncs.length})</small></span>
+        <div class="sync-chips">${list}</div>
+      </div>`;
+  }
+
+  // Dependency line
+  const tpCount = (r.thirdPartyScripts ?? []).length;
+  const lvl = dependencyLevel(tpCount);
+  const lvlLabel = t(`comp.dep_${lvl.key}`);
+  const depLine = `
+    <div class="adv-line">
+      <span class="adv-key">${esc(t('comp.sub_dependency'))}</span>
+      <div class="adv-val">
+        <span class="dep-pill" style="background:${lvl.color}20;color:${lvl.color};border:1px solid ${lvl.color}80">${esc(lvlLabel)}</span>
+        <span class="settings-hint">${tpCount} dom.</span>
+      </div>
+    </div>`;
+
+  return `
+    <details class="comp-section comp-advanced" open>
+      <summary class="comp-section-title">${esc(t('comp.section_advanced'))}</summary>
+      <div class="adv-grid">
+        ${classifyLine}
+        ${cmpLine}
+        ${syncLine}
+        ${depLine}
+      </div>
+    </details>`;
+}
+
+function renderSensitiveSection(sensitive) {
+  if (sensitive.length === 0) { return ''; }
+  const list = sensitive.map((s) =>
+    `<li><code>${esc(s.name)}</code> <span class="settings-hint">— ${esc(localized(cookiePurposes.purposeLabels[s.purpose]))}</span></li>`
+  ).join('');
+  return `
+    <section class="comp-section comp-section-warn">
+      <h3 class="comp-section-title">${esc(t('comp.section_sensitive'))}</h3>
+      <p class="settings-hint">${t('comp.sensitive_warn')}</p>
+      <ul class="sensitive-list">${list}</ul>
+    </section>`;
+}
+
+function buildExportPayload(r, classify, cmps, syncs) {
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    tool: 'Lucent — Browser Audit',
+    page: { url: r.url, host: r.host, isHttps: r.isHttps },
+    cookies: {
+      count: r.cookies.count,
+      consentAccepted: r.consentAccepted,
+      classification: classify.groups,
+      sensitive: classify.sensitive,
+    },
+    cmp: cmps,
+    syncing: syncs,
+    thirdParty: {
+      scripts: r.thirdPartyScripts,
+      scriptsWithoutSRI: r.scriptsWithoutSRI,
+      totalThirdPartyScripts: r.totalThirdPartyScripts,
+      iframes: r.iframes ?? [],
+    },
+    headers: r.headers,
+    forms: r.forms,
+    storage: r.storage,
+    libs: r.libs,
+    serviceWorker: r.serviceWorker,
+    inlineHandlers: r.inlineHandlers,
+  };
+}
+
+function downloadJSON(filename, payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function renderReport(r) {
   const cookieScore = calcCookieScore(r);
   const gdprScore = calcGdprScore(r);
   const secScore = calcSecurityScore(r);
   const pentestScore = calcPentestScore(r);
+
+  // Phase A enrichments (no extra permissions): purpose classification,
+  // CMP detection, sync vendor detection, dependency level, sensitive flag.
+  const classify = classifyAllCookies(r.cookies?.details ?? []);
+  const cmps = detectCMPs(r.thirdPartyScripts ?? [], r.iframes ?? []);
+  const syncs = detectSyncVendors(r.thirdPartyScripts ?? []);
 
   const total = Math.round((cookieScore.score + gdprScore.score + secScore.score + pentestScore.score) / 4);
   const totalColor = total >= 80 ? '#22c55e' : total >= 60 ? '#f59e0b' : '#ef4444';
@@ -283,6 +495,9 @@ function renderReport(r) {
         🖼 ${(r.iframes ?? []).length} iframes
       </div>
     </div>
+
+    ${renderAdvancedSection(r, classify, cmps, syncs)}
+    ${renderSensitiveSection(classify.sensitive)}
 
     ${renderSection(t('comp.section_cookies'), cookieScore)}
     ${renderSection(t('comp.section_gdpr'), gdprScore)}
@@ -383,6 +598,7 @@ export async function renderCompliance(container) {
         <button id="btn-comp-ai" class="btn-secondary btn-ai" title="${aiReady ? esc(t('comp.ai_summarize')) : esc(t('comp.ai_no_config'))}">
           ${esc(t('comp.ai_summarize'))}
         </button>
+        <button id="btn-comp-export" class="btn-secondary" disabled>${esc(t('comp.export_btn'))}</button>
       </div>
       <div id="comp-result">
         <p class="loading">${t('comp.intro')}</p>
@@ -453,6 +669,8 @@ export async function renderCompliance(container) {
     }
   });
 
+  let lastReport = null;
+
   container.querySelector('#btn-comp-run').addEventListener('click', async () => {
     if (!tabId) { return; }
     const btn = container.querySelector('#btn-comp-run');
@@ -478,6 +696,19 @@ export async function renderCompliance(container) {
       return;
     }
 
+    lastReport = res.result;
+    container.querySelector('#btn-comp-export').disabled = false;
     result.innerHTML = renderReport(res.result);
+  });
+
+  container.querySelector('#btn-comp-export').addEventListener('click', () => {
+    if (!lastReport) { return; }
+    const classify = classifyAllCookies(lastReport.cookies?.details ?? []);
+    const cmps = detectCMPs(lastReport.thirdPartyScripts ?? [], lastReport.iframes ?? []);
+    const syncs = detectSyncVendors(lastReport.thirdPartyScripts ?? []);
+    const payload = buildExportPayload(lastReport, classify, cmps, syncs);
+    const date = new Date().toISOString().slice(0, 10);
+    const slug = (lastReport.host || 'page').replace(/[^a-z0-9.-]/gi, '_');
+    downloadJSON(`${t('comp.export_filename')}-${slug}-${date}.json`, payload);
   });
 }
