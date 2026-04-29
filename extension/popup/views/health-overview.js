@@ -93,7 +93,8 @@ function renderCheck(r, fixMap) {
   const fix = fixMap[r.id];
 
   const isFingerprintCheck = r.id === 'fingerprint-entropy';
-  const showFix = fix && r.status !== 'pass' && r.status !== 'skipped';
+  const isMuted = !!r.muted;
+  const showFix = fix && r.status !== 'pass' && r.status !== 'skipped' && !isMuted;
   const canApply = fix?.type === 'apply' || r.canApply;
 
   // Fingerprint check always shows a "Ver detalles" button
@@ -112,19 +113,28 @@ function renderCheck(r, fixMap) {
     }
   }
 
+  // Mute toggle: offered for fail/warn checks (silenceable), and as unmute on already-muted ones
+  const canToggleMute = isMuted || (r.status === 'fail' || r.status === 'warn');
+  const muteBtn = canToggleMute
+    ? `<button class="fix-btn fix-mute" data-mute-id="${esc(r.id)}" title="${esc(t('health.mute_tip'))}">${esc(isMuted ? t('health.unmute_btn') : t('health.mute_btn'))}</button>`
+    : '';
+
+  const mutedChip = isMuted ? `<span class="muted-chip">${esc(t('health.muted_chip'))}</span>` : '';
+
   return `
-    <li class="check-item check-${cls}" data-check-id="${esc(r.id)}">
+    <li class="check-item check-${cls} ${isMuted ? 'check-muted' : ''}" data-check-id="${esc(r.id)}">
       <div class="check-row">
         <span class="check-icon">${esc(icon)}</span>
         <div class="check-main">
           <div class="check-title-row">
             <span class="check-title">${esc(checkText(r.id, r.title, 'title'))}</span>
+            ${mutedChip}
             ${severityLabel(r.severity)}
             ${frameworkBadges(r.frameworks)}
           </div>
           <span class="check-detail">${esc(translateDetail(r.detail ?? ''))}</span>
         </div>
-        <div class="check-actions">${detailBtn}${fixBtn}</div>
+        <div class="check-actions">${detailBtn}${fixBtn}${muteBtn}</div>
       </div>
       <div class="check-rationale" id="rationale-${esc(r.id)}" style="display:none">
         ${esc(checkText(r.id, r.rationale, 'rationale'))}
@@ -525,8 +535,8 @@ export async function renderHealthOverview(audit, container) {
       });
     });
 
-    // Fix / Apply buttons
-    container.querySelectorAll('.fix-btn').forEach((btn) => {
+    // Fix / Apply buttons (skip mute toggles, handled separately below)
+    container.querySelectorAll('.fix-btn:not(.fix-mute)').forEach((btn) => {
       btn.addEventListener('click', () => {
         const checkId = btn.dataset.checkId;
         const fix = fixMap[checkId];
@@ -535,6 +545,22 @@ export async function renderHealthOverview(audit, container) {
         // Localize instructions for the inline panel
         const localFix = fix ? { ...fix, instructions: fix.instructions ? checkText(checkId, fix.instructions, 'instructions') : fix.instructions } : fix;
         applyFix(localFix, api, expected, btn);
+      });
+    });
+
+    // Mute / unmute toggles — persist in chrome.storage.local under mutedChecks
+    // and re-run the audit so the score reflects the new state.
+    container.querySelectorAll('.fix-mute').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.muteId;
+        const stored = await chrome.storage.local.get('mutedChecks');
+        const current = new Set(stored.mutedChecks ?? []);
+        const wasMuted = current.has(id);
+        if (wasMuted) { current.delete(id); } else { current.add(id); }
+        await chrome.storage.local.set({ mutedChecks: [...current] });
+        showToast(wasMuted ? t('health.toast_unmuted') : t('health.toast_muted'), 'success');
+        const fresh = await sendMsg({ type: 'run_audit' });
+        if (fresh) { renderHealthOverview(fresh, container); }
       });
     });
 

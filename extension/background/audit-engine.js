@@ -9,7 +9,9 @@ export function calculateScore(results) {
 
   for (const r of results) {
     // Only evaluated checks count: pass / warn / fail
-    // skipped (no permission) and unknown (API not available) are excluded entirely
+    // skipped (no permission), unknown (API not available), and muted
+    // (user-silenced) are excluded entirely
+    if (r.muted) { continue; }
     if (r.status !== 'pass' && r.status !== 'warn' && r.status !== 'fail') { continue; }
     totalWeight += r.weight;
     if (r.status === 'fail') { lostPoints += r.weight; }
@@ -488,6 +490,15 @@ export async function runAudit() {
     })
   );
 
+  // Tag user-muted checks so calculateScore skips them and the popup styles
+  // them as informational (they still appear in the list, but with a chip).
+  const muted = await loadMutedChecks();
+  if (muted.size > 0) {
+    for (const r of results) {
+      if (muted.has(r.id)) { r.muted = true; }
+    }
+  }
+
   const score = calculateScore(results);
   const { label, level } = scoreLabel(score);
 
@@ -500,4 +511,9 @@ export async function runAudit() {
     results,
     categories: baseline.categories,
   };
+}
+
+async function loadMutedChecks() {
+  const stored = await chrome.storage.local.get('mutedChecks');
+  return new Set(stored.mutedChecks ?? []);
 }

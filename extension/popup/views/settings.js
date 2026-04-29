@@ -248,6 +248,29 @@ function renderPlanSection() {
     </section>`;
 }
 
+function renderMutedSection(muted) {
+  if (!muted.length) {
+    return `
+      <section class="settings-section">
+        <h3 class="settings-heading">${esc(t('settings.muted'))}</h3>
+        <p class="settings-hint">${esc(t('settings.muted_empty'))}</p>
+      </section>`;
+  }
+  return `
+    <section class="settings-section">
+      <h3 class="settings-heading">${esc(t('settings.muted'))}</h3>
+      <p class="settings-hint">${esc(t('settings.muted_intro'))}</p>
+      <ul class="muted-list">
+        ${muted.map((id) => `
+          <li class="muted-item">
+            <code class="muted-id">${esc(id)}</code>
+            <button class="link-btn muted-unmute" data-mute-id="${esc(id)}" title="${esc(t('health.unmute_btn'))}">✕</button>
+          </li>
+        `).join('')}
+      </ul>
+    </section>`;
+}
+
 function renderDataSection() {
   return `
     <section class="settings-section">
@@ -297,12 +320,14 @@ function renderAboutSection() {
 // --- Main ---
 
 export async function renderSettings(container) {
-  const [history, prefs, aiConfig, currentLang] = await Promise.all([
+  const [history, prefs, aiConfig, currentLang, mutedStore] = await Promise.all([
     sendMsg({ type: 'get_history' }),
     loadPrefs(),
     getAIConfig(),
     getLanguagePreference(),
+    chrome.storage.local.get('mutedChecks'),
   ]);
+  const mutedChecks = mutedStore?.mutedChecks ?? [];
 
   container.innerHTML = `
     <div class="settings-wrap">
@@ -314,6 +339,7 @@ export async function renderSettings(container) {
       ${renderAlertsSection(prefs)}
       ${renderAISection(aiConfig)}
       ${renderPlanSection()}
+      ${renderMutedSection(mutedChecks)}
       ${renderDataSection()}
       ${renderAboutSection()}
     </div>`;
@@ -453,6 +479,20 @@ export async function renderSettings(container) {
       await chrome.storage.local.remove('userPrefs');
       renderSettings(container);
     }
+  });
+
+  // --- Muted checks unmute ---
+  container.querySelectorAll('.muted-unmute').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.muteId;
+      const stored = await chrome.storage.local.get('mutedChecks');
+      const next = (stored.mutedChecks ?? []).filter((x) => x !== id);
+      await chrome.storage.local.set({ mutedChecks: next });
+      // Re-run the audit so the score reflects the change next time the user
+      // opens Health, then re-render this Settings view to drop the entry.
+      sendMsg({ type: 'run_audit' });
+      renderSettings(container);
+    });
   });
 
   // --- External links ---
