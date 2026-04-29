@@ -398,6 +398,11 @@ const TRANSLATIONS = {
   'sd.exfil_reads':         { es: 'Lecturas detectadas',          en: 'Reads detected' },
   'sd.exfil_sends':         { es: 'Envíos detectados',            en: 'Sends detected' },
 
+  // Source map detection
+  'sd.source_map_label':    { es: 'Source map detectado',          en: 'Source map detected' },
+  'sd.source_map_btn':      { es: '📄 Ver código original',        en: '📄 View original code' },
+  'sd.source_map_tip':      { es: 'Si el .map está accesible, abre el código sin minificar con nombres de variables reales', en: 'If the .map is accessible, opens the unminified code with real variable names' },
+
   // Obfuscation pattern descriptions
   'sa.obf.hex-vars':        { es: 'Variables hexadecimales — obfuscador típico', en: 'Hexadecimal variables — typical obfuscator' },
   'sa.obf.long-arrays':     { es: 'Arrays con strings largos codificados', en: 'Arrays with long encoded strings' },

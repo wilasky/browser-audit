@@ -180,6 +180,21 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
     ? { reads, sends }
     : null;
 
+  // Source map URL — if the bundler left a sourceMappingURL comment, the
+  // .map file usually contains the unminified original code with real
+  // variable names. Expose it to the user as a "View original code" link.
+  // Both syntaxes are valid per the source-maps spec: //# (recommended)
+  // and //@ (legacy, still in many older builds).
+  let sourceMapUrl = null;
+  const smMatch = code.match(/\/[/*][#@]\s*sourceMappingURL\s*=\s*([^\s*]+)/);
+  if (smMatch && smMatch[1]) {
+    try {
+      sourceMapUrl = new URL(smMatch[1], scriptUrl).href;
+    } catch {
+      sourceMapUrl = smMatch[1].slice(0, 300); // keep raw if URL parsing fails
+    }
+  }
+
   const totalRiskScore = Math.min(100,
     findings.reduce((acc, f) => acc + f.score, 0) +
     Math.floor(obfuscationScore / 4)
@@ -205,6 +220,7 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
     base64: base64Matches,
     endpoints: endpointHits,
     exfiltration,
+    sourceMapUrl,
     totalRiskScore,
     verdict,
   };

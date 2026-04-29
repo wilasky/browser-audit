@@ -1561,8 +1561,17 @@ main { padding: 0 0 16px; display: block; width: 100%; }
 .hash-status-new { background: #16161a; color: #aaa; border: 1px solid #2a2a2e; }
 .hash-status-ok  { background: #0d2a1a; color: #44ee77; border: 1px solid #1a5a2a; }
 .hash-status-changed { background: #2a1a08; color: #fbbf24; border: 1px solid #5a4416; }
-.hash-status-known { background: #0d1a2a; color: #88ccff; border: 1px solid #1a3a5a; }
+.hash-status-known {
+  background: #0d1a2a; color: #88ccff; border: 1px solid #1a3a5a;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  flex-wrap: wrap;
+}
 .hash-status-known strong { color: #aaddff; }
+.hash-status-known code {
+  font-size: 10px; color: #aaddff; background: #0a0f1a;
+  padding: 1px 5px; border-radius: 3px; word-break: break-all;
+}
+.source-map-btn { flex-shrink: 0; }
 
 /* Exfiltration heuristic — amber, not red. It is an *informative*
    pattern signal, not a confirmed finding. Threshold (≥1 read + ≥2 sends)

@@ -48,6 +48,15 @@ function renderKnownMatch(hash) {
   })}</div>`;
 }
 
+function renderSourceMap(sourceMapUrl) {
+  if (!sourceMapUrl) { return ''; }
+  return `
+    <div class="hash-status hash-status-known">
+      <span>${esc(t('sd.source_map_label'))}: <code>${esc(sourceMapUrl.length > 60 ? sourceMapUrl.slice(0, 57) + '…' : sourceMapUrl)}</code></span>
+      <button class="btn-icon source-map-btn" data-source-map="${esc(sourceMapUrl)}" title="${esc(t('sd.source_map_tip'))}">${esc(t('sd.source_map_btn'))}</button>
+    </div>`;
+}
+
 function renderExfiltration(exf) {
   if (!exf) { return ''; }
   const readsList = exf.reads.map((r) => `<code>${esc(r)}</code>`).join(' · ');
@@ -360,6 +369,7 @@ export async function renderScriptDetail(container, script) {
     const history = await pushHashHistory(url, analysis.stats.hash);
     const hashStatusHTML = renderHashStatus(history, analysis.stats.hash);
     const knownMatchHTML = renderKnownMatch(analysis.stats.hash);
+    const sourceMapHTML = renderSourceMap(analysis.sourceMapUrl);
     const exfiltrationHTML = renderExfiltration(analysis.exfiltration);
 
     body.innerHTML = `
@@ -373,6 +383,7 @@ export async function renderScriptDetail(container, script) {
 
       ${knownMatchHTML}
       ${hashStatusHTML}
+      ${sourceMapHTML}
       ${exfiltrationHTML}
 
       <div class="sd-stats">
@@ -428,6 +439,13 @@ export async function renderScriptDetail(container, script) {
         e.preventDefault();
         const href = a.dataset.href;
         if (href) { chrome.tabs.create({ url: href }); }
+      });
+    });
+
+    body.querySelectorAll('.source-map-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const url = btn.dataset.sourceMap;
+        if (url) { chrome.tabs.create({ url }); }
       });
     });
   } catch (err) {
