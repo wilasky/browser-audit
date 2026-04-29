@@ -394,8 +394,14 @@ export async function renderHealthOverview(audit, container) {
 
     // Persist category open/closed state across popup re-opens. The user
     // pins what they care about; closed by default keeps the view tidy.
+    // expand-all flips the visual state of every category but does NOT
+    // persist — it is a transient "show me everything" gesture. Without
+    // suppressPersist, hitting expand-all once would write "all open" to
+    // storage and every subsequent refresh would re-open everything.
+    let suppressPersist = false;
     container.querySelectorAll('.category[data-cat-id]').forEach((det) => {
       det.addEventListener('toggle', async () => {
+        if (suppressPersist) { return; }
         const id = det.dataset.catId;
         const s = await chrome.storage.local.get('catState');
         const next = { ...(s.catState ?? {}), [id]: det.open };
@@ -403,18 +409,16 @@ export async function renderHealthOverview(audit, container) {
       });
     });
 
-    // Expand-all / collapse-all toggle. Looks at the current state of the
-    // visible categories — if any is closed, opens all; otherwise closes all.
-    container.querySelector('#btn-expand-all')?.addEventListener('click', async () => {
+    // Expand-all / collapse-all toggle — visual only, not persisted. The
+    // next refresh restores whatever the user explicitly opened/closed.
+    container.querySelector('#btn-expand-all')?.addEventListener('click', () => {
       const cats = container.querySelectorAll('.category[data-cat-id]');
       const anyClosed = Array.from(cats).some((d) => !d.open);
-      const open = anyClosed; // open all if any was closed; otherwise close all
-      const next = {};
-      cats.forEach((d) => {
-        d.open = open;
-        next[d.dataset.catId] = open;
-      });
-      await chrome.storage.local.set({ catState: next });
+      const open = anyClosed;
+      suppressPersist = true;
+      cats.forEach((d) => { d.open = open; });
+      // Release the flag after the toggle events have flushed.
+      setTimeout(() => { suppressPersist = false; }, 0);
     });
 
     // After an undo from the modal, refresh the overview so the score and
