@@ -99,7 +99,11 @@ function renderCheck(r, fixMap, appliedApis) {
 
   const isFingerprintCheck = r.id === 'fingerprint-entropy';
   const isMuted = !!r.muted;
-  const showFix = fix && r.status !== 'pass' && r.status !== 'skipped' && !isMuted;
+  // Show the Apply button on skipped checks too — applyFix() auto-requests
+  // the missing permission before applying, so the user gets one-click flow
+  // (Apply → grant prompt → done) instead of having to dig into the detail
+  // or hit "+ Enable X checks" first.
+  const showFix = fix && r.status !== 'pass' && !isMuted;
   const canApply = fix?.type === 'apply' || r.canApply;
   const isApplied = !!r.api && appliedApis?.has(r.api);
 
