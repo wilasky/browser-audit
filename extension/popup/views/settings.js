@@ -520,7 +520,7 @@ export async function renderSettings(container) {
 3.
 
 **Contexto:**
-- Lucent versión: 0.1.0
+- Lucent versión: 0.2.1
 - Chrome: ${chromeVersion}
 - SO/idioma: ${lang}
 `

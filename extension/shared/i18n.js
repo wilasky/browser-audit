@@ -480,7 +480,7 @@ const TRANSLATIONS = {
   'settings.privacy_note':     { es: 'Toda la configuración se guarda en chrome.storage.local. Se borra automáticamente al desinstalar la extensión. Nunca se transmite a ningún servidor.', en: 'All config is stored in chrome.storage.local. Deleted automatically on extension uninstall. Never transmitted to any server.' },
 
   'settings.about':            { es: 'Acerca de',                   en: 'About' },
-  'settings.about_text':       { es: 'Lucent v0.1 · Browser security & privacy<br>Cliente open source · MIT License', en: 'Lucent v0.1 · Browser security & privacy<br>Open source client · MIT License' },
+  'settings.about_text':       { es: 'Lucent v0.2.1 · Browser security & privacy<br>Cliente open source · MIT License', en: 'Lucent v0.2.1 · Browser security & privacy<br>Open source client · MIT License' },
   'settings.feedback':         { es: '💬 Reportar bug / sugerencia', en: '💬 Report bug / suggestion' },
   'settings.privacy_link':     { es: 'Política privacidad',         en: 'Privacy policy' },
 
