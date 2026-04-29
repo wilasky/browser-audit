@@ -21,11 +21,15 @@ function translateScoreLabel(label) {
   return map[label] ?? label;
 }
 
+// Basic profile — the 5 controls that matter most for a typical user:
+// every critical/high severity, plus DoH (privacy floor: stops ISP seeing
+// every domain you visit). The remaining checks live under Advanced.
+const BASIC_EXTRA_IDS = new Set(['doh-enabled']);
+
 function getProfiles() {
   return {
-    all:      { label: t('profile.standard'), filter: (r) => !r.advanced },
+    basic:    { label: t('profile.basic'),    filter: (r) => (['critical', 'high'].includes(r.severity) || BASIC_EXTRA_IDS.has(r.id)) && !r.advanced },
     advanced: { label: t('profile.advanced'), filter: () => true },
-    basic:    { label: t('profile.basic'),    filter: (r) => ['critical', 'high'].includes(r.severity) && !r.advanced },
     failed:   { label: t('profile.failed'),   filter: (r) => r.status === 'fail' || r.status === 'warn' },
     CIS:      { label: 'CIS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CIS')) },
     CCN:      { label: 'ENS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CCN')) },
@@ -88,7 +92,7 @@ function frameworkBadges(frameworks) {
   return `<span class="fw-badge" title="${esc(tooltip)}">${esc(families.join(' '))}</span>`;
 }
 
-function renderCheck(r, fixMap) {
+function renderCheck(r, fixMap, appliedApis) {
   const cls = STATUS_CLASS[r.status] ?? 'skip';
   const icon = STATUS_ICON[r.status] ?? '?';
   const fix = fixMap[r.id];
@@ -97,6 +101,7 @@ function renderCheck(r, fixMap) {
   const isMuted = !!r.muted;
   const showFix = fix && r.status !== 'pass' && r.status !== 'skipped' && !isMuted;
   const canApply = fix?.type === 'apply' || r.canApply;
+  const isApplied = !!r.api && appliedApis?.has(r.api);
 
   // Fingerprint check always shows a "Ver detalles" button
   const detailBtn = isFingerprintCheck
@@ -120,6 +125,12 @@ function renderCheck(r, fixMap) {
     ? `<button class="fix-btn fix-mute" data-mute-id="${esc(r.id)}" title="${esc(t('health.mute_tip'))}">${esc(isMuted ? t('health.unmute_btn') : t('health.mute_btn'))}</button>`
     : '';
 
+  // "Default" button: only visible when this check has been applied via Lucent
+  // (i.e. its api is in appliedFixes). Click → setting.clear() + drop from list.
+  const defaultBtn = isApplied
+    ? `<button class="fix-btn fix-default" data-default-api="${esc(r.api)}" title="${esc(t('health.default_tip'))}">${esc(t('health.default_btn'))}</button>`
+    : '';
+
   const mutedChip = isMuted ? `<span class="muted-chip">${esc(t('health.muted_chip'))}</span>` : '';
 
   return `
@@ -135,17 +146,17 @@ function renderCheck(r, fixMap) {
           </div>
           <span class="check-detail">${esc(translateDetail(r.detail ?? ''))}</span>
         </div>
-        <div class="check-actions">${detailBtn}${fixBtn}${muteBtn}</div>
+        <div class="check-actions">${detailBtn}${fixBtn}${defaultBtn}${muteBtn}</div>
       </div>
     </li>`;
 }
 
-function renderCategory(cat, fixMap) {
+function renderCategory(cat, fixMap, appliedApis) {
   const pass = cat.checks.filter((c) => c.status === 'pass').length;
   const fail = cat.checks.filter((c) => c.status === 'fail').length;
   const warn = cat.checks.filter((c) => c.status === 'warn').length;
 
-  const checks = cat.checks.map((r) => renderCheck(r, fixMap)).join('');
+  const checks = cat.checks.map((r) => renderCheck(r, fixMap, appliedApis)).join('');
   const statsHtml = [
     fail > 0 ? `<span class="cat-stat stat-fail">${fail} ${esc(t('status.fail'))}</span>` : '',
     warn > 0 ? `<span class="cat-stat stat-warn">${warn} ${esc(t('status.warn'))}</span>` : '',
@@ -277,11 +288,17 @@ async function applyFix(fix, api, expected, btn) {
 export async function renderHealthOverview(audit, container) {
   // Read user-configured default profile from prefs
   const [stored, hardening] = await Promise.all([
-    chrome.storage.local.get(['userPrefs', 'detectedBrowser']),
+    chrome.storage.local.get(['userPrefs', 'detectedBrowser', 'appliedFixes']),
     sendMsg({ type: 'get_hardening_state' }),
   ]);
-  const defaultProfile = stored.userPrefs?.defaultProfile ?? 'all';
-  let activeProfile = PROFILES[defaultProfile] ? defaultProfile : 'all';
+  const appliedApis = new Set(
+    (stored.appliedFixes ?? [])
+      .map((a) => (typeof a === 'object' ? a.api : a))
+      .filter(Boolean)
+  );
+  const defaultProfile = stored.userPrefs?.defaultProfile ?? 'basic';
+  // Legacy 'all' (removed in 0.2.1) and any other unknown value fall back to basic
+  let activeProfile = PROFILES[defaultProfile] ? defaultProfile : 'basic';
   const detectedBrowser = stored.detectedBrowser ?? null;
   let hardeningEnabled = hardening?.enabled !== false;
   const hardeningCount = hardening?.count ?? 0;
@@ -359,7 +376,7 @@ export async function renderHealthOverview(audit, container) {
         ${renderProfileSelector(activeProfile)}
       </div>
 
-      <div class="categories">${groups.map((c) => renderCategory(c, fixMap)).join('')}</div>`;
+      <div class="categories">${groups.map((c) => renderCategory(c, fixMap, appliedApis)).join('')}</div>`;
 
     // Events
     container.querySelector('#btn-refresh').addEventListener('click', async () => {
@@ -554,6 +571,28 @@ export async function renderHealthOverview(audit, container) {
         // Localize instructions for the inline panel
         const localFix = fix ? { ...fix, instructions: fix.instructions ? checkText(checkId, fix.instructions, 'instructions') : fix.instructions } : fix;
         applyFix(localFix, api, expected, btn);
+      });
+    });
+
+    // "Default" buttons: revert just this setting back to Chrome's native value
+    // and remove it from the persisted list, without touching the rest.
+    container.querySelectorAll('.fix-default').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const api = btn.dataset.defaultApi;
+        const titleEl = btn.closest('.check-item')?.querySelector('.check-title');
+        const checkName = titleEl?.textContent?.trim() ?? api;
+        btn.disabled = true;
+        btn.textContent = t('health.diagnose_reverting');
+        const res = await sendMsg({ type: 'undo_individual_fix', api });
+        if (res?.ok) {
+          showToast(`${t('health.toast_default_done')} · ${checkName}`, 'success');
+          const fresh = await sendMsg({ type: 'run_audit' });
+          if (fresh) { renderHealthOverview(fresh, container); }
+        } else {
+          btn.disabled = false;
+          btn.textContent = t('health.default_btn');
+          showToast(`${t('health.toast_apply_failed')} · ${checkName}`, 'error');
+        }
       });
     });
 

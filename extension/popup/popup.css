@@ -232,6 +232,11 @@ main { padding: 0 0 16px; }
 }
 .fix-mute:hover { background: #2a2a2e; color: #ccc; }
 
+.fix-default {
+  background: #2a1f08; border-color: #5a4416; color: #fbbf24;
+}
+.fix-default:hover { background: #3a2f10; color: #ffd966; border-color: #8a6420; }
+
 /* Toast stack — anchored bottom-right of the popup viewport */
 .toast-stack {
   position: fixed; bottom: 12px; right: 12px; left: 12px;

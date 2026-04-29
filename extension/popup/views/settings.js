@@ -20,7 +20,7 @@ const DEFAULTS = {
   showFirstParty: false,
   alertOnScoreDrop: true,
   scoreDropThreshold: 10,
-  defaultProfile: 'all',
+  defaultProfile: 'basic',
   showRationale: 'click', // 'always' | 'click' | 'never'
   fingerprintAutoCalc: true,
 };
@@ -147,9 +147,8 @@ function renderViewSection(prefs) {
       <div class="settings-row">
         <label class="settings-label">${esc(t('settings.default_profile'))}</label>
         <select id="pref-default-profile" class="settings-select">
-          <option value="all" ${prefs.defaultProfile === 'all' ? 'selected' : ''}>${esc(t('profile.standard'))}</option>
-          <option value="advanced" ${prefs.defaultProfile === 'advanced' ? 'selected' : ''}>${esc(t('profile.advanced'))}</option>
           <option value="basic" ${prefs.defaultProfile === 'basic' ? 'selected' : ''}>${esc(t('profile.basic'))}</option>
+          <option value="advanced" ${prefs.defaultProfile === 'advanced' ? 'selected' : ''}>${esc(t('profile.advanced'))}</option>
           <option value="failed" ${prefs.defaultProfile === 'failed' ? 'selected' : ''}>${esc(t('profile.failed'))}</option>
           <option value="CIS" ${prefs.defaultProfile === 'CIS' ? 'selected' : ''}>CIS Benchmark</option>
           <option value="CCN" ${prefs.defaultProfile === 'CCN' ? 'selected' : ''}>ENS (CCN-STIC)</option>
