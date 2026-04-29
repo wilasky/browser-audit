@@ -147,7 +147,35 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
     .map((m) => m[1])
     .slice(0, 10);
 
-  // Total risk score
+  // Exfiltration heuristic: script that reads sensitive client storage AND
+  // sends data outbound. Each side alone is normal (analytics fetch, cookie
+  // reader for UI), but the combination is the textbook pattern for
+  // form/credential stealers and tracker pixels building cross-site IDs.
+  // Heuristic, not proof — surfaced as a warning, not a verdict.
+  const READS = [
+    /\bdocument\.cookie\b/,
+    /localStorage\.(getItem|key|getAll)\b/,
+    /sessionStorage\.(getItem|key|getAll)\b/,
+    /indexedDB\.open\b/,
+  ];
+  const SENDS = [
+    /\bfetch\s*\(/,
+    /\bnew\s+XMLHttpRequest\b/,
+    /navigator\.sendBeacon\b/,
+    /\bnew\s+WebSocket\b/,
+    /\bnew\s+Image\s*\(\s*\)/, // 1x1 pixel exfil pattern
+  ];
+  const reads = READS.filter((rx) => rx.test(code)).map((rx) => rx.source);
+  const sends = SENDS.filter((rx) => rx.test(code)).map((rx) => rx.source);
+  // Threshold tuned to reduce false positives: every analytics/tag-manager
+  // library reads cookies and does ONE fetch (legitimate). Requiring at
+  // least 2 distinct sending channels makes the heuristic specific enough
+  // for credential stealers / aggressive trackers without flagging GTM/GA.
+  // Treated as INFORMATIVE — does not affect totalRiskScore.
+  const exfiltration = (reads.length >= 1 && sends.length >= 2)
+    ? { reads, sends }
+    : null;
+
   const totalRiskScore = Math.min(100,
     findings.reduce((acc, f) => acc + f.score, 0) +
     Math.floor(obfuscationScore / 4)
@@ -168,6 +196,7 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
     ips,
     base64: base64Matches,
     endpoints: endpointHits,
+    exfiltration,
     totalRiskScore,
     verdict,
   };

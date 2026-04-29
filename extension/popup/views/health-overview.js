@@ -366,12 +366,12 @@ export async function renderHealthOverview(audit, container) {
             ${hardeningCount > 0 ? `<button id="btn-hardening-toggle" class="btn-icon ${hardeningEnabled ? 'btn-hardening-on' : 'btn-hardening-off'}" title="${esc(t(hardeningEnabled ? 'health.hardening_tip_on' : 'health.hardening_tip_off', { n: hardeningCount }))}">🛡</button>` : ''}
             <button id="btn-reset-fixes" class="btn-icon btn-reset" title="${esc(t('health.reset_tip'))}">↶</button>
             <button id="btn-diagnose" class="btn-icon btn-diagnose" title="${esc(t('health.diagnose_tip'))}">💡</button>
-            <button id="btn-export-json" class="btn-icon" title="Export JSON">↓ JSON</button>
-            <button id="btn-export-pdf" class="btn-icon" title="Export PDF">↓ PDF</button>
+            <button id="btn-export-json" class="btn-icon" title="Export JSON">JSON</button>
+            <button id="btn-export-pdf" class="btn-icon" title="Export PDF">PDF</button>
             <button id="btn-import-json" class="btn-icon" title="${esc(t('health.import'))}">↑</button>
             <input type="file" id="input-audit-json" accept="application/json" style="display:none"/>
-            ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button>` : ''}
-        </div>
+          </div>
+          ${sc > 0 ? `<div class="header-grant-row"><button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button></div>` : ''}
       </div>
 
       <div class="profile-bar">

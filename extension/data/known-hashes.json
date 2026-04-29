@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "description": "Curated SHA256 → known-script mapping. When Deep Analysis computes the hash of a downloaded script and finds a match, the user sees 'matches X (vendor verified)' instead of having to manually compare. Initial bootstrap is deliberately small — entries grow crowdsourced (issue or PR) as users report verified scripts. Keep the most-deployed first-party libraries here, not custom enterprise builds.",
+  "note": "The hashes below are illustrative placeholders. Real hashes are computed once over the exact published file (https://www.googletagmanager.com/gtm.js?id=...) and pinned per file. To add a verified entry: download the file, compute sha256 (e.g. `shasum -a 256 file.js`), and submit it with vendor + version + url.",
+  "entries": [
+    {
+      "hash": "0000000000000000000000000000000000000000000000000000000000000001",
+      "vendor": "Google Tag Manager",
+      "version": "loader",
+      "trust": "verified",
+      "category": "container",
+      "url": "https://www.googletagmanager.com/gtm.js"
+    },
+    {
+      "hash": "0000000000000000000000000000000000000000000000000000000000000002",
+      "vendor": "Google Analytics 4",
+      "version": "loader",
+      "trust": "verified",
+      "category": "analytics",
+      "url": "https://www.googletagmanager.com/gtag/js"
+    },
+    {
+      "hash": "0000000000000000000000000000000000000000000000000000000000000003",
+      "vendor": "Stripe.js",
+      "version": "v3",
+      "trust": "verified",
+      "category": "payment",
+      "url": "https://js.stripe.com/v3/"
+    },
+    {
+      "hash": "0000000000000000000000000000000000000000000000000000000000000004",
+      "vendor": "jQuery",
+      "version": "3.7.1 (slim, minified)",
+      "trust": "verified",
+      "category": "library",
+      "url": "https://code.jquery.com/jquery-3.7.1.slim.min.js"
+    }
+  ],
+  "trustLevels": {
+    "verified":  { "es": "Verificado",            "en": "Verified" },
+    "known":     { "es": "Conocido",              "en": "Known" },
+    "flagged":   { "es": "Marcado",               "en": "Flagged" }
+  }
+}

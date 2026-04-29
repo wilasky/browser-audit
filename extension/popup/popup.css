@@ -122,12 +122,16 @@ main { padding: 0 0 16px; }
 .btn-icon {
   background: #1e1e22; border: 1px solid #3a3a3e;
   color: #b0b0b8; cursor: pointer;
-  min-width: 26px; height: 24px; padding: 0 6px; border-radius: 4px;
-  font-size: 11px; font-weight: 600; line-height: 1; display: inline-flex;
-  align-items: center; justify-content: center; gap: 3px;
+  min-width: 24px; height: 22px; padding: 0 5px; border-radius: 4px;
+  font-size: 11px; font-weight: 600; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+  flex: 0 0 auto;  /* don't grow, don't shrink — wrap naturally instead */
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .btn-icon:hover { background: #2a2a2e; color: #e8e8ea; }
+
+/* Permission grant button on its own row — keeps the icon strip aligned */
+.header-grant-row { margin-top: 4px; }
 
 /* Categories — collapsible via <details> */
 .categories { padding: 4px 0; }
@@ -1541,6 +1545,31 @@ main { padding: 0 0 16px; }
 }
 
 .sd-lookups { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* Hash status badges (history + known-hashes match) */
+.hash-status {
+  font-size: 11px; padding: 6px 10px; border-radius: 4px;
+  margin: 4px 0; line-height: 1.5;
+}
+.hash-status-new { background: #16161a; color: #aaa; border: 1px solid #2a2a2e; }
+.hash-status-ok  { background: #0d2a1a; color: #44ee77; border: 1px solid #1a5a2a; }
+.hash-status-changed { background: #2a1a08; color: #fbbf24; border: 1px solid #5a4416; }
+.hash-status-known { background: #0d1a2a; color: #88ccff; border: 1px solid #1a3a5a; }
+.hash-status-known strong { color: #aaddff; }
+
+/* Exfiltration heuristic — amber, not red. It is an *informative*
+   pattern signal, not a confirmed finding. Threshold (≥1 read + ≥2 sends)
+   reduces false positives but the badge tone matches the uncertainty. */
+.exfil-warn {
+  background: #1f1908; border: 1px solid #5a4416; border-radius: 6px;
+  padding: 10px 12px; margin: 6px 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.exfil-warn .sd-section-title { color: #fbbf24; margin: 0; }
+.exfil-msg { font-size: 11px; color: #ddd; line-height: 1.5; margin: 0; }
+.exfil-msg strong { color: #fbbf24; }
+.exfil-rows { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
+.exfil-rows code { background: #2a1f08; color: #ffd966; padding: 1px 4px; border-radius: 3px; }
 
 /* Endpoints table in deep analysis (literal URL args to fetch/XHR/WS) */
 .sd-endp-table { font-size: 10px; }

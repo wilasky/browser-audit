@@ -1,6 +1,67 @@
 import { esc } from '../../shared/sanitize.js';
 import { analyzeScriptSource, fetchScriptSource } from '../../shared/script-analyzer.js';
-import { t } from '../../shared/i18n.js';
+import { t, localized } from '../../shared/i18n.js';
+import knownHashes from '../../data/known-hashes.json';
+
+// Build a Map<hash, entry> once at module load — O(1) lookup per analysis.
+const KNOWN_HASH_MAP = new Map(knownHashes.entries.map((e) => [e.hash, e]));
+
+// Persisted hash history per script URL. Limit to last 5 entries to avoid
+// unbounded storage growth across many sites.
+const HASH_HISTORY_KEY = 'scriptHashHistory';
+const HASH_HISTORY_PER_URL = 5;
+
+async function pushHashHistory(url, hash) {
+  const stored = await chrome.storage.local.get(HASH_HISTORY_KEY);
+  const all = stored[HASH_HISTORY_KEY] ?? {};
+  const list = all[url] ?? [];
+  // Don't duplicate consecutive identical hashes
+  if (list.length === 0 || list[list.length - 1].hash !== hash) {
+    list.push({ hash, seenAt: Date.now() });
+    while (list.length > HASH_HISTORY_PER_URL) { list.shift(); }
+    all[url] = list;
+    await chrome.storage.local.set({ [HASH_HISTORY_KEY]: all });
+  }
+  return list;
+}
+
+function renderHashStatus(history, currentHash) {
+  // history is the list AFTER pushing the current hash. Compare current
+  // against the previous entry (if any) to detect a change since last visit.
+  if (history.length === 1) {
+    return `<div class="hash-status hash-status-new">${esc(t('sd.hash_first'))}</div>`;
+  }
+  const prev = history[history.length - 2];
+  const prevDate = new Date(prev.seenAt).toLocaleDateString();
+  if (prev.hash === currentHash) {
+    return `<div class="hash-status hash-status-ok">${esc(t('sd.hash_unchanged', { date: prevDate }))}</div>`;
+  }
+  return `<div class="hash-status hash-status-changed">${esc(t('sd.hash_changed', { date: prevDate, prev: prev.hash.slice(0, 12) + '…' }))}</div>`;
+}
+
+function renderKnownMatch(hash) {
+  const entry = KNOWN_HASH_MAP.get(hash);
+  if (!entry) { return ''; }
+  const trustLabel = localized(knownHashes.trustLevels?.[entry.trust]) || entry.trust;
+  return `<div class="hash-status hash-status-known">${t('sd.known_match', {
+    vendor: esc(entry.vendor), version: esc(entry.version), trust: esc(trustLabel),
+  })}</div>`;
+}
+
+function renderExfiltration(exf) {
+  if (!exf) { return ''; }
+  const readsList = exf.reads.map((r) => `<code>${esc(r)}</code>`).join(' · ');
+  const sendsList = exf.sends.map((s) => `<code>${esc(s)}</code>`).join(' · ');
+  return `
+    <section class="exfil-warn">
+      <h3 class="sd-section-title">${esc(t('sd.exfil_title'))}</h3>
+      <p class="exfil-msg">${t('sd.exfil_msg')}</p>
+      <div class="exfil-rows">
+        <div><span class="settings-hint">${esc(t('sd.exfil_reads'))}:</span> ${readsList}</div>
+        <div><span class="settings-hint">${esc(t('sd.exfil_sends'))}:</span> ${sendsList}</div>
+      </div>
+    </section>`;
+}
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -293,6 +354,14 @@ export async function renderScriptDetail(container, script) {
     // Translate verdict text from background ('critical'/'high'/'medium'/'low')
     const verdictText = t(`verdict.${analysis.verdict.level}`);
 
+    // Persist this hash and look it up against (a) prior visits to this URL
+    // and (b) the curated known-hashes DB. Both surface as small status
+    // banners directly under the verdict.
+    const history = await pushHashHistory(url, analysis.stats.hash);
+    const hashStatusHTML = renderHashStatus(history, analysis.stats.hash);
+    const knownMatchHTML = renderKnownMatch(analysis.stats.hash);
+    const exfiltrationHTML = renderExfiltration(analysis.exfiltration);
+
     body.innerHTML = `
       <div class="sd-verdict" style="border-left:4px solid ${verdictColor}">
         <div class="sd-verdict-score" style="color:${verdictColor}">${analysis.totalRiskScore}/100</div>
@@ -301,6 +370,10 @@ export async function renderScriptDetail(container, script) {
           <div class="settings-hint">${esc(verdictText)}</div>
         </div>
       </div>
+
+      ${knownMatchHTML}
+      ${hashStatusHTML}
+      ${exfiltrationHTML}
 
       <div class="sd-stats">
         <div class="sd-stat"><strong>${analysis.stats.sizeKB}</strong> KB</div>

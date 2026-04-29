@@ -386,6 +386,18 @@ const TRANSLATIONS = {
   'sd.endpoints_title':     { es: '🌐 Endpoints contactados',     en: '🌐 Endpoints called' },
   'sd.endpoints_none':      { es: 'No hay endpoints hardcoded como string literal en el código.', en: 'No hardcoded endpoints found as string literals in the code.' },
 
+  // Hash history + known-hashes
+  'sd.hash_first':          { es: '🆕 Primera vez que vemos este script (hash guardado para futuras comparaciones)', en: '🆕 First time we see this script (hash saved for future comparison)' },
+  'sd.hash_unchanged':      { es: '✓ Hash idéntico al de la última visita ({date})', en: '✓ Hash unchanged since last visit ({date})' },
+  'sd.hash_changed':        { es: '⚠ El código de este script cambió desde la última visita ({date}) — hash anterior: {prev}', en: '⚠ This script changed since the last visit ({date}) — previous hash: {prev}' },
+  'sd.known_match':         { es: '✓ Coincide con: <strong>{vendor}</strong> ({version}) — {trust}', en: '✓ Matches: <strong>{vendor}</strong> ({version}) — {trust}' },
+
+  // Exfiltration heuristic
+  'sd.exfil_title':         { es: '⚠ Patrón de posible exfiltración', en: '⚠ Possible exfiltration pattern' },
+  'sd.exfil_msg':           { es: 'Este script <strong>lee almacenamiento sensible</strong> (cookies, localStorage…) <strong>y envía datos al exterior</strong> (fetch, beacon, WebSocket). Patrón típico de credential stealers y trackers cross-site. Cada parte por separado es legítima — la combinación no siempre.', en: 'This script <strong>reads sensitive storage</strong> (cookies, localStorage…) <strong>and sends data outbound</strong> (fetch, beacon, WebSocket). Typical pattern for credential stealers and cross-site trackers. Either alone is legitimate — the combination is not always.' },
+  'sd.exfil_reads':         { es: 'Lecturas detectadas',          en: 'Reads detected' },
+  'sd.exfil_sends':         { es: 'Envíos detectados',            en: 'Sends detected' },
+
   // Obfuscation pattern descriptions
   'sa.obf.hex-vars':        { es: 'Variables hexadecimales — obfuscador típico', en: 'Hexadecimal variables — typical obfuscator' },
   'sa.obf.long-arrays':     { es: 'Arrays con strings largos codificados', en: 'Arrays with long encoded strings' },
