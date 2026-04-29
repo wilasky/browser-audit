@@ -372,6 +372,7 @@ export async function renderHealthOverview(audit, container) {
             <input type="file" id="input-audit-json" accept="application/json" style="display:none"/>
           </div>
           ${sc > 0 ? `<div class="header-grant-row"><button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button></div>` : ''}
+        </div>
       </div>
 
       <div class="profile-bar">
