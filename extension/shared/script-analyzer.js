@@ -126,9 +126,9 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
   for (const { rx, api } of ENDPOINT_PATTERNS) {
     for (const m of code.matchAll(rx)) {
       const url = m[1];
-      // Skip relative paths (href="/foo"), data: and blob: literals — they
-      // aren't network destinations. Keep absolute http/https.
-      if (!/^https?:\/\//i.test(url)) { continue; }
+      // Skip relative paths, data: and blob: literals — they aren't
+      // network destinations. Keep absolute http/https/ws/wss.
+      if (!/^(https?|wss?):\/\//i.test(url)) { continue; }
       const key = `${api}|${url}`;
       if (endpointSeen.has(key)) { continue; }
       endpointSeen.add(key);
