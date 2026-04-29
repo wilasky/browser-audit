@@ -373,6 +373,18 @@ const TRANSLATIONS = {
   'sa.api.service-worker':  { es: 'Registra worker persistente — puede actuar tras cerrar pestaña', en: 'Registers persistent worker — can act after tab close' },
   'sa.api.crypto-mining':   { es: 'Patrón conocido de cryptominer', en: 'Known cryptominer pattern' },
   'sa.api.beacon':          { es: 'Envío silencioso de datos (no espera respuesta)', en: 'Silent data send (no response expected)' },
+  'sa.api.fetch':           { es: 'Petición HTTP — quién llama a quién',          en: 'HTTP request — who calls whom' },
+  'sa.api.xhr':             { es: 'XMLHttpRequest — petición HTTP clásica',        en: 'XMLHttpRequest — classic HTTP request' },
+  'sa.api.websocket':       { es: 'Conexión WebSocket persistente',                en: 'Persistent WebSocket connection' },
+  'sa.api.create-script':   { es: 'Inyección dinámica de <script> — patrón típico de loaders/malvertising', en: 'Dynamic <script> injection — typical loader/malvertising pattern' },
+  'sa.api.create-iframe':   { es: 'Inyección dinámica de <iframe> — anuncios o tracking encubierto', en: 'Dynamic <iframe> injection — ads or covert tracking' },
+  'sa.api.append-head':     { es: 'Modificación dinámica del <head>',              en: 'Dynamic <head> modification' },
+  'sa.api.form-action-set': { es: 'Modificación de form.action o method en runtime', en: 'Runtime modification of form.action / method' },
+  'sa.api.window-eval':     { es: "Acceso a eval via window['eval'] — bypass de detección estática", en: "Access to eval via window['eval'] — static-analysis bypass" },
+  'sa.api.fn-constructor':  { es: '[].constructor.constructor — variante de Function constructor', en: '[].constructor.constructor — Function-constructor variant' },
+
+  'sd.endpoints_title':     { es: '🌐 Endpoints contactados',     en: '🌐 Endpoints called' },
+  'sd.endpoints_none':      { es: 'No hay endpoints hardcoded como string literal en el código.', en: 'No hardcoded endpoints found as string literals in the code.' },
 
   // Obfuscation pattern descriptions
   'sa.obf.hex-vars':        { es: 'Variables hexadecimales — obfuscador típico', en: 'Hexadecimal variables — typical obfuscator' },

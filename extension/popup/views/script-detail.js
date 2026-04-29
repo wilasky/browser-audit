@@ -191,6 +191,23 @@ function renderFindings(findings) {
     </table>`;
 }
 
+function renderEndpoints(endpoints) {
+  if (!endpoints?.length) {
+    return `<p class="settings-hint">${esc(t('sd.endpoints_none'))}</p>`;
+  }
+  const rows = endpoints.map((e) => {
+    let host = e.url;
+    try { host = new URL(e.url).hostname; } catch { /* keep raw */ }
+    return `
+      <tr>
+        <td><code class="endp-api">${esc(e.api)}</code></td>
+        <td class="endp-host"><code>${esc(host)}</code></td>
+        <td class="endp-url settings-hint" title="${esc(e.url)}">${esc(e.url.length > 60 ? e.url.slice(0, 57) + '…' : e.url)}</td>
+      </tr>`;
+  }).join('');
+  return `<table class="sd-table sd-endp-table"><tbody>${rows}</tbody></table>`;
+}
+
 function renderObfuscation(obf) {
   const color = obf.level === 'high' ? '#ef4444' : obf.level === 'medium' ? '#f59e0b' : '#22c55e';
   const findings = obf.findings.length
@@ -300,6 +317,9 @@ export async function renderScriptDetail(container, script) {
 
       <h3 class="sd-section-title">${esc(t('sd.suspicious_apis'))}</h3>
       ${renderFindings(analysis.findings)}
+
+      <h3 class="sd-section-title">${esc(t('sd.endpoints_title'))}${analysis.endpoints?.length ? ` (${analysis.endpoints.length})` : ''}</h3>
+      ${renderEndpoints(analysis.endpoints ?? [])}
 
       <h3 class="sd-section-title">${esc(t('sd.obfuscation'))}</h3>
       ${renderObfuscation(analysis.obfuscation)}

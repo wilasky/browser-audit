@@ -1542,6 +1542,16 @@ main { padding: 0 0 16px; }
 
 .sd-lookups { display: flex; flex-wrap: wrap; gap: 4px; }
 
+/* Endpoints table in deep analysis (literal URL args to fetch/XHR/WS) */
+.sd-endp-table { font-size: 10px; }
+.sd-endp-table td { padding: 4px 6px; vertical-align: top; }
+.endp-api {
+  font-size: 10px; color: #88aacc; background: #0d1a2a;
+  padding: 1px 5px; border-radius: 3px; white-space: nowrap;
+}
+.endp-host code { font-size: 10px; color: #ccc; }
+.endp-url { font-size: 9px; color: #666; word-break: break-all; }
+
 /* Runtime fallback view (when source download fails) */
 .sd-rt-banner {
   background: linear-gradient(180deg, #1f1908 0%, #16161a 100%);

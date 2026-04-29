@@ -24,6 +24,18 @@ const SUSPICIOUS_APIS = [
   { id: 'service-worker',      pattern: /navigator\.serviceWorker\.register/g,                     weight: 4,  label: 'ServiceWorker.register',  descKey: 'sa.api.service-worker' },
   { id: 'crypto-mining',       pattern: /\b(coinhive|cryptonight|monero|webminer|cryptojacking)\b/gi, weight: 15, label: 'Cryptominer signature', descKey: 'sa.api.crypto-mining' },
   { id: 'beacon',              pattern: /navigator\.sendBeacon/g,                                  weight: 4,  label: 'sendBeacon',              descKey: 'sa.api.beacon' },
+  // Network behaviour — low base weight (legitimate code uses these too)
+  { id: 'fetch',               pattern: /\bfetch\s*\(/g,                                           weight: 1,  label: 'fetch()',                 descKey: 'sa.api.fetch' },
+  { id: 'xhr',                 pattern: /\bnew\s+XMLHttpRequest/g,                                 weight: 2,  label: 'new XMLHttpRequest',      descKey: 'sa.api.xhr' },
+  { id: 'websocket',           pattern: /\bnew\s+WebSocket/g,                                      weight: 3,  label: 'new WebSocket',           descKey: 'sa.api.websocket' },
+  // DOM injection — hallmark of loaders, ad networks, malvertising
+  { id: 'create-script',       pattern: /createElement\s*\(\s*['"`]script['"`]\s*\)/gi,            weight: 5,  label: "createElement('script')", descKey: 'sa.api.create-script' },
+  { id: 'create-iframe',       pattern: /createElement\s*\(\s*['"`]iframe['"`]\s*\)/gi,            weight: 4,  label: "createElement('iframe')", descKey: 'sa.api.create-iframe' },
+  { id: 'append-head',         pattern: /document\.head\.appendChild/g,                            weight: 3,  label: 'head.appendChild',        descKey: 'sa.api.append-head' },
+  { id: 'form-action-set',     pattern: /\.(action|method)\s*=\s*['"`]/g,                          weight: 3,  label: 'form.action =',           descKey: 'sa.api.form-action-set' },
+  // Edge-case eval variants that the plain /eval/ regex misses
+  { id: 'window-eval',         pattern: /(?:window|self|globalThis)\s*\[\s*['"`]eval['"`]\s*\]/g,  weight: 12, label: "window['eval']",          descKey: 'sa.api.window-eval' },
+  { id: 'fn-constructor',      pattern: /\[\]\s*\.\s*constructor\s*\.\s*constructor/g,             weight: 12, label: '[].constructor.constructor', descKey: 'sa.api.fn-constructor' },
 ];
 
 // Obfuscation detection — patterns common in obfuscators (jjencode, packer, etc.)
@@ -95,6 +107,33 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
     escapeRatio: (obfRatio * 100).toFixed(2) + '%',
   };
 
+  // Network endpoints — URLs that appear *as a literal argument* to fetch(),
+  // XMLHttpRequest.open(), or new WebSocket(). Pulled out separately so
+  // the popup can show "this script calls X domain" with confidence,
+  // not just "the file mentions this URL somewhere".
+  const ENDPOINT_PATTERNS = [
+    { rx: /\bfetch\s*\(\s*['"`]([^'"`]+)['"`]/gi,                        api: 'fetch' },
+    { rx: /\.open\s*\(\s*['"`][A-Z]+['"`]\s*,\s*['"`]([^'"`]+)['"`]/gi,  api: 'XHR.open' },
+    { rx: /\bnew\s+WebSocket\s*\(\s*['"`]([^'"`]+)['"`]/gi,              api: 'WebSocket' },
+    { rx: /navigator\.sendBeacon\s*\(\s*['"`]([^'"`]+)['"`]/gi,          api: 'sendBeacon' },
+  ];
+  const endpointHits = [];
+  const endpointSeen = new Set();
+  for (const { rx, api } of ENDPOINT_PATTERNS) {
+    for (const m of code.matchAll(rx)) {
+      const url = m[1];
+      // Skip relative paths (href="/foo"), data: and blob: literals — they
+      // aren't network destinations. Keep absolute http/https.
+      if (!/^https?:\/\//i.test(url)) { continue; }
+      const key = `${api}|${url}`;
+      if (endpointSeen.has(key)) { continue; }
+      endpointSeen.add(key);
+      endpointHits.push({ api, url: url.slice(0, 200) });
+      if (endpointHits.length >= 30) { break; }
+    }
+    if (endpointHits.length >= 30) { break; }
+  }
+
   // Extract URLs, IPs, base64 chunks
   const urls = [...new Set(code.match(URL_PATTERN) ?? [])]
     .filter((u) => !u.includes(scriptUrl)) // exclude self
@@ -128,6 +167,7 @@ export async function analyzeScriptSource(code, scriptUrl = '') {
     urls,
     ips,
     base64: base64Matches,
+    endpoints: endpointHits,
     totalRiskScore,
     verdict,
   };
