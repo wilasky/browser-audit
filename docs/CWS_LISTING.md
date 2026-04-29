@@ -122,27 +122,62 @@ Obtén un score de seguridad (0-100) para tu configuración de Chrome. Browser A
 
 Cada fallo muestra exactamente qué hacer para arreglarlo, con acceso directo a la página correcta de ajustes de Chrome.
 
-🕵️ SCRIPTSPY
-Inspecciona en tiempo real qué hace el JavaScript de cualquier web. Descubre qué scripts envían datos, leen cookies, rastrean tu ratón o usan técnicas de fingerprinting para identificarte sin cookies.
+🕵️ SCRIPTSPY + ANÁLISIS PROFUNDO
+Inspecciona en tiempo real qué hace el JavaScript de cualquier web. Descubre qué scripts envían datos, leen cookies, rastrean tu ratón o usan técnicas de fingerprinting.
 
 Por cada script, ScriptSpy muestra:
-• Score de riesgo (0-100) con explicación en texto
-• Si es de primer o tercer partido
-• Destinos de red contactados
-• Técnicas de fingerprinting usadas (canvas, WebGL, audio, navigator, fuentes)
+• Score de riesgo (0-100) con razón en texto
+• Origen primer / tercer partido
+• Destinos de red contactados en vivo
+• Fingerprinting (canvas, WebGL, audio, navigator, fuentes, pantalla, batería)
 • Listeners de input y ratón
+• Lecturas de cookies, localStorage / sessionStorage
 
-Pulsa "Ver script ↗" para abrir el código fuente en Chrome.
+Análisis estático profundo:
+• Hash SHA256 con histórico (avisa si el script cambia entre visitas)
+• Match contra vendors conocidos (GTM, GA4, Stripe.js, jQuery por versión…)
+• Patrones de API sospechosos (eval, Function, atob, fromCharCode, document.write…)
+• Endpoints hardcoded — a qué URLs llama literalmente
+• Patrones de inyección DOM (createElement('script'), iframe injection)
+• Score de obfuscación con desglose
+• Detección de source map — abre el código original sin minificar si está accesible
+• Modo runtime cuando el CDN bloquea la descarga (timing, SRI, comportamiento observado)
+
+📋 RGPD Y PRIVACIDAD
+Auditoría real de RGPD/cookies, no un contador:
+• Cookies agrupadas por propósito inferido (analítica, publicidad, tracking, sesión, auth…)
+• Detección de CMP (OneTrust, Didomi, Cookiebot, Quantcast, Sourcepoint, Funding Choices, Axeptio, Usercentrics…)
+• TCF v2 (IAB Europe) — lee propósitos aceptados (15) y vendors directamente desde window.__tcfapi
+• Detección de cookie syncing / identity matching (id5, criteo, doubleclick, taboola, pubmatic…)
+• Detector de cookie wall ("acepta o paga") — alerta cuando el consentimiento puede no ser libre bajo Directrices EDPB 03/2022
+• Marca cookies sensibles (nombres tipo session/auth/csrf)
+• Score de dependencia de terceros
+• Reset de consentimiento en un click: borra cookies + storage para que el banner reaparezca
+• Export del análisis completo en JSON
+
+🔧 BASTIONADO DEL NAVEGADOR
+• 50+ chequeos contra CIS Benchmark, NIST SP 800-53, CCN-STIC-885 (ENS español)
+• Apply por check que pide solo el permiso necesario (sin batch grant)
+• ↩ Default por check para revertir uno solo
+• 🛡 Toggle maestro para pausar todo el bastionado sin perder la lista
+• Silenciar checks para ignorarlos en el score (p.ej. DNT)
+• 💡 "¿Esta web no funciona?": cruza tus settings aplicados con una tabla curada para identificar cuál está rompiendo la web actual (Discord = WebRTC, Netflix = protectedContent, intranet = DoH…)
+• Categorías plegables con estado persistente
+• Vista detalle por check con frameworks, info técnica, instrucciones
+
+🌐 SE ADAPTA A TU NAVEGADOR
+Detecta Brave, Edge, Vivaldi, Opera, Arc sobre Chromium y ajusta recomendaciones: Brave ya bloquea canvas nativamente, Edge tiene Tracking Prevention propio, etc.
 
 🔐 PRIVACIDAD POR DISEÑO
 • Todo el análisis se ejecuta localmente en tu navegador
 • Ningún historial, URL ni dato personal sale de tu dispositivo
 • ScriptSpy solo se activa cuando abres el popup — sin monitorización en segundo plano
-• Los permisos opcionales (gestión, API de privacidad) se solicitan solo al usar esas funciones
+• Los permisos opcionales (management, privacy) se solicitan solo al usar esas funciones
 
 📤 EXPORT
-• Descarga auditorías como JSON o PDF
-• Histórico local de auditorías
+• Descarga auditorías Health como JSON o PDF
+• Export del análisis RGPD como JSON
+• Histórico local
 • Botón directo para reportar bugs en GitHub
 
 🤖 INTEGRACIÓN IA OPCIONAL
@@ -150,7 +185,7 @@ Pulsa "Ver script ↗" para abrir el código fuente en Chrome.
 • Resumen automático de políticas de privacidad en 3 bullets
 • 100% opt-in — la extensión funciona completa sin esto
 
-100% gratis, código abierto, sin cuenta.
+100% gratis, código abierto, sin cuenta. Interfaz bilingüe (Español / English).
 ```
 
 ---
