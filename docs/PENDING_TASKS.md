@@ -290,3 +290,27 @@ banner aunque sí elimina las cookies visibles. Causas probables:
 Cubierto en GDPR Fase B (`chrome.cookies` opt-in). Mientras tanto, el reset
 hace lo que puede y deja entries HttpOnly intactas — el usuario ve "✓ Reset
 · 0 cookies, 2 ls, 0 ss" (solo storage limpiado) en estos casos.
+
+### Deep Analysis — source map detection (~30 min, próximo)
+
+Cuando un script termina con `//# sourceMappingURL=...` (comentario que
+los bundlers webpack/rollup/esbuild añaden), Lucent debe extraer esa URL,
+resolverla relativa al script y ofrecer un link "📄 Ver código original".
+Si el `.map` está accesible, el usuario obtiene código humano-legible con
+nombres de variables originales — el opuesto al `var ja, na, oa, ...` de
+Closure-minified.
+
+Implementación:
+1. Regex en script-analyzer al final del code: `/\/[\/\*][#@]\s*sourceMappingURL=([^\s\*\/]+)/`
+2. Resolver URL: `new URL(found, scriptUrl).href`
+3. Nuevo campo `analysis.sourceMapUrl` (string|null)
+4. En script-detail.js, si presente, render: botón
+   `📄 Source map disponible — Abrir →` que abre la URL en nueva pestaña
+5. No hace HEAD check de disponibilidad (requeriría host permission); si
+   el .map devuelve 404, el usuario lo verá en la pestaña.
+
+Casos cubiertos: jQuery oficial, React/Vue oficiales, bundles webpack de
+SaaS pequeñas que olvidan deshabilitar source maps en producción. Casos
+NO cubiertos: GTM, GA4, Stripe.js (no exponen .map a propósito). Aún
+así detectarlo cuando exista es útil — convierte una caja negra en
+código auditable.

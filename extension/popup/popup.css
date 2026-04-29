@@ -63,7 +63,12 @@ h1 { font-size: 14px; font-weight: 600; letter-spacing: 0.02em; color: #fff; fle
 }
 .btn-primary:hover { background: #3a7ae0; }
 
-main { padding: 0 0 16px; }
+main { padding: 0 0 16px; display: block; width: 100%; }
+
+/* Belt-and-suspenders: ensure no descendant flex/grid leaks horizontally */
+#app { display: block; width: 100%; max-width: 400px; box-sizing: border-box; }
+#view-root { display: block; width: 100%; max-width: 400px; box-sizing: border-box; }
+#view-root > * { max-width: 100%; }
 
 /* Loading / error */
 .loading, .error {

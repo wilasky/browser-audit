@@ -426,7 +426,9 @@ export async function renderScriptSpyLive(container) {
   }
 
   // Stop auto-refresh when popup is closed
-  window.addEventListener('unload', stopAutoRefresh);
+  // 'unload' is deprecated by Chrome (interferes with bfcache). 'pagehide'
+  // covers popup-close and tab navigation equivalently.
+  window.addEventListener('pagehide', stopAutoRefresh);
 
   container.querySelector('#btn-spy-refresh').addEventListener('click', refresh);
 
