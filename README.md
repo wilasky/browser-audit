@@ -1,10 +1,8 @@
 <div align="center">
 
-<img src="extension/icons/icon128.png" alt="Lucent" width="96" height="96"/>
+<img src="docs/banner.png" alt="Lucent — See what every website actually does" width="100%"/>
 
 # Lucent — Browser Audit
-
-### See what every website actually does. Lock down your browser. 100% local.
 
 **The privacy &amp; security audit toolkit your browser was missing.**
 Inspect every script in real time, audit GDPR &amp; cookie compliance, and harden 40+ settings against CIS, NIST and CCN-STIC — without an account, a server, or a single byte of telemetry.
@@ -17,10 +15,6 @@ Inspect every script in real time, audit GDPR &amp; cookie compliance, and harde
 [![Browsers](https://img.shields.io/badge/Chrome%20%7C%20Brave%20%7C%20Edge%20%7C%20Opera%20%7C%20Vivaldi-supported-blue.svg)](#install)
 
 [**Install**](#install) · [**Why Lucent**](#why-lucent) · [**Features**](#features) · [**Compare**](#how-it-compares) · [**Privacy**](#privacy) · [**Roadmap**](#roadmap)
-
-<br/>
-
-<img src="docs/screenshoots/HealBrowser.png" alt="Lucent Browser Health Check" width="380"/>
 
 </div>
 
@@ -244,7 +238,7 @@ Same flow on `brave://extensions/`, `edge://extensions/`, `opera://extensions/`,
 | Page content | Stays in your browser. |
 | Audit results | Stored in `chrome.storage.local`. Yours. |
 | AI key | Stored locally. Used to talk **directly** to Claude / OpenAI / Ollama — Lucent never proxies. |
-| Pro tier (future) | Will send only `SHA256(domain)` / `SHA256(script)` for threat-intelligence lookups. Never URLs. |
+| Pro tier (future) | Will send only normalised hashes (e.g. `SHA256(domain)`) for the optional features that need them. Never URLs. |
 
 Full text in [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md).
 
@@ -256,16 +250,14 @@ The extension client (this repo) is **MIT** and stays free forever.
 
 A future **Lucent Pro** (€2/mo personal · €10/mo pentester · €50/mo enterprise) will add:
 
-- 🌐 Real-time threat intelligence (URLhaus, MalwareBazaar, OpenPhish, AbuseIPDB) — hash-only lookups.
 - 🤖 Bundled AI proxy — no key needed.
 - 🔒 Persistent per-setting locks with auto-restore on tampering.
 - ⏪ Per-check undo with hardened state diff.
 - 📊 90-day audit history retention.
 - 📑 Professional PDF / CSV export.
-- 🧬 YARA rule engine for script heuristics (pentester tier).
 - 🏢 SSO + central policy distribution (enterprise tier).
 
-Free tier keeps getting better. Pro funds the threat-intel and infra. See [docs/PRO_ROADMAP.md](docs/PRO_ROADMAP.md) and the realistic 8-week [docs/PRO_V1_PLAN.md](docs/PRO_V1_PLAN.md).
+Free tier keeps getting better. Pro funds the infra. See [docs/PRO_ROADMAP.md](docs/PRO_ROADMAP.md) and the realistic 8-week [docs/PRO_V1_PLAN.md](docs/PRO_V1_PLAN.md).
 
 ---
 
@@ -307,7 +299,7 @@ If you're a security researcher and find a vuln in Lucent itself, please open a 
 
 ## License
 
-[MIT](LICENSE) for the extension client. The future Pro threat-intelligence backend, curated YARA rules, and central policy server are proprietary.
+[MIT](LICENSE) for the extension client. The future Pro backend (AI proxy, central policy server, hosted features) is proprietary.
 
 ---
 
