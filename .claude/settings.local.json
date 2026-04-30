@@ -21,7 +21,24 @@
       "Bash(xargs grep *)",
       "Bash(grep -E \"\\\\.env$|secret|token|credentials\")",
       "WebFetch(domain:wilasky.github.io)",
-      "Bash(powershell -Command 'Get-ChildItem docs/screenshoots/*.png | ForEach-Object { Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\($_.FullName\\); Write-Host \"$\\($_.Name\\): $\\($img.Width\\) x $\\($img.Height\\)\"; $img.Dispose\\(\\) }')"
+      "Bash(powershell -Command 'Get-ChildItem docs/screenshoots/*.png | ForEach-Object { Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\($_.FullName\\); Write-Host \"$\\($_.Name\\): $\\($img.Width\\) x $\\($img.Height\\)\"; $img.Dispose\\(\\) }')",
+      "Bash(unzip -l browser-audit-2026-04-26.zip)",
+      "Bash(mkdir -p /tmp/cws-zip)",
+      "Bash(unzip -o browser-audit-2026-04-26.zip -d /tmp/cws-zip)",
+      "Read(//tmp/cws-zip/popup/**)",
+      "Bash(rm -f errors/errors.png browser-audit-2026-04-26.zip)",
+      "Bash(rm -rf errors)",
+      "Bash(ls errors *)",
+      "Bash(grep -rEn '\\\\.src\\\\s*=\\\\s*[\"'\\\\''`]https?://' extension/dist/)",
+      "Bash(npm test *)",
+      "Bash(unzip -p browser-audit-2026-04-28.zip popup/popup.js)",
+      "Bash(unzip -l browser-audit-2026-04-28.zip)",
+      "Bash(grep -E \"manifest|popup\\\\.js$\")",
+      "Bash(grep -oE '\\\\.\\(src|href\\)\\\\s*=\\\\s*[\"'\\\\''`]https?://[^\"'\\\\''`]+')",
+      "Bash(unzip -p browser-audit-2026-04-28.zip background/index.js)",
+      "Bash(grep -oE 'eval\\\\s*\\\\\\([^\\)]{0,40}\\\\\\)')",
+      "Bash(grep -oE '.{60}eval\\\\s*\\\\\\([^\\)]{0,60}.{30}')",
+      "Bash(unzip -p browser-audit-2026-04-28.zip manifest.json)"
     ]
   }
 }
