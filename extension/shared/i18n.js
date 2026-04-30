@@ -505,8 +505,18 @@ const TRANSLATIONS = {
 
   'settings.history':          { es: 'Histórico de score',          en: 'Score history' },
   'settings.history_empty':    { es: 'Sin auditorías todavía. Vuelve después de unas cuantas para ver evolución.', en: 'No audits yet. Come back after a few to see trends.' },
+  'settings.history_single':   { es: 'Primera auditoría — vuelve para ver la tendencia', en: 'First audit — come back to see the trend' },
   'settings.history_clear':    { es: 'Limpiar histórico',           en: 'Clear history' },
   'settings.history_confirm':  { es: '¿Borrar todo el histórico de auditorías?', en: 'Delete all audit history?' },
+  'settings.history_current':  { es: 'Actual',                       en: 'Current' },
+  'settings.history_best':     { es: 'Mejor',                        en: 'Best' },
+  'settings.history_worst':    { es: 'Peor',                         en: 'Worst' },
+  'settings.history_no_change':{ es: 'Sin cambios',                  en: 'No change' },
+  'settings.history_delta_up':   { es: '+{n} desde {date}',          en: '+{n} since {date}' },
+  'settings.history_delta_down': { es: '{n} desde {date}',           en: '{n} since {date}' },
+  'settings.history_count':    { es: 'Últimas {n} auditorías',       en: 'Last {n} audits' },
+  'settings.history_one_audit':{ es: 'Una sola auditoría',           en: 'One audit so far' },
+  'settings.import_invalid':   { es: 'Archivo no válido (sin versión)', en: 'Invalid file (missing version)' },
 
   'settings.audit_auto':       { es: 'Auditoría automática',        en: 'Auto audit' },
   'settings.audit_re':         { es: 'Re-auditar automáticamente',  en: 'Auto re-audit' },

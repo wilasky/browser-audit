@@ -1167,14 +1167,28 @@ main { padding: 0 0 16px; display: block; width: 100%; }
 }
 .api-key-input:focus { outline: none; border-color: #4f8ef7; }
 
-/* History line chart */
-.hist-chart-wrap { display: flex; flex-direction: column; gap: 6px; }
-.hist-svg { width: 100%; height: 80px; background: #0f0f15; border: 1px solid #1a1a1e; border-radius: 4px; }
-.hist-meta {
-  display: flex; gap: 8px; align-items: center; justify-content: space-between;
-  font-size: 11px; color: #888; flex-wrap: wrap;
+/* History line chart — area filled under the line, last point highlighted,
+   stats row with current/best/worst/delta */
+.hist-chart-wrap { display: flex; flex-direction: column; gap: 8px; }
+.hist-svg {
+  width: 100%; height: 100px; display: block;
+  background: linear-gradient(180deg, #0d0d12 0%, #0f0f15 100%);
+  border: 1px solid #1a1a1e; border-radius: 6px;
 }
-.hist-meta strong { color: #4f8ef7; font-size: 14px; }
+.hist-meta {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: center; font-size: 11px; color: #888;
+}
+.hist-meta-current,
+.hist-meta-extremes { display: flex; align-items: center; gap: 4px; }
+.hist-meta-label {
+  font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.06em;
+  font-weight: 600;
+}
+.hist-meta strong { font-size: 14px; font-weight: 700; }
+.hist-meta-extremes strong { font-size: 12px; }
+.hist-meta-sep { color: #333; }
+.hist-meta-count { margin-left: auto; font-size: 10px; }
 
 /* Settings UI controls */
 .settings-toggle {
