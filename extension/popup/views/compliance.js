@@ -420,7 +420,7 @@ function renderAdvancedSection(r, classify, cmps, syncs) {
       : '';
     tcfLine = `
       <div class="adv-line adv-line-stack">
-        <span class="adv-key">${esc(t('comp.sub_tcf'))} <small>(CMP ${r.tcf.cmpId ?? '?'})</small></span>
+        <span class="adv-key">${esc(t('comp.sub_tcf'))} <small>(CMP ${esc(String(r.tcf.cmpId ?? '?'))})</small></span>
         <div class="adv-val tcf-summary">
           <span class="tcf-pill">${esc(purposesText)}</span>
           ${vendorsText ? `<span class="settings-hint">${esc(vendorsText.replace(/^\s·\s/, ''))}</span>` : ''}

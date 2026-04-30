@@ -125,7 +125,7 @@ function renderRuntimeTechSheet(info) {
     rows.push([t('sd.runtime_sri'),
       info.sri ? t('sd.runtime_sri_yes', { hash: info.sri.slice(0, 24) + '…' }) : t('sd.runtime_sri_no')]);
   }
-  return `<table class="sd-rt-table">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join('')}</table>`;
+  return `<table class="sd-rt-table">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>`;
 }
 
 function renderRuntimeBehavior(script) {

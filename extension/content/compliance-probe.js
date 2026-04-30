@@ -142,8 +142,9 @@
               const vendorLI = data.vendor?.legitimateInterests ?? {};
               const purposeIdsAccepted = Object.entries(purposes)
                 .filter(([, v]) => v).map(([k]) => Number(k)).sort((a, b) => a - b);
+              const cmpIdNum = Number(data.cmpId);
               resolve({
-                cmpId: data.cmpId ?? null,
+                cmpId: Number.isFinite(cmpIdNum) ? cmpIdNum : null,
                 cmpVersion: data.cmpVersion ?? null,
                 gdprApplies: data.gdprApplies ?? null,
                 tcfPolicyVersion: data.tcfPolicyVersion ?? null,
