@@ -192,3 +192,125 @@ Pediste en su día y no entraron en v0.1:
 ---
 
 *Última actualización: 2026-04-25*
+
+---
+
+## 🛣️ Roadmap v0.3 (rama `feat/free-v03`) — extensiones futuras
+
+### GDPR — Fase B (requiere permiso `cookies` opcional)
+
+Fase A entregada en la rama (Phase A = purpose guessing, CMP detector, syncing detector,
+session/auth warning por nombre, third-party dependency score, export JSON). Estas
+features adicionales requieren el permiso `cookies` + `<all_urls>` host permission, lo
+que tras Blue Argon CWS va a mirar con lupa — pedirlas solo cuando estén justificadas
+en privacy-policy y UI:
+
+- **Auditoría completa de atributos por cookie:** Secure, HttpOnly, SameSite,
+  Expires/Max-Age, Domain, Path, Partitioned/CHIPS — vía `chrome.cookies.getAll({url})`.
+- **Detección de cookies peligrosas con criterios completos:** sin Secure, sin HttpOnly,
+  SameSite=None sin Secure, persistentes con expiración larga, cookies 3rd-party
+  publicitarias, cookies accesibles desde JS, nombres sospechosos sin atributos seguros.
+- **Tabla de duración / persistencia:** sesión / <30d / <6m / >6m / >1y con counts y riesgo.
+- **Session/auth warning real con `httpOnly` flag** — el aviso por nombre que entrega
+  Fase A pasa a aviso por atributo real ("cookie de sesión sin HttpOnly = potencial XSS").
+
+Implementación: pedir `cookies` como `optional_permissions` (no required) y disparar
+el prompt solo cuando el usuario activa "Análisis avanzado de cookies" en Settings.
+Justificación tipo: "Solo para inspeccionar atributos de seguridad de cookies de la
+pestaña activa. No sale del navegador."
+
+### GDPR — Fase C (UX refinada)
+
+- **Comparador "Scan before/after consent"** — dos botones: snapshot antes de aceptar
+  banner, snapshot después. Diff: cookies nuevas, dominios nuevos. Esto es valor GDPR
+  real ("¿el sitio carga cookies no necesarias antes del consentimiento?").
+- **Export CSV** además de JSON.
+- **Tabla rica con filtros y orden** por riesgo / dominio / propósito.
+
+### Deep Analysis (ScriptSpy → análisis estático) — mejoras
+
+Hoy `script-analyzer.js` ya cubre `eval`, `new Function()`, `setTimeout(string)`,
+`setInterval(string)`, `document.write`, `innerHTML =`, `atob`, `unescape`, `wasm`,
+`fromCharCode`, `crypto.subtle`, `RTCPeerConnection`, `clipboard`, `geolocation`,
+`serviceWorker.register`, cryptominer signatures, `sendBeacon`. Y el motor runtime
+(content scripts) ya monitoriza eventos en vivo. Pendientes que GPT identifica
+como gap real:
+
+1. **Sinks peligrosos en estático:** ya cubierto en su mayoría (eval/Function/innerHTML/
+   document.write/setTimeout-string/setInterval-string). Validar que las regex pillan
+   los casos edge (`window['eval']('...')`, `setTimeout.call(null, "...")`).
+2. **Network behavior estático:** detectar `fetch(`, `new XMLHttpRequest`, `new WebSocket`,
+   y sobre todo extraer los **endpoints** hardcoded en strings adyacentes a esas llamadas.
+   Pasa de "este script hace fetch" a "este script llama a `https://tracker.example/log`".
+3. **DOM manipulation sospechosa:** `document.createElement('iframe')`,
+   `document.createElement('script')`, `appendChild` sobre `<head>` o `<body>`,
+   modificación dinámica de `<form action>`. Patrón típico de loaders y malvertising.
+4. **Data exfiltration hints:** `document.cookie`, `localStorage.getItem(`,
+   `sessionStorage.getItem(`, combinado con un `fetch`/`sendBeacon` cercano. Marca
+   "lee cookie + envía a externo" como crítico.
+5. **Supply chain risk:**
+   - **Histórico de hashes** — chrome.storage.local guarda hash anterior por URL.
+     Cuando el script cambia: alerta "el código de este script cambió desde la última
+     vista". Util para detectar compromise tras release.
+   - **DB curada de hashes conocidos** — JSON con hashes de versiones de Google Tag
+     Manager, GA, Stripe.js, jQuery por versión, etc. Match → "este es GTM 4.2 oficial,
+     comportamiento conocido". Mismatch → analizar manualmente.
+   - **Diff visual entre visitas** del mismo URL — si una librería normalmente estable
+     cambia tras una visita, flag.
+
+Esto no requiere permisos nuevos (solo lectura de strings + storage). La DB curada
+puede crecer crowdsourced en un futuro repo aparte (o en `extension/data/known-hashes.json`).
+
+*Actualización 2026-04-29: GDPR Fase A entregada en rama feat/free-v03.*
+
+### GDPR Fase A.5 — TCF v2 consumer + cookie wall + vendor links (entregada)
+
+Implementado sin nuevos permisos:
+- Compliance probe llama `window.__tcfapi('getTCData', 2, cb)` con poll de 2.5s
+  para CMPs que registran el API asíncronamente. Devuelve cmpId, propósitos
+  aceptados, vendors aceptados, interés legítimo, tcString.
+- Cookie wall detector: 4 patrones regex multi-señal en el texto del banner
+  (precio/período en EUR/USD/GBP, "ad-free" multilenguaje, "pay or accept",
+  "subscribe + currency"). Requiere ≥2 señales para clasificar como
+  cookieWall, con 1 señal marca "posible". Heurístico, no garantía legal.
+- Vendor list link extractor: anchors con texto "partners/vendors/socios/
+  proveedores/colabor". Dedupe por href, limit 5.
+- Tabla de 15 propósitos TCF estándar bilingüe en `extension/data/tcf-purposes.json`.
+
+### Caso Marca.com (banner no reaparece tras reset)
+
+Reportado: en `marca.com` el reset de consentimiento no hace reaparecer el
+banner aunque sí elimina las cookies visibles. Causas probables:
+- CMP backend con cookies HttpOnly que `document.cookie = "X=; expires=..."`
+  no puede tocar (necesita `chrome.cookies.remove()` con permiso `cookies`).
+- Consent guardado en IndexedDB (algunas CMPs custom lo usan).
+- Cookies cross-domain con `Domain=.cmp-provider.com` distinto del dominio
+  de la página.
+
+Cubierto en GDPR Fase B (`chrome.cookies` opt-in). Mientras tanto, el reset
+hace lo que puede y deja entries HttpOnly intactas — el usuario ve "✓ Reset
+· 0 cookies, 2 ls, 0 ss" (solo storage limpiado) en estos casos.
+
+### Deep Analysis — source map detection (~30 min, próximo)
+
+Cuando un script termina con `//# sourceMappingURL=...` (comentario que
+los bundlers webpack/rollup/esbuild añaden), Lucent debe extraer esa URL,
+resolverla relativa al script y ofrecer un link "📄 Ver código original".
+Si el `.map` está accesible, el usuario obtiene código humano-legible con
+nombres de variables originales — el opuesto al `var ja, na, oa, ...` de
+Closure-minified.
+
+Implementación:
+1. Regex en script-analyzer al final del code: `/\/[\/\*][#@]\s*sourceMappingURL=([^\s\*\/]+)/`
+2. Resolver URL: `new URL(found, scriptUrl).href`
+3. Nuevo campo `analysis.sourceMapUrl` (string|null)
+4. En script-detail.js, si presente, render: botón
+   `📄 Source map disponible — Abrir →` que abre la URL en nueva pestaña
+5. No hace HEAD check de disponibilidad (requeriría host permission); si
+   el .map devuelve 404, el usuario lo verá en la pestaña.
+
+Casos cubiertos: jQuery oficial, React/Vue oficiales, bundles webpack de
+SaaS pequeñas que olvidan deshabilitar source maps en producción. Casos
+NO cubiertos: GTM, GA4, Stripe.js (no exponen .map a propósito). Aún
+así detectarlo cuando exista es útil — convierte una caja negra en
+código auditable.

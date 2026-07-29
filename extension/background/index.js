@@ -1,6 +1,7 @@
 import { runAudit } from './audit-engine.js';
 import { ingestEvent, getAggregatedData, resetTab, enrichWithThreatIntel } from './event-aggregator.js';
 import { getPlanState, devTogglePro, resetPlan } from './plan-manager.js';
+import consentMarkersFile from '../data/consent-markers.json';
 
 const AUDIT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
@@ -57,8 +58,14 @@ async function injectScriptSpy(tabId) {
 
 // Re-apply persisted privacy fixes — Chrome can lose extension ownership
 // when the SW goes idle. This restores the user's intended hardening.
+//
+// Skipped when hardeningEnabled === false: the user has paused the hardening
+// from the Health header. The appliedFixes list is preserved so flipping
+// the switch back ON restores the previous state.
 async function reapplyPersistedFixes() {
-  const stored = await chrome.storage.local.get('appliedFixes');
+  const stored = await chrome.storage.local.get(['appliedFixes', 'hardeningEnabled']);
+  if (stored.hardeningEnabled === false) { return; }
+
   const applied = (stored.appliedFixes ?? []).filter((a) =>
     typeof a === 'object' && a.api && a.value !== undefined && a.value !== null
   );
@@ -74,6 +81,23 @@ async function reapplyPersistedFixes() {
           resolve();
         });
       });
+    } catch { /* skip silently */ }
+  }
+}
+
+// Clear all persisted fixes from Chrome but keep them in storage so the user
+// can flip the toggle back ON and recover the same state.
+async function pauseHardening() {
+  const stored = await chrome.storage.local.get('appliedFixes');
+  const applied = (stored.appliedFixes ?? []).filter((a) =>
+    typeof a === 'object' && a.api
+  );
+  for (const fix of applied) {
+    const [namespace, key] = fix.api.split('.');
+    const setting = chrome.privacy?.[namespace]?.[key];
+    if (!setting) { continue; }
+    try {
+      await new Promise((resolve) => setting.clear({}, () => { void chrome.runtime.lastError; resolve(); }));
     } catch { /* skip silently */ }
   }
 }
@@ -130,6 +154,50 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === 'get_script_runtime_info') {
+    const { tabId, url } = msg;
+    if (!tabId || !url) {
+      sendResponse({ ok: false, reason: 'missing tabId/url' });
+      return true;
+    }
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: (scriptUrl) => {
+        const entries = performance.getEntriesByType('resource').filter((e) => e.name === scriptUrl);
+        const entry = entries[entries.length - 1];
+        // Find a <script> element pointing at this URL. The src in the DOM
+        // may be relative or absolute; we accept any element whose resolved
+        // src matches.
+        let scriptEl = null;
+        for (const el of document.querySelectorAll('script[src]')) {
+          if (el.src === scriptUrl) { scriptEl = el; break; }
+        }
+        return {
+          timing: entry ? {
+            duration: Math.round(entry.duration),
+            transferSize: entry.transferSize ?? null,
+            encodedBodySize: entry.encodedBodySize ?? null,
+            decodedBodySize: entry.decodedBodySize ?? null,
+            deliveryType: entry.deliveryType ?? null,
+            initiatorType: entry.initiatorType ?? null,
+            nextHopProtocol: entry.nextHopProtocol ?? null,
+            renderBlockingStatus: entry.renderBlockingStatus ?? null,
+          } : null,
+          sri: scriptEl?.integrity || null,
+          async: scriptEl ? !!scriptEl.async : null,
+          defer: scriptEl ? !!scriptEl.defer : null,
+          type: scriptEl?.type || null,
+          crossOrigin: scriptEl?.crossOrigin || null,
+        };
+      },
+      args: [url],
+    })
+      .then((results) => sendResponse({ ok: true, info: results?.[0]?.result ?? null }))
+      .catch((err) => sendResponse({ ok: false, reason: err.message }));
+    return true;
+  }
+
   if (msg.type === 'fetch_script_source') {
     const url = msg.url;
     if (!url) { sendResponse({ ok: false, reason: 'No URL' }); return; }
@@ -150,10 +218,94 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             return;
           }
           const text = await res.text();
+          if (!text) {
+            // 204 No Content, or some CDNs return 200 with empty body when
+            // they don't want extensions reading them. Raise it specifically
+            // so the popup can offer the runtime fallback view.
+            sendResponse({ ok: false, reason: 'Empty body' });
+            return;
+          }
           sendResponse({ ok: true, text, contentType: res.headers.get('content-type') });
         })
         .catch((err) => sendResponse({ ok: false, reason: err.message }));
     });
+    return true;
+  }
+
+  if (msg.type === 'reset_consent') {
+    const { tabId } = msg;
+    if (!tabId) { sendResponse({ ok: false, reason: 'no tab' }); return true; }
+
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: (markers) => {
+        const lower = markers.map((m) => m.toLowerCase());
+        const matches = (key) => {
+          const k = key.toLowerCase();
+          return lower.some((m) => k.includes(m));
+        };
+        let lsRemoved = 0, ssRemoved = 0, ckRemoved = 0;
+
+        try {
+          const keys = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && matches(k)) { keys.push(k); }
+          }
+          keys.forEach((k) => { localStorage.removeItem(k); lsRemoved++; });
+        } catch { /* sandboxed */ }
+
+        try {
+          const keys = [];
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const k = sessionStorage.key(i);
+            if (k && matches(k)) { keys.push(k); }
+          }
+          keys.forEach((k) => { sessionStorage.removeItem(k); ssRemoved++; });
+        } catch { /* sandboxed */ }
+
+        try {
+          const cookies = document.cookie.split(';').map((c) => c.trim()).filter(Boolean);
+          for (const c of cookies) {
+            const name = c.split('=')[0]?.trim();
+            if (!name || !matches(name)) { continue; }
+            const past = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            const path = 'path=/';
+            const host = location.hostname;
+            // Walk every ascending sub-host so compound TLDs (.co.uk,
+            // .com.au, .gov.es) are covered. parts.slice(-2) would yield
+            // "co.uk" on www.amazon.co.uk and miss "amazon.co.uk".
+            const parts = host.split('.');
+            const domains = new Set();
+            for (let i = 0; i < parts.length - 1; i++) {
+              const d = parts.slice(i).join('.');
+              domains.add(d);
+              domains.add('.' + d);
+            }
+            // Without explicit domain (covers cookies set without Domain attr)
+            document.cookie = `${name}=; ${past}; ${path}`;
+            domains.forEach((d) => {
+              document.cookie = `${name}=; ${past}; ${path}; domain=${d}`;
+            });
+            ckRemoved++;
+          }
+        } catch { /* nothing */ }
+
+        return { lsRemoved, ssRemoved, ckRemoved };
+      },
+      args: [consentMarkersFile.markers],
+    })
+      .then((results) => {
+        const stats = results?.[0]?.result ?? { lsRemoved: 0, ssRemoved: 0, ckRemoved: 0 };
+        // Reload so the consent banner reappears with a clean slate. Plain
+        // reload — the bypassCache flag is MV2-era and not a documented
+        // MV3 option for chrome.tabs.reload.
+        chrome.tabs.reload(tabId)
+          .then(() => sendResponse({ ok: true, stats }))
+          .catch(() => sendResponse({ ok: true, stats }));
+      })
+      .catch((err) => sendResponse({ ok: false, reason: err.message }));
     return true;
   }
 
@@ -261,7 +413,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (idx >= 0) { existing[idx] = { api: f.api, value: f.value }; }
         else { existing.push({ api: f.api, value: f.value }); }
       }
-      await chrome.storage.local.set({ appliedFixes: existing });
+      // Applying anything implicitly turns hardening back on — otherwise the
+      // alarm would clear this fix again at the next 30-min tick.
+      await chrome.storage.local.set({ appliedFixes: existing, hardeningEnabled: true });
       sendResponse({ ok: errors.length === 0, applied, errors });
     });
     return true;
@@ -302,7 +456,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           } else {
             applied.push({ api, value });
           }
-          await chrome.storage.local.set({ appliedFixes: applied });
+          await chrome.storage.local.set({ appliedFixes: applied, hardeningEnabled: true });
           sendResponse({ ok: true, verified: true });
         } else {
           const reason = details.levelOfControl === 'controlled_by_other_extensions'
@@ -312,6 +466,54 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             : `Cambio aplicado pero el valor sigue siendo "${currentValue}". El navegador puede no soportar este valor.`;
           sendResponse({ ok: false, reason });
         }
+      });
+    });
+    return true;
+  }
+
+  if (msg.type === 'undo_individual_fix') {
+    const { api } = msg;
+    if (!api) { sendResponse({ ok: false, reason: 'missing api' }); return true; }
+    const [namespace, key] = api.split('.');
+    const setting = chrome.privacy?.[namespace]?.[key];
+    if (!setting) { sendResponse({ ok: false, reason: 'API not available' }); return true; }
+    setting.clear({}, async () => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ ok: false, reason: chrome.runtime.lastError.message });
+        return;
+      }
+      // Drop just this entry from appliedFixes so the 30-min alarm does not
+      // re-apply it; the rest of the hardening stays as it was.
+      const stored = await chrome.storage.local.get('appliedFixes');
+      const next = (stored.appliedFixes ?? []).filter((a) =>
+        typeof a === 'object' ? a.api !== api : a !== api
+      );
+      await chrome.storage.local.set({ appliedFixes: next });
+      sendResponse({ ok: true });
+    });
+    return true;
+  }
+
+  if (msg.type === 'set_hardening_enabled') {
+    const enabled = !!msg.enabled;
+    (async () => {
+      if (enabled) {
+        await chrome.storage.local.set({ hardeningEnabled: true });
+        await reapplyPersistedFixes();
+      } else {
+        await pauseHardening();
+        await chrome.storage.local.set({ hardeningEnabled: false });
+      }
+      sendResponse({ ok: true, enabled });
+    })();
+    return true;
+  }
+
+  if (msg.type === 'get_hardening_state') {
+    chrome.storage.local.get(['hardeningEnabled', 'appliedFixes']).then((s) => {
+      sendResponse({
+        enabled: s.hardeningEnabled !== false, // default true
+        count: (s.appliedFixes ?? []).length,
       });
     });
     return true;

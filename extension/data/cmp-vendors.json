@@ -1,0 +1,71 @@
+{
+  "version": "1.0.0",
+  "description": "Known Consent Management Platforms (CMPs). Detected by matching script src or iframe src against these domain fragments. The page is considered to use a CMP if any script/iframe URL matches.",
+  "vendors": [
+    {
+      "id": "onetrust",
+      "name": "OneTrust",
+      "domains": ["cdn.cookielaw.org", "optanon.blob.core.windows.net", "cookielaw.org"]
+    },
+    {
+      "id": "didomi",
+      "name": "Didomi",
+      "domains": ["sdk.privacy-center.org", "didomi.io", "api.privacy-center.org"]
+    },
+    {
+      "id": "cookiebot",
+      "name": "Cookiebot (Cybot)",
+      "domains": ["consent.cookiebot.com", "consentcdn.cookiebot.com"]
+    },
+    {
+      "id": "quantcast",
+      "name": "Quantcast Choice",
+      "domains": ["quantcast.mgr.consensu.org", "choicescdn.com", "cmp.quantcast.com"]
+    },
+    {
+      "id": "sourcepoint",
+      "name": "Sourcepoint",
+      "domains": ["cmp.sp-prod.net", "sourcepoint.com", "sourcepointcmp.com"]
+    },
+    {
+      "id": "funding-choices",
+      "name": "Google Funding Choices",
+      "domains": ["fundingchoicesmessages.google.com", "fundingchoices.google.com"]
+    },
+    {
+      "id": "axeptio",
+      "name": "Axeptio",
+      "domains": ["static.axept.io", "axeptio.eu", "client.axept.io"]
+    },
+    {
+      "id": "usercentrics",
+      "name": "Usercentrics",
+      "domains": ["app.usercentrics.eu", "api.usercentrics.eu", "consent-api.service.consent.eu"]
+    },
+    {
+      "id": "iubenda",
+      "name": "iubenda",
+      "domains": ["cdn.iubenda.com", "cs.iubenda.com"]
+    },
+    {
+      "id": "trustarc",
+      "name": "TrustArc",
+      "domains": ["consent.trustarc.com", "trustarc.com", "consent-pref.trustarc.com"]
+    },
+    {
+      "id": "cookieyes",
+      "name": "CookieYes",
+      "domains": ["cdn-cookieyes.com", "cookieyes.com"]
+    },
+    {
+      "id": "complianz",
+      "name": "Complianz",
+      "domains": ["complianz.io"]
+    },
+    {
+      "id": "termly",
+      "name": "Termly",
+      "domains": ["app.termly.io", "termly.io"]
+    }
+  ]
+}

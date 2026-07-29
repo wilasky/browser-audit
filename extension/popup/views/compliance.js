@@ -1,6 +1,76 @@
 import { esc } from '../../shared/sanitize.js';
 import { isAIConfigured, summarizePrivacyPolicy } from '../../shared/ai-client.js';
-import { t } from '../../shared/i18n.js';
+import { t, localized } from '../../shared/i18n.js';
+import cookiePurposes from '../../data/cookie-purposes.json';
+import cmpVendors from '../../data/cmp-vendors.json';
+import syncVendors from '../../data/sync-vendors.json';
+import tcfPurposes from '../../data/tcf-purposes.json';
+
+// Pre-compile the cookie-purpose regexes once per popup load.
+const COMPILED_PURPOSES = cookiePurposes.patterns.map((p) => ({
+  ...p,
+  rx: new RegExp(p.regex, 'i'),
+}));
+
+function classifyCookie(name) {
+  for (const p of COMPILED_PURPOSES) {
+    if (p.rx.test(name)) {
+      return { purpose: p.purpose, vendor: p.vendor ?? null, sensitive: !!p.sensitive };
+    }
+  }
+  return { purpose: 'unknown', vendor: null, sensitive: false };
+}
+
+function classifyAllCookies(cookies) {
+  const groups = {};
+  const sensitive = [];
+  for (const c of cookies) {
+    const cls = classifyCookie(c.name);
+    const key = cls.purpose;
+    if (!groups[key]) { groups[key] = []; }
+    groups[key].push({ name: c.name, vendor: cls.vendor });
+    if (cls.sensitive) {
+      sensitive.push({ name: c.name, purpose: cls.purpose });
+    }
+  }
+  return { groups, sensitive };
+}
+
+// Match script src + iframe src against a host fragment list.
+function hostMatches(host, fragments) {
+  if (!host) { return false; }
+  return fragments.some((f) => host === f || host.endsWith(`.${f}`));
+}
+
+function detectCMPs(thirdPartyScripts, iframes) {
+  const hits = [];
+  const allHosts = [
+    ...thirdPartyScripts,
+    ...(iframes ?? []).map((i) => i.host).filter(Boolean),
+  ];
+  for (const cmp of cmpVendors.vendors) {
+    if (allHosts.some((h) => hostMatches(h, cmp.domains))) {
+      hits.push({ id: cmp.id, name: cmp.name });
+    }
+  }
+  return hits;
+}
+
+function detectSyncVendors(thirdPartyScripts) {
+  const hits = [];
+  for (const v of syncVendors.vendors) {
+    if (thirdPartyScripts.some((h) => hostMatches(h, [v.domain]))) {
+      hits.push({ name: v.name, type: v.type, domain: v.domain });
+    }
+  }
+  return hits;
+}
+
+function dependencyLevel(thirdPartyCount) {
+  if (thirdPartyCount < 5)  { return { key: 'low',    color: '#22c55e' }; }
+  if (thirdPartyCount < 15) { return { key: 'medium', color: '#f59e0b' }; }
+  return { key: 'high', color: '#ef4444' };
+}
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -70,9 +140,19 @@ function calcGdprScore(r) {
     issues.push({ s: 'pass', t: t('compi.policy_linked', { n: r.policyLinks.length }) });
   }
 
-  if (r.thirdPartyScripts.length > 5) {
-    issues.push({ s: 'warn', t: t('compi.many_third_party', { n: r.thirdPartyScripts.length }) });
-    pts -= 15;
+  // Third-party exposure scales with dependencyLevel (low/med/high). Previously
+  // a flat -15 above 5 domains, which made 6 and 60 score the same.
+  // Now: 0-4 → 0pts, 5-14 (medium) → -15pts, 15+ (high) → -30pts.
+  const tpCount = r.thirdPartyScripts.length;
+  if (tpCount > 0) {
+    const lvl = dependencyLevel(tpCount);
+    if (lvl.key === 'high') {
+      issues.push({ s: 'fail', t: t('compi.many_third_party', { n: tpCount }) });
+      pts -= 30;
+    } else if (lvl.key === 'medium') {
+      issues.push({ s: 'warn', t: t('compi.many_third_party', { n: tpCount }) });
+      pts -= 15;
+    }
   }
 
   for (const form of r.forms) {
@@ -252,11 +332,310 @@ function renderSection(name, scoreData) {
     </section>`;
 }
 
+// Compact "Advanced analysis" section that groups the four Phase A insights
+// (purpose chips, CMP, sync, dependency) into one collapsible block. Keeps
+// the popup short — each subline is one row, the whole section folds via
+// <details>.
+function renderAdvancedSection(r, classify, cmps, syncs) {
+  const labels = cookiePurposes.purposeLabels;
+  const order = ['analytics', 'ads', 'tracking', 'session', 'auth', 'security', 'consent', 'ux', 'unknown'];
+
+  // Classify line
+  let classifyLine = '';
+  if (r.cookies.count === 0) {
+    classifyLine = `<div class="adv-line"><span class="adv-key">${esc(t('comp.sub_classify'))}</span><span class="settings-hint">${esc(t('comp.classify_empty'))}</span></div>`;
+  } else {
+    const chips = order
+      .filter((p) => classify.groups[p])
+      .map((p) => {
+        const items = classify.groups[p];
+        const label = localized(labels[p]);
+        const vendors = [...new Set(items.map((i) => i.vendor).filter(Boolean))];
+        const vendorTip = vendors.length ? ` · ${vendors.join(', ')}` : '';
+        return `<span class="purpose-chip purpose-${p}" title="${esc(label)}${esc(vendorTip)}">${esc(label)} <strong>${items.length}</strong></span>`;
+      }).join('');
+    classifyLine = `
+      <div class="adv-line adv-line-stack">
+        <span class="adv-key">${esc(t('comp.sub_classify'))}</span>
+        <div class="purpose-chips">${chips}</div>
+      </div>`;
+  }
+
+  // CMP line
+  const cmpValue = cmps.length === 0
+    ? `<span class="settings-hint">${esc(t('comp.cmp_none'))}</span>`
+    : cmps.map((c) => `<span class="cmp-chip">${esc(c.name)}</span>`).join(' ');
+  const cmpLine = `<div class="adv-line"><span class="adv-key">${esc(t('comp.sub_cmp'))}</span><div class="adv-val">${cmpValue}</div></div>`;
+
+  // Sync line
+  let syncLine;
+  if (syncs.length === 0) {
+    syncLine = `<div class="adv-line"><span class="adv-key">${esc(t('comp.sub_sync'))}</span><span class="settings-hint">${esc(t('comp.sync_none'))}</span></div>`;
+  } else {
+    const list = syncs.map((s) =>
+      `<span class="sync-chip" title="${esc(s.domain)}">${esc(s.name)}<small> · ${esc(s.type)}</small></span>`
+    ).join('');
+    syncLine = `
+      <div class="adv-line adv-line-stack">
+        <span class="adv-key">${esc(t('comp.sub_sync'))} <small>(${syncs.length})</small></span>
+        <div class="sync-chips">${list}</div>
+      </div>`;
+  }
+
+  // Dependency line
+  const tpCount = (r.thirdPartyScripts ?? []).length;
+  const lvl = dependencyLevel(tpCount);
+  const lvlLabel = t(`comp.dep_${lvl.key}`);
+  const depLine = `
+    <div class="adv-line">
+      <span class="adv-key">${esc(t('comp.sub_dependency'))}</span>
+      <div class="adv-val">
+        <span class="dep-pill" style="background:${lvl.color}20;color:${lvl.color};border:1px solid ${lvl.color}80">${esc(lvlLabel)}</span>
+        <span class="settings-hint">${tpCount} dom.</span>
+      </div>
+    </div>`;
+
+  // TCF v2 line — only shown if the page exposes window.__tcfapi
+  let tcfLine = '';
+  if (r.tcf) {
+    const purposesText = t('comp.tcf_purposes', {
+      n: r.tcf.purposesAccepted, total: r.tcf.purposesTotal,
+    });
+    const vendorsText = r.tcf.vendorsTotal > 0
+      ? ` · ${t('comp.tcf_vendors', { n: r.tcf.vendorsAccepted, total: r.tcf.vendorsTotal })}`
+      : '';
+    const liText = r.tcf.legitimateInterestsTotal > 0
+      ? ` · ${t('comp.tcf_li', { n: r.tcf.legitimateInterestsTotal })}`
+      : '';
+    // Render the accepted purpose list as a collapsible details block
+    const acceptedDetail = r.tcf.purposeIdsAccepted.length > 0
+      ? `<details class="tcf-purposes-detail">
+          <summary class="settings-hint">${esc(t('comp.tcf_purposes_detail'))}</summary>
+          <ul class="tcf-purpose-list">
+            ${r.tcf.purposeIdsAccepted.map((id) => `
+              <li><code>P${id}</code> ${esc(localized(tcfPurposes.purposes[id]) || '?')}</li>
+            `).join('')}
+          </ul>
+        </details>`
+      : '';
+    tcfLine = `
+      <div class="adv-line adv-line-stack">
+        <span class="adv-key">${esc(t('comp.sub_tcf'))} <small>(CMP ${esc(String(r.tcf.cmpId ?? '?'))})</small></span>
+        <div class="adv-val tcf-summary">
+          <span class="tcf-pill">${esc(purposesText)}</span>
+          ${vendorsText ? `<span class="settings-hint">${esc(vendorsText.replace(/^\s·\s/, ''))}</span>` : ''}
+          ${liText ? `<span class="settings-hint">${esc(liText.replace(/^\s·\s/, ''))}</span>` : ''}
+        </div>
+        ${acceptedDetail}
+      </div>`;
+  }
+
+  // Vendor list links — page advertised a "View partners" / "Lista de socios"
+  let vendorLinksLine = '';
+  if (r.vendorListLinks?.length > 0) {
+    const links = r.vendorListLinks.map((l) =>
+      `<a class="vendor-link" data-href="${esc(l.href)}" title="${esc(l.href)}">${esc(l.text)}</a>`
+    ).join(' · ');
+    vendorLinksLine = `
+      <div class="adv-line adv-line-stack">
+        <span class="adv-key">${esc(t('comp.sub_vendor_links'))}</span>
+        <div class="adv-val">${links}</div>
+      </div>`;
+  }
+
+  // Cookie wall is rendered separately in renderReport() — outside this function.
+
+  // Consent banner reset — visible only if the probe detected an accepted
+  // consent (cookie or storage marker). One-click clears CMP markers and
+  // reloads so the banner reappears.
+  const consentBanner = r.consentAccepted ? `
+    <div class="adv-consent-banner">
+      <div class="adv-consent-text">${esc(t('comp.consent_status'))}</div>
+      <button id="btn-reset-consent" class="btn-reset-consent" title="${esc(t('comp.reset_consent_tip'))}">${esc(t('comp.reset_consent'))}</button>
+    </div>` : '';
+
+  return `
+    <details class="comp-section comp-advanced">
+      <summary class="comp-section-title">${esc(t('comp.section_advanced'))}</summary>
+      <div class="adv-grid">
+        ${consentBanner}
+        ${classifyLine}
+        ${cmpLine}
+        ${tcfLine}
+        ${syncLine}
+        ${depLine}
+        ${vendorLinksLine}
+      </div>
+    </details>`;
+}
+
+// Compact bilingual glossary covering every term used in the GDPR view.
+// Surfaced as a collapsible details so it does not push the report down.
+function getLegendItems() {
+  const isEs = t('btn.save') === 'Guardar';
+  if (isEs) {
+    return [
+      { section: 'Marcos y CMPs', items: [
+        ['TCF (IAB Europe)', 'Marco de Transparencia y Consentimiento de IAB Europe — estándar de UE'],
+        ['CMP', 'Consent Management Platform — software del banner (OneTrust, Didomi, Cookiebot, Sourcepoint…)'],
+        ['CMP ID', 'Identificador numérico de la CMP en el registro de IAB'],
+        ['TCString', 'Cadena codificada que recoge tus elecciones TCF (compactada en una cookie)'],
+        ['GDPR Applies', 'Indica si la página considera que el RGPD aplica a tu sesión (geolocalización IP)'],
+      ]},
+      { section: 'Propósitos y vendors', items: [
+        ['Propósito', 'Una de las 15 finalidades estándar TCF (P1–P15) que la web declara'],
+        ['Vendor', 'Cada uno de los partners publicitarios/análisis de la Global Vendor List'],
+        ['Interés legítimo', 'Base legal alternativa al consentimiento — no requiere aceptación expresa'],
+      ]},
+      { section: 'Cookies', items: [
+        ['1st party / propias', 'Cookies del mismo dominio que la web que visitas'],
+        ['3rd party / terceros', 'Cookies de otros dominios — típicas de tracking entre sitios'],
+        ['Cookie sensible', 'Nombre típico de sesión/auth/CSRF (sid, jwt, token, …) — debería tener HttpOnly'],
+        ['Cookie syncing', 'Emparejar IDs entre redes publicitarias para identificarte sin cookies propias'],
+        ['Cookie wall', 'Esquema "acepta o paga" — consentimiento dudoso bajo EDPB Guidelines 03/2022'],
+      ]},
+      { section: 'Cabeceras y seguridad', items: [
+        ['HSTS', 'Strict-Transport-Security — fuerza HTTPS, evita downgrade'],
+        ['CSP', 'Content-Security-Policy — bloquea scripts/recursos no autorizados'],
+        ['XFO', 'X-Frame-Options — previene clickjacking'],
+        ['SRI', 'Subresource Integrity — verifica que el código externo no fue manipulado'],
+        ['CSRF token', 'Token oculto en formularios que evita peticiones forjadas'],
+      ]},
+      { section: 'Otros', items: [
+        ['DMP', 'Data Management Platform (BlueKai, Adobe Audience Manager…) — agrega perfiles'],
+        ['Mixed content', 'Recursos http:// servidos en una página https://'],
+        ['Service Worker', 'Script persistente que actúa como proxy entre la página y la red'],
+      ]},
+    ];
+  }
+  return [
+    { section: 'Frameworks & CMPs', items: [
+      ['TCF (IAB Europe)', 'Transparency and Consent Framework — EU standard'],
+      ['CMP', 'Consent Management Platform — the banner software (OneTrust, Didomi, Cookiebot, Sourcepoint…)'],
+      ['CMP ID', 'Numeric ID of the CMP in the IAB registry'],
+      ['TCString', 'Encoded string that captures your TCF choices (compacted into a cookie)'],
+      ['GDPR Applies', 'Whether the page considers GDPR applies to your session (IP geolocation)'],
+    ]},
+    { section: 'Purposes & vendors', items: [
+      ['Purpose', 'One of the 15 standard TCF purposes (P1–P15) declared by the site'],
+      ['Vendor', 'Each advertising/analytics partner from the Global Vendor List'],
+      ['Legitimate interest', 'Alternative legal basis to consent — no explicit acceptance required'],
+    ]},
+    { section: 'Cookies', items: [
+      ['1st party', 'Cookies from the same domain as the page you visit'],
+      ['3rd party', 'Cookies from other domains — typical of cross-site tracking'],
+      ['Sensitive cookie', 'Typical session/auth/CSRF name (sid, jwt, token, …) — should have HttpOnly'],
+      ['Cookie syncing', 'Pairing IDs across ad networks to identify you without first-party cookies'],
+      ['Cookie wall', '"Accept or pay" scheme — questionable consent under EDPB Guidelines 03/2022'],
+    ]},
+    { section: 'Headers & security', items: [
+      ['HSTS', 'Strict-Transport-Security — forces HTTPS, prevents downgrade'],
+      ['CSP', 'Content-Security-Policy — blocks unauthorized scripts/resources'],
+      ['XFO', 'X-Frame-Options — prevents clickjacking'],
+      ['SRI', 'Subresource Integrity — verifies external code was not tampered with'],
+      ['CSRF token', 'Hidden form token that prevents forged requests'],
+    ]},
+    { section: 'Other', items: [
+      ['DMP', 'Data Management Platform (BlueKai, Adobe Audience Manager…) — aggregates profiles'],
+      ['Mixed content', 'http:// resources served on an https:// page'],
+      ['Service Worker', 'Persistent script that acts as a proxy between the page and the network'],
+    ]},
+  ];
+}
+
+function renderLegend() {
+  const sections = getLegendItems().map(({ section, items }) => {
+    const rows = items.map(([term, def]) =>
+      `<tr><td class="leg-term">${esc(term)}</td><td class="leg-def">${esc(def)}</td></tr>`
+    ).join('');
+    return `<tr class="leg-section-row"><td colspan="2" class="leg-section">${esc(section)}</td></tr>${rows}`;
+  }).join('');
+  return `
+    <details class="comp-legend">
+      <summary class="legend-toggle">${esc(t('comp.legend'))}</summary>
+      <table class="legend-table">${sections}</table>
+    </details>`;
+}
+
+// Stand-alone alert for cookie wall pages, rendered above the Advanced
+// section so it is the first thing the user sees after the overview.
+function renderCookieWallAlert(banners) {
+  if (!banners?.length) { return ''; }
+  const maxSignals = Math.max(...banners.map((b) => b.cookieWallSignals ?? 0));
+  if (maxSignals === 0) { return ''; }
+  const isWall = banners.some((b) => b.cookieWall);
+  const cls = isWall ? 'comp-wall comp-wall-strong' : 'comp-wall';
+  const msg = isWall ? t('comp.cookie_wall_warn') : t('comp.cookie_wall_possible');
+  return `<div class="${cls}">${msg}</div>`;
+}
+
+function renderSensitiveSection(sensitive) {
+  if (sensitive.length === 0) { return ''; }
+  const list = sensitive.map((s) =>
+    `<li><code>${esc(s.name)}</code> <span class="settings-hint">— ${esc(localized(cookiePurposes.purposeLabels[s.purpose]))}</span></li>`
+  ).join('');
+  return `
+    <section class="comp-section comp-section-warn">
+      <h3 class="comp-section-title">${esc(t('comp.section_sensitive'))}</h3>
+      <p class="settings-hint">${t('comp.sensitive_warn')}</p>
+      <ul class="sensitive-list">${list}</ul>
+    </section>`;
+}
+
+function buildExportPayload(r, classify, cmps, syncs) {
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    tool: 'Lucent — Browser Audit',
+    page: { url: r.url, host: r.host, isHttps: r.isHttps },
+    cookies: {
+      count: r.cookies.count,
+      consentAccepted: r.consentAccepted,
+      classification: classify.groups,
+      sensitive: classify.sensitive,
+    },
+    cmp: cmps,
+    tcf: r.tcf ?? null,
+    vendorListLinks: r.vendorListLinks ?? [],
+    cookieWall: r.banners?.some((b) => b.cookieWall) ?? false,
+    cookieWallSignals: Math.max(0, ...(r.banners ?? []).map((b) => b.cookieWallSignals ?? 0)),
+    syncing: syncs,
+    thirdParty: {
+      scripts: r.thirdPartyScripts,
+      scriptsWithoutSRI: r.scriptsWithoutSRI,
+      totalThirdPartyScripts: r.totalThirdPartyScripts,
+      iframes: r.iframes ?? [],
+    },
+    headers: r.headers,
+    forms: r.forms,
+    storage: r.storage,
+    libs: r.libs,
+    serviceWorker: r.serviceWorker,
+    inlineHandlers: r.inlineHandlers,
+  };
+}
+
+function downloadJSON(filename, payload) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function renderReport(r) {
   const cookieScore = calcCookieScore(r);
   const gdprScore = calcGdprScore(r);
   const secScore = calcSecurityScore(r);
   const pentestScore = calcPentestScore(r);
+
+  // Phase A enrichments (no extra permissions): purpose classification,
+  // CMP detection, sync vendor detection, dependency level, sensitive flag.
+  const classify = classifyAllCookies(r.cookies?.details ?? []);
+  const cmps = detectCMPs(r.thirdPartyScripts ?? [], r.iframes ?? []);
+  const syncs = detectSyncVendors(r.thirdPartyScripts ?? []);
 
   const total = Math.round((cookieScore.score + gdprScore.score + secScore.score + pentestScore.score) / 4);
   const totalColor = total >= 80 ? '#22c55e' : total >= 60 ? '#f59e0b' : '#ef4444';
@@ -283,6 +662,10 @@ function renderReport(r) {
         🖼 ${(r.iframes ?? []).length} iframes
       </div>
     </div>
+
+    ${renderCookieWallAlert(r.banners)}
+    ${renderAdvancedSection(r, classify, cmps, syncs)}
+    ${renderSensitiveSection(classify.sensitive)}
 
     ${renderSection(t('comp.section_cookies'), cookieScore)}
     ${renderSection(t('comp.section_gdpr'), gdprScore)}
@@ -366,6 +749,8 @@ function renderReport(r) {
         </div>
       </details>
     ` : ''}
+
+    ${renderLegend()}
   `;
 }
 
@@ -383,6 +768,7 @@ export async function renderCompliance(container) {
         <button id="btn-comp-ai" class="btn-secondary btn-ai" title="${aiReady ? esc(t('comp.ai_summarize')) : esc(t('comp.ai_no_config'))}">
           ${esc(t('comp.ai_summarize'))}
         </button>
+        <button id="btn-comp-export" class="btn-secondary" disabled>${esc(t('comp.export_btn'))}</button>
       </div>
       <div id="comp-result">
         <p class="loading">${t('comp.intro')}</p>
@@ -453,6 +839,8 @@ export async function renderCompliance(container) {
     }
   });
 
+  let lastReport = null;
+
   container.querySelector('#btn-comp-run').addEventListener('click', async () => {
     if (!tabId) { return; }
     const btn = container.querySelector('#btn-comp-run');
@@ -478,6 +866,52 @@ export async function renderCompliance(container) {
       return;
     }
 
+    lastReport = res.result;
+    container.querySelector('#btn-comp-export').disabled = false;
     result.innerHTML = renderReport(res.result);
+  });
+
+  container.querySelector('#btn-comp-export').addEventListener('click', () => {
+    if (!lastReport) { return; }
+    const classify = classifyAllCookies(lastReport.cookies?.details ?? []);
+    const cmps = detectCMPs(lastReport.thirdPartyScripts ?? [], lastReport.iframes ?? []);
+    const syncs = detectSyncVendors(lastReport.thirdPartyScripts ?? []);
+    const payload = buildExportPayload(lastReport, classify, cmps, syncs);
+    const date = new Date().toISOString().slice(0, 10);
+    const slug = (lastReport.host || 'page').replace(/[^a-z0-9.-]/gi, '_');
+    downloadJSON(`${t('comp.export_filename')}-${slug}-${date}.json`, payload);
+  });
+
+  // Vendor list links (delegated — anchors live inside renderReport output)
+  container.addEventListener('click', (ev) => {
+    const a = ev.target.closest('.vendor-link');
+    if (!a) { return; }
+    ev.preventDefault();
+    const href = a.dataset.href;
+    if (href) { chrome.tabs.create({ url: href }); }
+  });
+
+  // Reset consent — wired via delegation because the button is rendered
+  // inside renderReport() output (re-mounted after each scan).
+  container.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('#btn-reset-consent');
+    if (!btn || !tabId) { return; }
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = t('comp.reset_consent_doing');
+    const res = await sendMsg({ type: 'reset_consent', tabId });
+    if (res?.ok) {
+      const s = res.stats ?? {};
+      btn.textContent = t('comp.reset_consent_done', {
+        ck: s.ckRemoved ?? 0, ls: s.lsRemoved ?? 0, ss: s.ssRemoved ?? 0,
+      });
+      // The tab was reloaded — the next scan needs a fresh probe. Disable
+      // re-click and let the user re-run the analysis.
+      setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 4000);
+    } else {
+      btn.disabled = false;
+      btn.textContent = t('comp.reset_consent_fail', { reason: res?.reason ?? '?' });
+      setTimeout(() => { btn.textContent = original; }, 4000);
+    }
   });
 }

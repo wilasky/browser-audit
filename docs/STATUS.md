@@ -6,9 +6,63 @@
 
 ## Estado actual
 
-**Fase actual:** v0.2.0 con fix de Blue Argon — listo para resubir a CWS
-**Última actualización:** 2026-04-28
-**Próxima tarea:** Subir `browser-audit-2026-04-28.zip` al Chrome Web Store
+**Fase actual:** v0.2.2 lista en rama `feat/free-v03`. v0.2.0 esperando review CWS en `main`.
+**Última actualización:** 2026-04-29
+**Próxima tarea:** Esperar veredicto de v0.2.0 en CWS. Tras aprobación, mergear feat/free-v03 → main → subir `browser-audit-2026-04-29.zip` (v0.2.2) como update.
+
+### Branches activas
+
+- **`main`** — v0.2.0, congelada hasta CWS aprueba.
+- **`feat/free-v03`** — v0.2.2 con 32 commits acumulados. Incluye toda la lista de mejoras free abajo.
+- **`feat/pro-ui`** — Prototipo Pro UI con 3 commits parked. Lock+Undo Pro pendientes.
+
+### Mejoras v0.2.1 → v0.2.2 (rama feat/free-v03)
+
+**Health:**
+- Multi-browser detection (Brave/Edge/Vivaldi/Arc/Opera) — helper `shared/browser-detect.js`, badge en header, tips per-browser en Fingerprint Detail.
+- Toggle 🛡 Bastionado ON/OFF (preserva appliedFixes en storage).
+- Toast + pulse animado al aplicar settings.
+- Vista Health Detail por check (frameworks chips + tech detail + actions).
+- Silenciar checks individuales (mutedChecks no afectan score) + lista en Settings.
+- Modal "💡 ¿Esta web no funciona?" + Undo per-setting + tabla curada `breaking-settings.json`.
+- Perfil "Estándar" eliminado, "Básico" ampliado a 5 (+doh-enabled), botón ↩ Default per-check.
+- Categorías plegables `<details>` con persistencia en `chrome.storage.catState` + botón 📂 expand-all (transient).
+- Apply button funciona también en checks `skipped` — auto-request del permiso.
+- Header con iconos compactos uniformes (↺ 📂 🛡 ↶ 💡 JSON PDF ↑).
+
+**GDPR / Cookies:**
+- Pestaña renombrada a "GDPR & Privacy Compliance Analysis".
+- Sección "🔍 Análisis avanzado" colapsable con: cookie purpose chips, CMP detector (13 vendors), cookie syncing detection (29 vendors), 3rd-party dependency score.
+- TCF v2 consumer (poll 2.5s a `__tcfapi`), 15 propósitos IAB con texto humano bilingüe.
+- Cookie wall detector multi-señal (≥2 hits → cookie wall).
+- Vendor list link extractor.
+- 🔄 Reset consent (sin permiso `cookies`, ~90% de CMPs cubiertas).
+- Export JSON con findings completos.
+- Leyenda colapsable bilingüe explicando TCF, CMP, HSTS, CSP, etc.
+
+**Deep Analysis (ScriptSpy):**
+- Runtime fallback view cuando CDN bloquea descarga (ficha técnica via Performance Resource Timing + SRI + comportamiento).
+- Network endpoints extraction (URLs literal a fetch/XHR/WebSocket/sendBeacon).
+- DOM injection patterns (createElement script/iframe, head.appendChild).
+- Eval edge cases (window['eval'], `[].constructor.constructor`).
+- Hash history per URL (max 5 entries).
+- Known-hashes DB stub (`known-hashes.json` — crece crowdsourced).
+- Exfiltration heuristic (≥1 read + ≥2 sends, amber, no afecta score).
+- Source map detection (//# sourceMappingURL → botón "Ver código original").
+- Score recalibrado: critical≥80, high≥50, medium≥25 (antes 70/40/20). Pesos bajados en patterns comunes.
+
+**i18n:**
+- Bilingual ES/EN completo en script-detail, baseline detail, todas features nuevas.
+- "Improvable" → "Needs improvement" (era spanglish).
+- Profile labels y filteredLabel ahora respetan idioma activo y profile filter.
+
+**Tests:**
+- 28 → 48 tests pasando. Nueva cobertura completa para script-analyzer (Deep Analysis 5.1+5.2 + source map + endpoints + exfiltration).
+
+**Documentación:**
+- README rewrite estilo open source (badges, screenshots, install, roadmap).
+- PENDING_TASKS.md con roadmap detallado (GDPR Phase B, Phase C, Deep Analysis enhancements futuras).
+- known-hashes.json + cmp-vendors.json + sync-vendors.json + cookie-purposes.json + tcf-purposes.json + breaking-settings.json + consent-markers.json (7 JSON nuevos).
 
 ### Incidente CWS (2026-04-28)
 

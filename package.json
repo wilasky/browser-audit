@@ -1,6 +1,6 @@
 {
   "name": "browser-audit",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Chrome extension: Browser Health Check + ScriptSpy",
   "private": true,
   "type": "module",

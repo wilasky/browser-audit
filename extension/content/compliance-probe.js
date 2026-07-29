@@ -54,12 +54,23 @@
     'cookie', 'consent', 'rgpd', 'gdpr', 'aceptar', 'accept', 'privacy',
     'consentimiento', 'configurar cookies',
   ];
+  // Cookie wall — pay-or-accept patterns. No single regex catches everything;
+  // require 2+ signals on the banner text. Heuristic, not legal advice.
+  const COOKIE_WALL_SIGNALS = [
+    /(€|\$|£)\s?[\d.,]+\s*\/\s*(mes|month|año|year|mo|yr|jahr|mois|anno)/i,
+    /ad.?free|sin anuncios|sin publicidad|skip ads|ohne werbung|sans pub|senza pubblicit/i,
+    /(pay|paga|paying|pagar|abonner|abbonati|zahlen).{0,40}(accept|reject|continue|consent|aceptar|rechazar|navegar|surf|browse)/i,
+    /(subscribe|suscr[íi]bete|suscribir|abonnement|abonnieren).{0,60}(€|\$|£|\d+[.,]\d+)/i,
+  ];
+
   const banners = [];
   document.querySelectorAll('div, section, aside, dialog, footer').forEach((el) => {
-    const text = (el.textContent || '').toLowerCase().slice(0, 500);
+    const fullText = (el.textContent || '').slice(0, 2000);
+    const text = fullText.toLowerCase();
     const hasButton = el.querySelector('button, a[role="button"]');
     const matches = bannerKeywords.filter((k) => text.includes(k));
     if (matches.length >= 2 && hasButton && el.offsetHeight > 50) {
+      const signalsHit = COOKIE_WALL_SIGNALS.filter((rx) => rx.test(fullText));
       banners.push({
         tag: el.tagName,
         keywords: matches,
@@ -73,9 +84,89 @@
         hasConfigBtn: !!Array.from(el.querySelectorAll('button, a')).find((b) =>
           /configurar|preferencias|settings|customize|gestionar|m[aá]s opciones|personalizar|ajustes|opciones|manage|customise|options|choices|more info|m[aá]s info/i.test(b.textContent || '')
         ),
+        // Cookie wall classification — requires 2+ independent signals.
+        // 1 → "possible", 2+ → "cookieWall: true". Heuristic, not legal proof.
+        cookieWallSignals: signalsHit.length,
+        cookieWall: signalsHit.length >= 2,
       });
     }
   });
+
+  // --- Vendor list link extractor ---
+  // Some banners hide the partner/vendor list behind a separate link. Capture
+  // anchors with text that hints at a "view our partners" / "lista de socios"
+  // page so the user can audit the count manually.
+  const vendorListLinks = [];
+  const VENDOR_LINK_RX = /\b(partners|vendors|socios|providers|terceros|proveedores|colabor|fournisseurs)\b/i;
+  document.querySelectorAll('a[href]').forEach((a) => {
+    const text = (a.textContent || '').trim();
+    if (text.length === 0 || text.length > 80) { return; }
+    if (!VENDOR_LINK_RX.test(text)) { return; }
+    const href = a.getAttribute('href') || '';
+    if (!href || href === '#') { return; }
+    vendorListLinks.push({ text: text.slice(0, 60), href: href.slice(0, 200) });
+  });
+  // Dedupe by href and limit
+  const seenHrefs = new Set();
+  const dedupedVendorLinks = vendorListLinks
+    .filter((l) => { if (seenHrefs.has(l.href)) { return false; } seenHrefs.add(l.href); return true; })
+    .slice(0, 5);
+
+  // --- TCF v2.x consumer ---
+  // IAB Europe Transparency & Consent Framework. Most serious EU CMPs expose
+  // window.__tcfapi but the CMP frequently registers it asynchronously, after
+  // the DOM is ready. Poll for up to 2.5s before giving up — without this
+  // sites with lazy-loaded CMPs would always report "TCF not detected".
+  let tcfData = null;
+  try {
+    const tcfDeadline = Date.now() + 2500;
+    while (Date.now() < tcfDeadline) {
+      if (typeof window.__tcfapi === 'function') { break; }
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    if (typeof window.__tcfapi === 'function') {
+      tcfData = await new Promise((resolve) => {
+        let resolved = false;
+        const timer = setTimeout(() => {
+          if (!resolved) { resolved = true; resolve(null); }
+        }, 1500);
+        try {
+          window.__tcfapi('getTCData', 2, (data, success) => {
+            if (resolved) { return; }
+            resolved = true;
+            clearTimeout(timer);
+            if (success && data) {
+              const purposes = data.purpose?.consents ?? {};
+              const legitimate = data.purpose?.legitimateInterests ?? {};
+              const vendorConsents = data.vendor?.consents ?? {};
+              const vendorLI = data.vendor?.legitimateInterests ?? {};
+              const purposeIdsAccepted = Object.entries(purposes)
+                .filter(([, v]) => v).map(([k]) => Number(k)).sort((a, b) => a - b);
+              const cmpIdNum = Number(data.cmpId);
+              resolve({
+                cmpId: Number.isFinite(cmpIdNum) ? cmpIdNum : null,
+                cmpVersion: data.cmpVersion ?? null,
+                gdprApplies: data.gdprApplies ?? null,
+                tcfPolicyVersion: data.tcfPolicyVersion ?? null,
+                tcString: typeof data.tcString === 'string' ? data.tcString.slice(0, 200) : null,
+                purposeIdsAccepted,
+                purposesAccepted: purposeIdsAccepted.length,
+                purposesTotal: Object.keys(purposes).length,
+                legitimateInterestsTotal: Object.values(legitimate).filter(Boolean).length,
+                vendorsAccepted: Object.values(vendorConsents).filter(Boolean).length,
+                vendorsTotal: Object.keys(vendorConsents).length,
+                vendorsLegitimate: Object.values(vendorLI).filter(Boolean).length,
+              });
+            } else {
+              resolve(null);
+            }
+          });
+        } catch {
+          if (!resolved) { resolved = true; clearTimeout(timer); resolve(null); }
+        }
+      });
+    }
+  } catch { /* tcf api missing or threw */ }
 
   // --- Privacy/legal links ---
   const policyLinks = [];
@@ -250,6 +341,8 @@
     },
     storage: { lsCount, lsSize, ssCount, ssSize },
     banners,
+    tcf: tcfData,
+    vendorListLinks: dedupedVendorLinks,
     policyLinks: policyLinks.slice(0, 5),
     forms,
     headers,

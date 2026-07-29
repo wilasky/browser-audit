@@ -3,6 +3,8 @@ import { esc } from '../../shared/sanitize.js';
 import { t } from '../../shared/i18n.js';
 import { checkText, categoryLabel, translateDetail } from '../../shared/baseline-i18n.js';
 import baseline from '../../data/baseline.v1.json';
+import { scoreLabel } from '../../background/audit-engine.js';
+import { openDiagnoseModal } from './health-diagnose.js';
 
 const STATUS_ICON = { pass: '✓', warn: '⚠', fail: '✗', skipped: '—', unknown: '?' };
 const STATUS_CLASS = { pass: 'pass', warn: 'warn', fail: 'fail', skipped: 'skip', unknown: 'skip' };
@@ -20,18 +22,25 @@ function translateScoreLabel(label) {
   return map[label] ?? label;
 }
 
+// Basic profile — the 5 controls that matter most for a typical user:
+// every critical/high severity, plus DoH (privacy floor: stops ISP seeing
+// every domain you visit). The remaining checks live under Advanced.
+const BASIC_EXTRA_IDS = new Set(['doh-enabled']);
+
+// Build profile labels lazily — t() depends on initI18n() having run, which
+// happens after this module loads. A module-level const PROFILES = getProfiles()
+// would freeze the labels before the language is set, leaving them in
+// Spanish on EN sessions.
 function getProfiles() {
   return {
-    all:      { label: t('profile.standard'), filter: (r) => !r.advanced },
+    basic:    { label: t('profile.basic'),    filter: (r) => (['critical', 'high'].includes(r.severity) || BASIC_EXTRA_IDS.has(r.id)) && !r.advanced },
     advanced: { label: t('profile.advanced'), filter: () => true },
-    basic:    { label: t('profile.basic'),    filter: (r) => ['critical', 'high'].includes(r.severity) && !r.advanced },
     failed:   { label: t('profile.failed'),   filter: (r) => r.status === 'fail' || r.status === 'warn' },
     CIS:      { label: 'CIS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CIS')) },
     CCN:      { label: 'ENS',       filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('CCN')) },
     NIST:     { label: 'NIST',      filter: (r) => (r.frameworks ?? []).some((f) => f.startsWith('NIST')) },
   };
 }
-const PROFILES = getProfiles();
 
 function sendMsg(msg) {
   return new Promise((resolve) => {
@@ -87,14 +96,20 @@ function frameworkBadges(frameworks) {
   return `<span class="fw-badge" title="${esc(tooltip)}">${esc(families.join(' '))}</span>`;
 }
 
-function renderCheck(r, fixMap) {
+function renderCheck(r, fixMap, appliedApis) {
   const cls = STATUS_CLASS[r.status] ?? 'skip';
   const icon = STATUS_ICON[r.status] ?? '?';
   const fix = fixMap[r.id];
 
   const isFingerprintCheck = r.id === 'fingerprint-entropy';
-  const showFix = fix && r.status !== 'pass' && r.status !== 'skipped';
+  const isMuted = !!r.muted;
+  // Show the Apply button on skipped checks too — applyFix() auto-requests
+  // the missing permission before applying, so the user gets one-click flow
+  // (Apply → grant prompt → done) instead of having to dig into the detail
+  // or hit "+ Enable X checks" first.
+  const showFix = fix && r.status !== 'pass' && !isMuted;
   const canApply = fix?.type === 'apply' || r.canApply;
+  const isApplied = !!r.api && appliedApis?.has(r.api);
 
   // Fingerprint check always shows a "Ver detalles" button
   const detailBtn = isFingerprintCheck
@@ -112,53 +127,101 @@ function renderCheck(r, fixMap) {
     }
   }
 
+  // Mute toggle: offered for fail/warn checks (silenceable), and as unmute on already-muted ones
+  const canToggleMute = isMuted || (r.status === 'fail' || r.status === 'warn');
+  const muteBtn = canToggleMute
+    ? `<button class="fix-btn fix-mute" data-mute-id="${esc(r.id)}" title="${esc(t('health.mute_tip'))}">${esc(isMuted ? t('health.unmute_btn') : t('health.mute_btn'))}</button>`
+    : '';
+
+  // "Default" button: only visible when this check has been applied via Lucent
+  // (i.e. its api is in appliedFixes). Click → setting.clear() + drop from list.
+  const defaultBtn = isApplied
+    ? `<button class="fix-btn fix-default" data-default-api="${esc(r.api)}" title="${esc(t('health.default_tip'))}">${esc(t('health.default_btn'))}</button>`
+    : '';
+
+  const mutedChip = isMuted ? `<span class="muted-chip">${esc(t('health.muted_chip'))}</span>` : '';
+
   return `
-    <li class="check-item check-${cls}" data-check-id="${esc(r.id)}">
+    <li class="check-item check-${cls} ${isMuted ? 'check-muted' : ''}" data-check-id="${esc(r.id)}">
       <div class="check-row">
         <span class="check-icon">${esc(icon)}</span>
         <div class="check-main">
           <div class="check-title-row">
             <span class="check-title">${esc(checkText(r.id, r.title, 'title'))}</span>
+            ${mutedChip}
             ${severityLabel(r.severity)}
             ${frameworkBadges(r.frameworks)}
           </div>
           <span class="check-detail">${esc(translateDetail(r.detail ?? ''))}</span>
         </div>
-        <div class="check-actions">${detailBtn}${fixBtn}</div>
-      </div>
-      <div class="check-rationale" id="rationale-${esc(r.id)}" style="display:none">
-        ${esc(checkText(r.id, r.rationale, 'rationale'))}
-        ${fix?.instructions ? `<div class="fix-instructions">${esc(checkText(r.id, fix.instructions, 'instructions'))}</div>` : ''}
+        <div class="check-actions">${detailBtn}${fixBtn}${defaultBtn}${muteBtn}</div>
       </div>
     </li>`;
 }
 
-function renderCategory(cat, fixMap) {
+function renderCategory(cat, fixMap, appliedApis, catState) {
   const pass = cat.checks.filter((c) => c.status === 'pass').length;
   const fail = cat.checks.filter((c) => c.status === 'fail').length;
   const warn = cat.checks.filter((c) => c.status === 'warn').length;
 
-  const checks = cat.checks.map((r) => renderCheck(r, fixMap)).join('');
+  const checks = cat.checks.map((r) => renderCheck(r, fixMap, appliedApis)).join('');
   const statsHtml = [
     fail > 0 ? `<span class="cat-stat stat-fail">${fail} ${esc(t('status.fail'))}</span>` : '',
     warn > 0 ? `<span class="cat-stat stat-warn">${warn} ${esc(t('status.warn'))}</span>` : '',
     pass > 0 ? `<span class="cat-stat stat-pass">${pass} ${esc(t('status.pass'))}</span>` : '',
   ].filter(Boolean).join('');
 
+  // All categories collapsed by default. State persists in chrome.storage
+  // under catState — the user re-opens what they care about and it sticks.
+  const isOpen = catState[cat.id] === true;
+
   return `
-    <section class="category">
-      <div class="cat-header">
-        <h2 class="cat-title">${esc(cat.icon)} ${esc(categoryLabel(cat.id) || cat.label)}</h2>
+    <details class="category"${isOpen ? ' open' : ''} data-cat-id="${esc(cat.id)}">
+      <summary class="cat-header">
+        <span class="cat-title">${esc(cat.icon)} ${esc(categoryLabel(cat.id) || cat.label)}</span>
         <div class="cat-stats">${statsHtml}</div>
-      </div>
+      </summary>
       <ul class="check-list">${checks}</ul>
-    </section>`;
+    </details>`;
 }
 
-function renderProfileSelector(activeProfile) {
-  return Object.entries(PROFILES).map(([key, p]) =>
+function renderProfileSelector(activeProfile, profiles) {
+  return Object.entries(profiles).map(([key, p]) =>
     `<button class="profile-btn ${key === activeProfile ? 'active' : ''}" data-profile="${key}">${p.label}</button>`
   ).join('');
+}
+
+// Floating notification at the bottom of the popup. Stacks if several fire
+// in quick succession; auto-dismisses after 2.6s.
+function showToast(message, type = 'success') {
+  let stack = document.getElementById('toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  stack.appendChild(toast);
+  // Force a reflow so the entrance transition runs
+  void toast.offsetWidth;
+  toast.classList.add('toast-visible');
+  setTimeout(() => {
+    toast.classList.remove('toast-visible');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, 2600);
+}
+
+function pulseItem(btn, type) {
+  const item = btn?.closest('.check-item');
+  if (!item) { return; }
+  const cls = type === 'success' ? 'item-pulse-ok' : 'item-pulse-err';
+  item.classList.remove(cls);
+  void item.offsetWidth;
+  item.classList.add(cls);
+  setTimeout(() => item.classList.remove(cls), 900);
 }
 
 async function applyFix(fix, api, expected, btn) {
@@ -196,22 +259,27 @@ async function applyFix(fix, api, expected, btn) {
     }
 
     const res = await sendMsg({ type: 'apply_fix', api, value: expected });
+    const item = btn.closest('.check-item');
+    const titleEl = item?.querySelector('.check-title');
+    const checkName = titleEl?.textContent?.trim() ?? api;
     if (res?.ok) {
       btn.textContent = t('health.applied');
       btn.classList.add('fix-applied');
-      const item = btn.closest('.check-item');
       if (item) { item.className = item.className.replace(/check-\w+/, 'check-pass'); }
       const icon = item?.querySelector('.check-icon');
       if (icon) { icon.textContent = '✓'; }
+      pulseItem(btn, 'success');
+      showToast(`${t('health.toast_applied')} · ${checkName}`, 'success');
     } else {
       btn.disabled = false;
       btn.textContent = t('health.apply_now');
-      const item = btn.closest('.check-item');
       if (item) {
         let err = item.querySelector('.apply-error');
         if (!err) { err = document.createElement('div'); err.className = 'apply-error'; item.appendChild(err); }
         err.textContent = res?.reason ?? 'No se pudo aplicar (puede requerir reauditar para verificar).';
       }
+      pulseItem(btn, 'error');
+      showToast(`${t('health.toast_apply_failed')} · ${checkName}`, 'error');
     }
     return;
   }
@@ -231,10 +299,25 @@ async function applyFix(fix, api, expected, btn) {
 
 export async function renderHealthOverview(audit, container) {
   // Read user-configured default profile from prefs
-  const stored = await chrome.storage.local.get('userPrefs');
-  const defaultProfile = stored.userPrefs?.defaultProfile ?? 'all';
-  let activeProfile = PROFILES[defaultProfile] ? defaultProfile : 'all';
-  const { label, level } = audit;
+  const [stored, hardening] = await Promise.all([
+    chrome.storage.local.get(['userPrefs', 'detectedBrowser', 'appliedFixes', 'catState']),
+    sendMsg({ type: 'get_hardening_state' }),
+  ]);
+  const catState = stored.catState ?? {};
+  const appliedApis = new Set(
+    (stored.appliedFixes ?? [])
+      .map((a) => (typeof a === 'object' ? a.api : a))
+      .filter(Boolean)
+  );
+  // Build profile labels NOW (post-initI18n). Module-level const would
+  // freeze them in Spanish before the language was set.
+  const PROFILES = getProfiles();
+  const defaultProfile = stored.userPrefs?.defaultProfile ?? 'basic';
+  // Legacy 'all' (removed in 0.2.1) and any other unknown value fall back to basic
+  let activeProfile = PROFILES[defaultProfile] ? defaultProfile : 'basic';
+  const detectedBrowser = stored.detectedBrowser ?? null;
+  let hardeningEnabled = hardening?.enabled !== false;
+  const hardeningCount = hardening?.count ?? 0;
 
   const fixMap = {};
   const apiMap = {};   // checkId -> api string (for direct apply)
@@ -261,6 +344,10 @@ export async function renderHealthOverview(audit, container) {
       }
       return tw === 0 ? 100 : Math.max(0, Math.round(100 - (lost / tw) * 100));
     })();
+    // Label/level must derive from the FILTERED score, not the global audit.
+    // Otherwise the score circle shows 100 but the text under it still says
+    // the global verdict ("Mejorable") — confusing when switching profiles.
+    const { label, level } = scoreLabel(filteredScore);
 
     const groups = groupByCategory(filtered, audit.categories);
 
@@ -271,7 +358,7 @@ export async function renderHealthOverview(audit, container) {
     const sc = filtered.filter((r) => r.status === 'skipped').length;
     const uc = filtered.filter((r) => r.status === 'unknown').length;
 
-    const isFiltered = activeProfile !== 'all';
+    const isFiltered = activeProfile !== 'advanced';
     const profileLabel = PROFILES[activeProfile].label;
 
     container.innerHTML = `
@@ -286,33 +373,93 @@ export async function renderHealthOverview(audit, container) {
             <span style="color:#22c55e">${pc} ${esc(t('status.pass'))}</span>${sc + uc > 0 ? ` · ${sc + uc} ${esc(t('status.na'))}` : ''}
           </div>
           ${isFiltered ? `<div class="score-sub score-context">${esc(t('health.score_filter'))} <strong>${esc(profileLabel)}</strong> · ${esc(t('health.score_global'))}: <strong>${audit.score}</strong></div>` : ''}
-          <div class="score-sub">${esc(t('health.audited_label'))} ${new Date(audit.completedAt).toLocaleTimeString()} · ${esc(t('health.checks_count'))}${esc(audit.baselineVersion)}</div>
+          <div class="score-sub">${esc(t('health.audited_label'))} ${new Date(audit.completedAt).toLocaleTimeString()} · ${esc(t('health.checks_count'))}${esc(audit.baselineVersion)}${detectedBrowser?.chromiumVersion ? ` · <span class="health-browser-badge" title="${esc(t('fp.header_audited_as'))} ${esc(detectedBrowser.name)}">${esc(detectedBrowser.name)} v${detectedBrowser.chromiumVersion}</span>` : ''}</div>
           <div class="header-actions">
-            <button id="btn-refresh" class="btn-secondary">${esc(t('health.refresh'))}</button>
-            ${sc > 0 ? `<button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button>` : ''}
-            <button id="btn-reset-fixes" class="btn-secondary btn-reset" title="${esc(t('health.reset_tip'))}">${esc(t('health.reset'))}</button>
-            <div class="export-row">
-              <button id="btn-export-json" class="btn-export">↓ JSON</button>
-              <button id="btn-export-pdf" class="btn-export">↓ PDF</button>
-              <button id="btn-import-json" class="btn-export">${esc(t('health.import'))}</button>
-              <input type="file" id="input-audit-json" accept="application/json" style="display:none"/>
-            </div>
+            <button id="btn-refresh" class="btn-icon" title="${esc(t('health.refresh'))}">↺</button>
+            <button id="btn-expand-all" class="btn-icon" title="${esc(t('health.expand_all'))}">📂</button>
+            ${hardeningCount > 0 ? `<button id="btn-hardening-toggle" class="btn-icon ${hardeningEnabled ? 'btn-hardening-on' : 'btn-hardening-off'}" title="${esc(t(hardeningEnabled ? 'health.hardening_tip_on' : 'health.hardening_tip_off', { n: hardeningCount }))}">🛡</button>` : ''}
+            <button id="btn-reset-fixes" class="btn-icon btn-reset" title="${esc(t('health.reset_tip'))}">↶</button>
+            <button id="btn-diagnose" class="btn-icon btn-diagnose" title="${esc(t('health.diagnose_tip'))}">💡</button>
+            <button id="btn-export-json" class="btn-icon" title="Export JSON">JSON</button>
+            <button id="btn-export-pdf" class="btn-icon" title="Export PDF">PDF</button>
+            <button id="btn-import-json" class="btn-icon" title="${esc(t('health.import'))}">↑</button>
+            <input type="file" id="input-audit-json" accept="application/json" style="display:none"/>
           </div>
+          ${sc > 0 ? `<div class="header-grant-row"><button id="btn-grant-permissions" class="btn-secondary btn-grant" title="${esc(t('health.grant_tip', { n: sc }))}">${esc(t('health.grant', { n: sc }))}</button></div>` : ''}
         </div>
       </div>
 
       <div class="profile-bar">
         <span class="profile-label">${esc(t('profile.label'))}</span>
-        ${renderProfileSelector(activeProfile)}
+        ${renderProfileSelector(activeProfile, PROFILES)}
       </div>
 
-      <div class="categories">${groups.map((c) => renderCategory(c, fixMap)).join('')}</div>`;
+      <div class="categories">${groups.map((c) => renderCategory(c, fixMap, appliedApis, catState)).join('')}</div>`;
 
     // Events
     container.querySelector('#btn-refresh').addEventListener('click', async () => {
       container.innerHTML = `<p class="loading">${esc(t('health.auditing'))}</p>`;
       const freshAudit = await sendMsg({ type: 'run_audit' });
       if (freshAudit) { renderHealthOverview(freshAudit, container); }
+    });
+
+    container.querySelector('#btn-diagnose')?.addEventListener('click', () => {
+      openDiagnoseModal(container).catch(console.error);
+    });
+
+    // Persist category open/closed state across popup re-opens. The user
+    // pins what they care about; closed by default keeps the view tidy.
+    // expand-all flips the visual state of every category but does NOT
+    // persist — it is a transient "show me everything" gesture. Without
+    // suppressPersist, hitting expand-all once would write "all open" to
+    // storage and every subsequent refresh would re-open everything.
+    let suppressPersist = false;
+    container.querySelectorAll('.category[data-cat-id]').forEach((det) => {
+      det.addEventListener('toggle', async () => {
+        if (suppressPersist) { return; }
+        const id = det.dataset.catId;
+        const s = await chrome.storage.local.get('catState');
+        const next = { ...(s.catState ?? {}), [id]: det.open };
+        await chrome.storage.local.set({ catState: next });
+      });
+    });
+
+    // Expand-all / collapse-all toggle — visual only, not persisted. The
+    // next refresh restores whatever the user explicitly opened/closed.
+    container.querySelector('#btn-expand-all')?.addEventListener('click', () => {
+      const cats = container.querySelectorAll('.category[data-cat-id]');
+      const anyClosed = Array.from(cats).some((d) => !d.open);
+      const open = anyClosed;
+      suppressPersist = true;
+      cats.forEach((d) => { d.open = open; });
+      // Release the flag after the toggle events have flushed.
+      setTimeout(() => { suppressPersist = false; }, 0);
+    });
+
+    // After an undo from the modal, refresh the overview so the score and
+    // applied list reflect the change.
+    container.addEventListener('diag-undo-done', async () => {
+      const fresh = await sendMsg({ type: 'get_audit' });
+      if (fresh) { renderHealthOverview(fresh, container); }
+    }, { once: true });
+
+    container.querySelector('#btn-hardening-toggle')?.addEventListener('click', async () => {
+      const btn = container.querySelector('#btn-hardening-toggle');
+      const wasEnabled = hardeningEnabled;
+      btn.disabled = true;
+      btn.textContent = '⌛';
+      const res = await sendMsg({ type: 'set_hardening_enabled', enabled: !wasEnabled });
+      if (res?.ok) {
+        hardeningEnabled = res.enabled;
+        // Re-audit so the user sees the actual current state of the checks
+        // — pausing the hardening flips many checks from pass back to fail.
+        container.innerHTML = `<p class="loading">${esc(t('health.auditing'))}</p>`;
+        const freshAudit = await sendMsg({ type: 'run_audit' });
+        if (freshAudit) { renderHealthOverview(freshAudit, container); }
+      } else {
+        btn.disabled = false;
+        btn.textContent = '🛡';
+      }
     });
 
     container.querySelector('#btn-grant-permissions')?.addEventListener('click', () => {
@@ -461,8 +608,8 @@ export async function renderHealthOverview(audit, container) {
       });
     });
 
-    // Fix / Apply buttons
-    container.querySelectorAll('.fix-btn').forEach((btn) => {
+    // Fix / Apply buttons (skip mute toggles, handled separately below)
+    container.querySelectorAll('.fix-btn:not(.fix-mute)').forEach((btn) => {
       btn.addEventListener('click', () => {
         const checkId = btn.dataset.checkId;
         const fix = fixMap[checkId];
@@ -474,7 +621,47 @@ export async function renderHealthOverview(audit, container) {
       });
     });
 
-    // Click on check title row toggles rationale
+    // "Default" buttons: revert just this setting back to Chrome's native value
+    // and remove it from the persisted list, without touching the rest.
+    container.querySelectorAll('.fix-default').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const api = btn.dataset.defaultApi;
+        const titleEl = btn.closest('.check-item')?.querySelector('.check-title');
+        const checkName = titleEl?.textContent?.trim() ?? api;
+        btn.disabled = true;
+        btn.textContent = t('health.diagnose_reverting');
+        const res = await sendMsg({ type: 'undo_individual_fix', api });
+        if (res?.ok) {
+          showToast(`${t('health.toast_default_done')} · ${checkName}`, 'success');
+          const fresh = await sendMsg({ type: 'run_audit' });
+          if (fresh) { renderHealthOverview(fresh, container); }
+        } else {
+          btn.disabled = false;
+          btn.textContent = t('health.default_btn');
+          showToast(`${t('health.toast_apply_failed')} · ${checkName}`, 'error');
+        }
+      });
+    });
+
+    // Mute / unmute toggles — persist in chrome.storage.local under mutedChecks
+    // and re-run the audit so the score reflects the new state.
+    container.querySelectorAll('.fix-mute').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.muteId;
+        const stored = await chrome.storage.local.get('mutedChecks');
+        const current = new Set(stored.mutedChecks ?? []);
+        const wasMuted = current.has(id);
+        if (wasMuted) { current.delete(id); } else { current.add(id); }
+        await chrome.storage.local.set({ mutedChecks: [...current] });
+        showToast(wasMuted ? t('health.toast_unmuted') : t('health.toast_muted'), 'success');
+        const fresh = await sendMsg({ type: 'run_audit' });
+        if (fresh) { renderHealthOverview(fresh, container); }
+      });
+    });
+
+    // Click on check title row opens the detail view (the fingerprint check
+    // has its own dedicated view). The previous inline rationale panel was
+    // replaced by the full Health Detail screen.
     container.querySelectorAll('.check-item').forEach((item) => {
       item.querySelector('.check-title-row')?.addEventListener('click', () => {
         const id = item.dataset.checkId;
@@ -482,8 +669,14 @@ export async function renderHealthOverview(audit, container) {
           container.dispatchEvent(new CustomEvent('open-fingerprint', { bubbles: true }));
           return;
         }
-        const panel = document.getElementById(`rationale-${id}`);
-        if (panel) { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; }
+        const result = audit.results.find((r) => r.id === id);
+        if (!result) { return; }
+        // Pass the matching check definition (for method.type, etc.)
+        const checkDef = baseline.checks.find((c) => c.id === id);
+        container.dispatchEvent(new CustomEvent('open-health-detail', {
+          bubbles: true,
+          detail: { ...result, method: checkDef?.method ?? null },
+        }));
       });
     });
   }

@@ -20,8 +20,7 @@ const DEFAULTS = {
   showFirstParty: false,
   alertOnScoreDrop: true,
   scoreDropThreshold: 10,
-  defaultProfile: 'all',
-  showRationale: 'click', // 'always' | 'click' | 'never'
+  defaultProfile: 'basic',
   fingerprintAutoCalc: true,
 };
 
@@ -36,49 +35,101 @@ async function savePrefs(prefs) {
 
 // --- History chart ---
 
+function levelColor(level) {
+  return level === 'green' ? '#22c55e'
+    : level === 'amber' ? '#f59e0b'
+    : level === 'red' ? '#ef4444'
+    : '#888';
+}
+
 function renderHistoryChart(history) {
   if (!history.length) {
-    return '<p class="settings-hint">Sin auditorías todavía. Vuelve después de unas cuantas para ver evolución.</p>';
+    return `<p class="settings-hint">${esc(t('settings.history_empty'))}</p>`;
   }
 
-  const items = history.slice(0, 14).reverse(); // chronological
-  const max = Math.max(...items.map((h) => h.score), 100);
-  const min = Math.min(...items.map((h) => h.score), 0);
+  // history comes newest-first from chrome.storage; reverse to plot chronologically
+  const items = history.slice(0, 14).reverse();
+  const single = items.length === 1;
+  const last = items[items.length - 1];
+  const first = items[0];
 
-  // Build SVG line chart
-  const w = 320, h = 80, pad = 4;
-  const xStep = items.length > 1 ? (w - pad * 2) / (items.length - 1) : 0;
+  // Chart dimensions — wider and slightly taller than before, with breathing room
+  const w = 340, h = 100, padX = 8, padY = 14;
 
+  // Scale: pad ±5 around min/max so a flat sequence still draws above the bottom
+  const rawMin = Math.min(...items.map((it) => it.score));
+  const rawMax = Math.max(...items.map((it) => it.score));
+  const yMin = Math.max(0, Math.min(rawMin - 5, 95));
+  const yMax = Math.min(100, Math.max(rawMax + 5, yMin + 10));
+
+  const xStep = items.length > 1 ? (w - padX * 2) / (items.length - 1) : 0;
   const points = items.map((item, i) => {
-    const x = pad + i * xStep;
-    const y = h - pad - ((item.score - min) / Math.max(max - min, 1)) * (h - pad * 2);
+    const x = padX + i * xStep;
+    const y = h - padY - ((item.score - yMin) / (yMax - yMin)) * (h - padY * 2);
     return { x, y, score: item.score, level: item.level, date: item.completedAt };
   });
 
-  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  const lineColor = levelColor(last.level);
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  // Filled area below the line for visual weight
+  const areaPath = single
+    ? ''
+    : `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${h - padY} L ${points[0].x.toFixed(1)} ${h - padY} Z`;
+
   const dots = points.map((p) => {
-    const color = p.level === 'green' ? '#22c55e' : p.level === 'amber' ? '#f59e0b' : '#ef4444';
-    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${color}"><title>${p.score} · ${new Date(p.date).toLocaleString()}</title></circle>`;
+    const isLast = p === last;
+    const r = isLast ? 5 : 3;
+    const color = levelColor(p.level);
+    const tooltip = `${p.score}% · ${new Date(p.date).toLocaleString()}`;
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${color}" ${isLast ? `stroke="${color}" stroke-opacity="0.3" stroke-width="6"` : ''}><title>${esc(tooltip)}</title></circle>`;
   }).join('');
 
-  const last = points[points.length - 1];
-  const first = points[0];
-  const delta = last.score - first.score;
-  const deltaText = delta > 0 ? `+${delta} desde ${new Date(first.date).toLocaleDateString()}` :
-    delta < 0 ? `${delta} desde ${new Date(first.date).toLocaleDateString()}` :
-    'Sin cambio';
-  const deltaColor = delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : '#666';
+  // Best / worst markers
+  const bestScore = rawMax, worstScore = rawMin;
+
+  // Footer line: current · delta · count
+  let deltaHtml;
+  if (single) {
+    deltaHtml = `<span class="settings-hint">${esc(t('settings.history_one_audit'))}</span>`;
+  } else {
+    const delta = last.score - first.score;
+    const fdate = new Date(first.date).toLocaleDateString();
+    let txt;
+    let color;
+    if (delta > 0) { txt = t('settings.history_delta_up', { n: delta, date: fdate }); color = '#22c55e'; }
+    else if (delta < 0) { txt = t('settings.history_delta_down', { n: delta, date: fdate }); color = '#ef4444'; }
+    else { txt = t('settings.history_no_change'); color = '#888'; }
+    deltaHtml = `<span style="color:${color}">${esc(txt)}</span>`;
+  }
 
   return `
     <div class="hist-chart-wrap">
-      <svg class="hist-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-        <path d="${path}" stroke="#3a3a4e" stroke-width="1.5" fill="none"/>
+      <svg class="hist-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="hist-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${areaPath ? `<path d="${areaPath}" fill="url(#hist-grad)" stroke="none"/>` : ''}
+        ${linePath ? `<path d="${linePath}" stroke="${lineColor}" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
         ${dots}
       </svg>
       <div class="hist-meta">
-        <span><strong>${last.score}</strong> actual</span>
-        <span style="color:${deltaColor}">${deltaText}</span>
-        <span class="settings-hint">${items.length} de las últimas auditorías</span>
+        <div class="hist-meta-current">
+          <span class="hist-meta-label">${esc(t('settings.history_current'))}</span>
+          <strong style="color:${lineColor}">${last.score}</strong>
+        </div>
+        ${single ? '' : `
+          <div class="hist-meta-extremes">
+            <span class="hist-meta-label">${esc(t('settings.history_best'))}</span>
+            <strong style="color:${levelColor(items.find((i) => i.score === bestScore)?.level)}">${bestScore}</strong>
+            <span class="hist-meta-sep">·</span>
+            <span class="hist-meta-label">${esc(t('settings.history_worst'))}</span>
+            <strong style="color:${levelColor(items.find((i) => i.score === worstScore)?.level)}">${worstScore}</strong>
+          </div>`}
+        ${deltaHtml}
+        <span class="settings-hint hist-meta-count">${esc(t('settings.history_count', { n: items.length }))}</span>
       </div>
     </div>`;
 }
@@ -147,21 +198,12 @@ function renderViewSection(prefs) {
       <div class="settings-row">
         <label class="settings-label">${esc(t('settings.default_profile'))}</label>
         <select id="pref-default-profile" class="settings-select">
-          <option value="all" ${prefs.defaultProfile === 'all' ? 'selected' : ''}>${esc(t('profile.standard'))}</option>
-          <option value="advanced" ${prefs.defaultProfile === 'advanced' ? 'selected' : ''}>${esc(t('profile.advanced'))}</option>
           <option value="basic" ${prefs.defaultProfile === 'basic' ? 'selected' : ''}>${esc(t('profile.basic'))}</option>
+          <option value="advanced" ${prefs.defaultProfile === 'advanced' ? 'selected' : ''}>${esc(t('profile.advanced'))}</option>
           <option value="failed" ${prefs.defaultProfile === 'failed' ? 'selected' : ''}>${esc(t('profile.failed'))}</option>
           <option value="CIS" ${prefs.defaultProfile === 'CIS' ? 'selected' : ''}>CIS Benchmark</option>
           <option value="CCN" ${prefs.defaultProfile === 'CCN' ? 'selected' : ''}>ENS (CCN-STIC)</option>
           <option value="NIST" ${prefs.defaultProfile === 'NIST' ? 'selected' : ''}>NIST SP 800-53</option>
-        </select>
-      </div>
-      <div class="settings-row">
-        <label class="settings-label">${esc(t('settings.show_rationale'))}</label>
-        <select id="pref-rationale" class="settings-select">
-          <option value="click" ${prefs.showRationale === 'click' ? 'selected' : ''}>${esc(t('settings.rationale_click'))}</option>
-          <option value="always" ${prefs.showRationale === 'always' ? 'selected' : ''}>${esc(t('settings.rationale_always'))}</option>
-          <option value="never" ${prefs.showRationale === 'never' ? 'selected' : ''}>${esc(t('settings.rationale_never'))}</option>
         </select>
       </div>
     </section>`;
@@ -248,6 +290,29 @@ function renderPlanSection() {
     </section>`;
 }
 
+function renderMutedSection(muted) {
+  if (!muted.length) {
+    return `
+      <section class="settings-section">
+        <h3 class="settings-heading">${esc(t('settings.muted'))}</h3>
+        <p class="settings-hint">${esc(t('settings.muted_empty'))}</p>
+      </section>`;
+  }
+  return `
+    <section class="settings-section">
+      <h3 class="settings-heading">${esc(t('settings.muted'))}</h3>
+      <p class="settings-hint">${esc(t('settings.muted_intro'))}</p>
+      <ul class="muted-list">
+        ${muted.map((id) => `
+          <li class="muted-item">
+            <code class="muted-id">${esc(id)}</code>
+            <button class="link-btn muted-unmute" data-mute-id="${esc(id)}" title="${esc(t('health.unmute_btn'))}">✕</button>
+          </li>
+        `).join('')}
+      </ul>
+    </section>`;
+}
+
 function renderDataSection() {
   return `
     <section class="settings-section">
@@ -297,12 +362,14 @@ function renderAboutSection() {
 // --- Main ---
 
 export async function renderSettings(container) {
-  const [history, prefs, aiConfig, currentLang] = await Promise.all([
+  const [history, prefs, aiConfig, currentLang, mutedStore] = await Promise.all([
     sendMsg({ type: 'get_history' }),
     loadPrefs(),
     getAIConfig(),
     getLanguagePreference(),
+    chrome.storage.local.get('mutedChecks'),
   ]);
+  const mutedChecks = mutedStore?.mutedChecks ?? [];
 
   container.innerHTML = `
     <div class="settings-wrap">
@@ -314,6 +381,7 @@ export async function renderSettings(container) {
       ${renderAlertsSection(prefs)}
       ${renderAISection(aiConfig)}
       ${renderPlanSection()}
+      ${renderMutedSection(mutedChecks)}
       ${renderDataSection()}
       ${renderAboutSection()}
     </div>`;
@@ -342,7 +410,6 @@ export async function renderSettings(container) {
   bindPref('pref-interval', 'auditInterval', 'number');
   bindPref('pref-fp-auto', 'fingerprintAutoCalc');
   bindPref('pref-default-profile', 'defaultProfile', 'select');
-  bindPref('pref-rationale', 'showRationale', 'select');
   bindPref('pref-spy-auto', 'scriptSpyAutoStart');
   bindPref('pref-show-1p', 'showFirstParty');
   bindPref('pref-alert-drop', 'alertOnScoreDrop');
@@ -405,7 +472,7 @@ export async function renderSettings(container) {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      if (!data.version) { throw new Error('Archivo no válido (sin versión)'); }
+      if (!data.version) { throw new Error(t('settings.import_invalid')); }
       const updates = {};
       if (data.userPrefs && typeof data.userPrefs === 'object') {
         updates.userPrefs = { ...DEFAULTS, ...data.userPrefs };
@@ -455,6 +522,20 @@ export async function renderSettings(container) {
     }
   });
 
+  // --- Muted checks unmute ---
+  container.querySelectorAll('.muted-unmute').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.muteId;
+      const stored = await chrome.storage.local.get('mutedChecks');
+      const next = (stored.mutedChecks ?? []).filter((x) => x !== id);
+      await chrome.storage.local.set({ mutedChecks: next });
+      // Re-run the audit so the score reflects the change next time the user
+      // opens Health, then re-render this Settings view to drop the entry.
+      sendMsg({ type: 'run_audit' });
+      renderSettings(container);
+    });
+  });
+
   // --- External links ---
   container.querySelectorAll('[data-link]').forEach((a) => {
     a.addEventListener('click', (e) => {
@@ -480,7 +561,7 @@ export async function renderSettings(container) {
 3.
 
 **Contexto:**
-- Lucent versión: 0.1.0
+- Lucent versión: 0.2.2
 - Chrome: ${chromeVersion}
 - SO/idioma: ${lang}
 `

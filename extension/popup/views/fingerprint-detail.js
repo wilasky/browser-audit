@@ -1,6 +1,105 @@
 import { calculateFingerprintDetail } from '../../shared/fingerprint.js';
 import { esc } from '../../shared/sanitize.js';
 import { t } from '../../shared/i18n.js';
+import { detectBrowser } from '../../shared/browser-detect.js';
+
+// Build the list of privacy actions tailored to the running browser. Each
+// entry is { titleKey, descKey, btnLabelKey?, btnUrl?, params? }; the renderer
+// just walks the list, so adding a per-browser variant means appending one
+// entry — not editing the JSX.
+function buildActionsForBrowser(browser) {
+  const actions = [];
+  const flagsBase = ({
+    edge: 'edge://flags/',
+    brave: 'brave://flags/',
+    opera: 'opera://flags/',
+    vivaldi: 'vivaldi://flags/',
+  })[browser.id] ?? 'chrome://flags/';
+  const params = { browser: browser.name };
+
+  // Browser-specific opening tip
+  if (browser.id === 'edge') {
+    actions.push({
+      titleKey: 'fp.action_edge_tracking_title',
+      descKey: 'fp.action_edge_tracking_desc',
+      btnLabelKey: 'fp.action_edge_tracking_btn',
+      btnUrl: 'edge://settings/privacy',
+    });
+  } else if (browser.id === 'brave') {
+    actions.push({
+      titleKey: 'fp.action_brave_shields_title',
+      descKey: 'fp.action_brave_shields_desc',
+    });
+  } else if (browser.id === 'vivaldi') {
+    actions.push({
+      titleKey: 'fp.action_vivaldi_shields_title',
+      descKey: 'fp.action_vivaldi_shields_desc',
+      btnLabelKey: 'fp.action_btn1',
+      btnUrl: 'vivaldi://settings/privacy',
+    });
+  }
+
+  // Reduce User-Agent flag — uses the browser-specific flags URL
+  actions.push({
+    titleKey: 'fp.action1_title',
+    descKey: 'fp.action1_desc',
+    btnLabelKey: 'fp.action_btn1',
+    btnUrl: `${flagsBase}#reduce-user-agent`,
+  });
+
+  // Canvas blocker — skip if the browser already does it natively
+  if (browser.hasNativeCanvasBlock) {
+    actions.push({
+      titleKey: 'fp.action_native_canvas_title',
+      descKey: 'fp.action_native_canvas_desc',
+      params,
+    });
+  } else {
+    actions.push({
+      titleKey: 'fp.action2_title',
+      descKey: 'fp.action2_desc',
+      btnLabelKey: 'fp.action_btn2',
+      btnUrl: 'https://chromewebstore.google.com/search/canvas%20blocker',
+    });
+  }
+
+  // "Switch to Brave or Firefox" — pointless if already on Brave
+  if (browser.id !== 'brave') {
+    actions.push({
+      titleKey: 'fp.action3_title',
+      descKey: 'fp.action3_desc',
+      btnLabelKey: 'fp.action_btn3',
+      btnUrl: 'https://brave.com/download/',
+    });
+  }
+
+  // Tor Browser — universal recommendation for the paranoid case
+  actions.push({
+    titleKey: 'fp.action4_title',
+    descKey: 'fp.action4_desc',
+    btnLabelKey: 'fp.action_btn4',
+    btnUrl: 'https://www.torproject.org/download/',
+  });
+
+  return actions;
+}
+
+function renderAction(a) {
+  const params = a.params ?? {};
+  const title = t(a.titleKey, params);
+  const desc = t(a.descKey, params);
+  const btn = a.btnLabelKey
+    ? `<button class="fp-action-btn" data-flag="${esc(a.btnUrl)}">${esc(t(a.btnLabelKey))}</button>`
+    : '';
+  return `
+    <div class="fp-action">
+      <div class="fp-action-head">
+        <strong>${esc(title)}</strong>
+        ${btn}
+      </div>
+      <p class="fp-action-desc">${desc}</p>
+    </div>`;
+}
 
 function getUniq() {
   return {
@@ -33,7 +132,10 @@ export async function renderFingerprintDetail(container) {
   container.innerHTML = `<p class="loading">${esc(t('fp.calculating'))}</p>`;
 
   try {
-    const d = await calculateFingerprintDetail();
+    const [d, browser] = await Promise.all([
+      calculateFingerprintDetail(),
+      detectBrowser(),
+    ]);
     const color = d.level === 'green' ? '#22c55e' : d.level === 'amber' ? '#f59e0b' : '#ef4444';
     const rare = d.signals.filter((s) => s.uniqueness === 'rare').length;
     const barPct = Math.min(100, (d.totalEntropy / 40) * 100);
@@ -41,11 +143,16 @@ export async function renderFingerprintDetail(container) {
     // Translate the level text from background ('green'/'amber'/'red')
     const levelKey = d.level === 'green' ? 'fp.level_low' : d.level === 'amber' ? 'fp.level_medium' : 'fp.level_high';
 
+    const browserBadge = browser.chromiumVersion
+      ? `<span class="fp-browser-badge" title="${esc(t('fp.header_audited_as'))} ${esc(browser.name)}">${esc(browser.name)} v${browser.chromiumVersion}</span>`
+      : '';
+
     container.innerHTML = `
       <div class="fp-wrap">
         <div class="fp-header">
           <button id="btn-fp-back" class="link-btn">${esc(t('btn.back'))}</button>
           <span class="fp-title">${esc(t('fp.title'))}</span>
+          ${browserBadge}
         </div>
 
         <div class="fp-score-row">
@@ -67,7 +174,7 @@ export async function renderFingerprintDetail(container) {
         <div class="fp-hash-row">
           <span class="fp-hash-label">${esc(t('fp.id_label'))}</span>
           <span class="fp-hash-val" id="fp-hash">${esc(d.fingerprintHash)}</span>
-          <button id="btn-copy-hash" class="btn-export" title="${esc(t('fp.copy_hash_tip'))}">⎘</button>
+          <button id="btn-copy-hash" class="btn-icon" title="${esc(t('fp.copy_hash_tip'))}">⎘</button>
         </div>
 
         <div class="fp-signals">
@@ -76,39 +183,7 @@ export async function renderFingerprintDetail(container) {
 
         <div class="fp-actions-block">
           <h3 class="fp-actions-title">${esc(t('fp.actions_title'))}</h3>
-
-          <div class="fp-action">
-            <div class="fp-action-head">
-              <strong>${esc(t('fp.action1_title'))}</strong>
-              <button class="fp-action-btn" data-flag="chrome://flags/#reduce-user-agent">${esc(t('fp.action_btn1'))}</button>
-            </div>
-            <p class="fp-action-desc">${t('fp.action1_desc')}</p>
-          </div>
-
-          <div class="fp-action">
-            <div class="fp-action-head">
-              <strong>${esc(t('fp.action2_title'))}</strong>
-              <button class="fp-action-btn" data-flag="https://chromewebstore.google.com/search/canvas%20blocker">${esc(t('fp.action_btn2'))}</button>
-            </div>
-            <p class="fp-action-desc">${t('fp.action2_desc')}</p>
-          </div>
-
-          <div class="fp-action">
-            <div class="fp-action-head">
-              <strong>${esc(t('fp.action3_title'))}</strong>
-              <button class="fp-action-btn" data-flag="https://brave.com/download/">${esc(t('fp.action_btn3'))}</button>
-            </div>
-            <p class="fp-action-desc">${t('fp.action3_desc')}</p>
-          </div>
-
-          <div class="fp-action">
-            <div class="fp-action-head">
-              <strong>${esc(t('fp.action4_title'))}</strong>
-              <button class="fp-action-btn" data-flag="https://www.torproject.org/download/">${esc(t('fp.action_btn4'))}</button>
-            </div>
-            <p class="fp-action-desc">${t('fp.action4_desc')}</p>
-          </div>
-
+          ${buildActionsForBrowser(browser).map(renderAction).join('')}
           ${d.canvasBlocked
             ? `<div class="fp-success">${esc(t('fp.canvas_blocked'))}</div>`
             : ''}

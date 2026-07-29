@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "description": "Known consent storage keys (cookies, localStorage, sessionStorage) used by major CMPs. Lucent matches case-insensitively as substring against keys and cookie names. Used by reset_consent handler to undo a previously accepted banner without requiring the chrome.cookies API. Cookies marked HttpOnly cannot be deleted via document.cookie — those need Phase B.",
+  "markers": [
+    "cookieConsent",
+    "cookie_consent",
+    "CookieConsent",
+    "OptanonAlertBoxClosed",
+    "OptanonConsent",
+    "cmplz_consent",
+    "didomi_token",
+    "euconsent",
+    "euconsent-v2",
+    "cookielawinfo-checkbox",
+    "CookieControl",
+    "BCPermissionLevelCookie",
+    "_iub_cs",
+    "cb-enabled",
+    "gdpr_consent",
+    "consent_user_consent_token",
+    "usercentrics",
+    "tcf_consent",
+    "axeptio_authorized_vendors",
+    "axeptio_cookies",
+    "trustarc",
+    "consent",
+    "cookieyes-consent",
+    "_sp_v1",
+    "_sp_consent",
+    "fundingChoicesMessage",
+    "_cookies_accepted"
+  ]
+}
