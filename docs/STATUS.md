@@ -6,15 +6,15 @@
 
 ## Estado actual
 
-**Fase actual:** v0.2.2 lista en rama `feat/free-v03`. v0.2.0 esperando review CWS en `main`.
-**Última actualización:** 2026-04-29
-**Próxima tarea:** Esperar veredicto de v0.2.0 en CWS. Tras aprobación, mergear feat/free-v03 → main → subir `browser-audit-2026-04-29.zip` (v0.2.2) como update.
+**Fase actual:** v0.2.2 mergeada y pusheada a `main`. Zip de producción generado y verificado, listo para subir como update en el CWS Developer Dashboard.
+**Última actualización:** 2026-07-29
+**Próxima tarea:** Subir manualmente `browser-audit-2026-07-29.zip` al CWS Developer Dashboard como actualización de la extensión existente (paso manual, requiere login de Google del propietario).
 
 ### Branches activas
 
-- **`main`** — v0.2.0, congelada hasta CWS aprueba.
-- **`feat/free-v03`** — v0.2.2 con 32 commits acumulados. Incluye toda la lista de mejoras free abajo.
-- **`feat/pro-ui`** — Prototipo Pro UI con 3 commits parked. Lock+Undo Pro pendientes.
+- **`main`** — v0.2.2, mergeada desde `feat/free-v03` (commit `099bb7d`) y pusheada a origin el 2026-07-29. Incluye toda la lista de mejoras free abajo.
+- **`feat/free-v03`** — mergeada a `main`; también pusheada a origin (commit `0a92b4c`) para conservar el historial. Puede eliminarse cuando se confirme que main la sustituye sin problema.
+- **`feat/pro-ui`** — Prototipo Pro UI con 3 commits parked. Lock+Undo Pro pendientes. Aún no mergeada.
 
 ### Mejoras v0.2.1 → v0.2.2 (rama feat/free-v03)
 
@@ -283,4 +283,4 @@ Si se decide cambiar algo del Architecture.md, anotarlo aquí con fecha y razón
 
 ---
 
-*Último commit: pendiente de primer push*
+*Último commit: `099bb7d` (merge feat/free-v03 → main), pusheado a origin/main el 2026-07-29*
