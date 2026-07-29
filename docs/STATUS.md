@@ -6,13 +6,13 @@
 
 ## Estado actual
 
-**Fase actual:** v0.2.2 mergeada y pusheada a `main`. Zip de producción generado y verificado, listo para subir como update en el CWS Developer Dashboard.
+**Fase actual:** v0.2.2 ya estaba **publicada y aprobada en la Chrome Web Store desde hace meses** (item ID `gaeakblaejmchannjngonjnmbnaeoaao`), pero el trabajo correspondiente nunca se había subido a GitHub — `main` seguía en v0.2.0 en remoto. Hoy se mergeó `feat/free-v03` → `main` y se subió versión **v0.2.3** (bump sobre v0.2.2: fix de guion en locale EN/ES + 2 screenshots nuevas de RGPD/diagnóstico). Zip de producción generado y verificado, listo para subir como update en el CWS Developer Dashboard.
 **Última actualización:** 2026-07-29
-**Próxima tarea:** Subir manualmente `browser-audit-2026-07-29.zip` al CWS Developer Dashboard como actualización de la extensión existente (paso manual, requiere login de Google del propietario).
+**Próxima tarea:** Subir manualmente `browser-audit-2026-07-29.zip` (v0.2.3) al CWS Developer Dashboard como actualización de la extensión existente (paso manual, requiere login de Google del propietario). Ver `docs/CWS_LISTING.md` para actualizar el texto del listing (probablemente sigue con copy de v0.2.0 en la store).
 
 ### Branches activas
 
-- **`main`** — v0.2.2, mergeada desde `feat/free-v03` (commit `099bb7d`) y pusheada a origin el 2026-07-29. Incluye toda la lista de mejoras free abajo.
+- **`main`** — v0.2.3, mergeada desde `feat/free-v03` (commit `099bb7d`, bump de versión en `04ae47d`) y pusheada a origin el 2026-07-29. Incluye toda la lista de mejoras free abajo. Refleja el código que ya está aprobado en CWS como v0.2.2, más el fix de locale.
 - **`feat/free-v03`** — mergeada a `main`; también pusheada a origin (commit `0a92b4c`) para conservar el historial. Puede eliminarse cuando se confirme que main la sustituye sin problema.
 - **`feat/pro-ui`** — Prototipo Pro UI con 3 commits parked. Lock+Undo Pro pendientes. Aún no mergeada.
 
