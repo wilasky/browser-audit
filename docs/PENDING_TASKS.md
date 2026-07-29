@@ -1,96 +1,30 @@
 # Tareas pendientes — Lucent (Browser Audit)
 
-## 🔴 Bloqueante: Restaurar workflow CI en GitHub
+## 📋 Estado de la publicación (actualizado 2026-07-29)
 
-**Por qué falta:** El push original falló porque el Personal Access Token no tenía scope `workflow`. Decidimos eliminar `.github/workflows/ci.yml` para hacer push, y restaurarlo manualmente después por la web.
-
-**Cómo restaurarlo:**
-
-1. Ir a: https://github.com/wilasky/browser-audit
-2. Click en **Add file** → **Create new file**
-3. En el campo de path escribir: `.github/workflows/ci.yml`
-4. Pegar este contenido (o copiarlo del local antes de eliminarlo):
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
-
-      - name: Test
-        run: npm run test
-        continue-on-error: true
-```
-
-5. Commit message: `ci: restore CI workflow`
-6. Pulsar **Commit new file**
-
-Después, en local hacer `git pull` para sincronizar.
-
-**Alternativa:** Si en el futuro quieres añadirlo desde local, **regenera el token** con scope `workflow` también marcado, y el push funcionará.
-
----
-
-## 📋 Estado de la publicación
+**La extensión está publicada y aprobada en la Chrome Web Store** — item `gaeakblaejmchannjngonjnmbnaeoaao`, instalable en https://chromewebstore.google.com/detail/gaeakblaejmchannjngonjnmbnaeoaao. v0.2.2 fue aprobada hace meses (subida manualmente, sin haber sincronizado ese código con GitHub en su momento). Hoy se reconcilió todo: GitHub `main` está al día con ese código, y se subió **v0.2.3** (fix de guion en locale + 2 screenshots nuevas) al dashboard, pendiente de que Google la revise.
 
 ### ✅ Hecho
-- Código completo, 28 tests pasando, lint limpio
-- ZIP de producción listo: `browser-audit-2026-04-25.zip` (317 KB)
-- Privacy Policy escrita: `docs/PRIVACY_POLICY.md`
+- Código completo, 48 tests pasando, lint limpio
+- Workflow CI restaurado y activo (`.github/workflows/ci.yml`)
+- GitHub `main` sincronizado con el código publicado (v0.2.3)
+- Privacy Policy escrita y **hosteada** en GitHub Pages: https://wilasky.github.io/browser-audit/PRIVACY_POLICY (verificado que carga)
 - Terms escritos: `docs/TERMS.md`
 - Listing CWS preparado: `docs/CWS_LISTING.md`
 - Landing page: `landing/index.html`
-- Iconos circulares con transparencia
 - LICENSE MIT
 - Nombre: **Lucent**
-- Screenshots tomadas: `docs/screenshoots/`
+- Cuenta CWS Developer creada, ítem publicado y aprobado
+- Screenshots: `docs/screenshoots/` (v1) + `docs/screenshotsv2/` (RGPD profundo, diagnóstico)
+- v0.2.3 subida al Developer Dashboard, en espera de revisión
 
-### 🔴 Pendiente para publicar
-1. **Push a GitHub** — falta restaurar workflow (paso de arriba)
-2. **Crear cuenta Chrome Web Store Developer** ($5 una vez)
-   - https://chrome.google.com/webstore/devconsole
-3. **Hostear Privacy Policy públicamente**
-   - Activar GitHub Pages en el repo:
-     Settings → Pages → Source: `main` branch, `/docs` folder → Save
-   - URL será: `https://wilasky.github.io/browser-audit/PRIVACY_POLICY`
-4. **Subir el ZIP a CWS** y rellenar listing:
-   - Texto en `docs/CWS_LISTING.md` (EN + ES)
-   - URL Privacy Policy del paso anterior
-   - 5 screenshots de `docs/screenshoots/`
-   - Categoría: Privacy & Security
-   - Justificación de permisos: en `docs/CWS_LISTING.md` sección final
-
-### 🟡 Tras publicar (no bloqueante)
+### 🟡 Pendiente (no bloqueante)
+- Confirmar en el Developer Dashboard que Google aprobó v0.2.3
+- Actualizar el texto del "Store listing" en el dashboard con el copy actual de `docs/CWS_LISTING.md` (puede que aún tenga el texto de una versión anterior)
+- Sustituir 2 de las 5 screenshots del listing por las de `docs/screenshotsv2/`
 - Crear Twitter/Mastodon
 - Anunciar en r/privacy, r/netsec, r/chrome
-- Actualizar nombre "Browser Audit" → "Lucent" en código (manifest, README, landing)
-- Cambiar "Browser Audit" en `extension/manifest.json` → `"Lucent — Browser Audit"`
-- Update v0.2 con: Wappalyzer-style detection, más security headers, leyenda RGPD, top scripts maliciosos
+- Update siguiente con: Wappalyzer-style detection, más security headers, top scripts maliciosos
 
 ---
 

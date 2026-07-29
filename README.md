@@ -9,7 +9,7 @@ Inspect every script in real time, audit GDPR &amp; cookie compliance, and harde
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4f8ef7.svg)](#)
-[![Version](https://img.shields.io/badge/version-0.2.2-22c55e.svg)](docs/STATUS.md)
+[![Version](https://img.shields.io/badge/version-0.2.3-22c55e.svg)](docs/STATUS.md)
 [![Tests](https://img.shields.io/badge/tests-48%20passing-22c55e.svg)](#)
 [![Privacy](https://img.shields.io/badge/data%20sent-zero%20bytes-22c55e.svg)](#privacy)
 [![Browsers](https://img.shields.io/badge/Chrome%20%7C%20Brave%20%7C%20Edge%20%7C%20Opera%20%7C%20Vivaldi-supported-blue.svg)](#install)
@@ -188,7 +188,7 @@ Lucent doesn't replace your blocker - it complements it. uBlock blocks; Lucent *
 
 ### From Chrome Web Store
 
-> ⏳ **Pending Google review.** The link will land here once approved. The latest release is also published as a `.zip` you can side-load.
+**[Install Lucent - Browser Audit](https://chromewebstore.google.com/detail/gaeakblaejmchannjngonjnmbnaeoaao)**
 
 ### Manual (developer mode)
 
