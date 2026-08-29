@@ -1,0 +1,934 @@
+<title>Lucent · Boceto pestaña Guías</title>
+<style>
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0f11; --surface: #17171b; --surface-2: #1c1c21; --surface-hover: #202026;
+      --border: #2a2a2e; --border-soft: #232327; --text: #e8e8ea; --text-dim: #8b8b93; --text-faint: #55555c;
+      --accent: #4f8ef7; --accent-soft: #1e2a3f; --privacy: #a78bfa; --privacy-soft: #241e3a;
+      --success: #22c55e; --success-soft: #16241c; --pro: #f59e0b; --pro-soft: #2a2013;
+      --shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f6f9; --surface: #ffffff; --surface-2: #f0f0f4; --surface-hover: #ebebf1;
+      --border: #e3e3ea; --border-soft: #ececf1; --text: #17171c; --text-dim: #62626c; --text-faint: #9a9aa4;
+      --accent: #3d6fe0; --accent-soft: #e7edfd; --privacy: #7c5cf0; --privacy-soft: #efeafd;
+      --success: #158a45; --success-soft: #e5f6ec; --pro: #b4590a; --pro-soft: #fbeee0;
+      --shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 24px rgba(20,20,40,0.08);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0f11; --surface: #17171b; --surface-2: #1c1c21; --surface-hover: #202026;
+    --border: #2a2a2e; --border-soft: #232327; --text: #e8e8ea; --text-dim: #8b8b93; --text-faint: #55555c;
+    --accent: #4f8ef7; --accent-soft: #1e2a3f; --privacy: #a78bfa; --privacy-soft: #241e3a;
+    --success: #22c55e; --success-soft: #16241c; --pro: #f59e0b; --pro-soft: #2a2013;
+    --shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f6f9; --surface: #ffffff; --surface-2: #f0f0f4; --surface-hover: #ebebf1;
+    --border: #e3e3ea; --border-soft: #ececf1; --text: #17171c; --text-dim: #62626c; --text-faint: #9a9aa4;
+    --accent: #3d6fe0; --accent-soft: #e7edfd; --privacy: #7c5cf0; --privacy-soft: #efeafd;
+    --success: #158a45; --success-soft: #e5f6ec; --pro: #b4590a; --pro-soft: #fbeee0;
+    --shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 24px rgba(20,20,40,0.08);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", system-ui, ui-sans-serif, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 40px 20px 100px; }
+
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; }
+  .page-sub { font-size: 13.5px; color: var(--text-dim); max-width: 62ch; line-height: 1.5; margin: 0; }
+
+  .section-label {
+    display: flex; align-items: center; gap: 10px; margin: 56px 0 16px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint);
+  }
+  .section-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+  /* ---------- Hub grid ---------- */
+  .hub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (max-width: 520px) { .hub-grid { grid-template-columns: 1fr; } }
+
+  .hub-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow); position: relative;
+  }
+  .hub-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .hub-icon {
+    width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; background: var(--accent-soft); color: var(--accent); flex-shrink: 0;
+  }
+  .hub-icon.privacy { background: var(--privacy-soft); color: var(--privacy); }
+  .hub-icon.muted { background: var(--surface-2); color: var(--text-dim); }
+  .tier-chip {
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 20px; white-space: nowrap; background: var(--success-soft); color: var(--success);
+  }
+  .devices-chip { font-size: 9.5px; font-weight: 600; color: var(--text-faint); }
+  .hub-name { font-size: 14.5px; font-weight: 650; margin: 0; }
+  .hub-desc { font-size: 12px; color: var(--text-dim); line-height: 1.45; margin: 0; min-height: 34px; }
+  .hub-progress-row { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+  .hub-bar-track { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .hub-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+  .hub-progress-num { font: 650 11px/1 ui-monospace, "SF Mono", Consolas, monospace; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hub-card.stub { opacity: 0.55; }
+  .hub-card.resources { justify-content: center; }
+  .link-row { display: flex; flex-direction: column; gap: 5px; margin-top: 2px; }
+  .link-row a { font-size: 11.5px; color: var(--accent); text-decoration: none; }
+  .link-row a:hover { text-decoration: underline; }
+
+  /* ---------- Detail screen ---------- */
+  .detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+  .detail-header { padding: 20px 22px; border-bottom: 1px solid var(--border-soft); }
+  .detail-head-row { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .detail-title { font-size: 17px; font-weight: 700; margin: 0; flex: 1; }
+  .expand-toggle {
+    font-size: 11px; font-weight: 600; color: var(--text-dim); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; cursor: pointer;
+  }
+  .expand-toggle:hover { color: var(--text); border-color: var(--accent); }
+
+  /* Profile bar */
+  .profile-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 12px 0 16px; }
+  .profile-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 2px; }
+  .profile-pill {
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 4px 11px; border-radius: 20px; cursor: pointer; font-size: 11.5px; font-weight: 600;
+  }
+  .profile-pill.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .profile-pill:hover:not(.active) { border-color: var(--text-faint); color: var(--text); }
+  .profile-add { border-style: dashed; }
+  .profile-input {
+    font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+    border: 1px solid var(--accent); background: var(--surface); color: var(--text); outline: none; width: 140px;
+  }
+
+  .detail-note { font-size: 12px; color: var(--text-dim); line-height: 1.55; margin: 0 0 16px; max-width: 58ch; }
+  .detail-note b { color: var(--text); font-weight: 650; }
+
+  .progress-row { display: flex; align-items: center; gap: 10px; }
+  .progress-track { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--privacy)); transition: width .3s ease; }
+  .progress-text { font: 700 12px/1 ui-monospace, "SF Mono", Consolas, monospace; font-variant-numeric: tabular-nums; color: var(--text); white-space: nowrap; }
+  .progress-meta { font-size: 11px; color: var(--text-faint); margin-top: 6px; }
+
+  .filters { display: flex; gap: 6px; padding: 12px 22px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+  .filter-chip {
+    font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: 20px;
+    border: 1px solid var(--border); background: transparent; color: var(--text-dim); cursor: pointer;
+  }
+  .filter-chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  /* Collapsible phases */
+  .phase-details { border-top: 1px solid var(--border-soft); }
+  .phase-details:first-of-type { border-top: none; }
+  .phase-summary {
+    list-style: none; cursor: pointer; padding: 14px 22px; display: flex; align-items: center; gap: 10px;
+    user-select: none;
+  }
+  .phase-summary::-webkit-details-marker { display: none; }
+  .phase-summary::marker { content: ""; }
+  .chevron { font-size: 10px; color: var(--text-faint); transition: transform .15s ease; flex-shrink: 0; }
+  .phase-details[open] .chevron { transform: rotate(90deg); }
+  .phase-label { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--text); flex: 1; }
+  .phase-sub { font-size: 10.5px; color: var(--text-faint); font-weight: 500; }
+  .phase-progress { font: 700 11px/1 ui-monospace, monospace; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .phase-steps { padding: 0 22px 6px; }
+
+  .step { display: flex; gap: 12px; padding: 13px 0; border-top: 1px solid var(--border-soft); }
+  .phase-steps .step:first-child { border-top: none; }
+
+  .check-btn {
+    width: 21px; height: 21px; border-radius: 7px; border: 1.5px solid var(--border);
+    background: var(--surface); flex-shrink: 0; margin-top: 1px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: transparent;
+    font-size: 13px; transition: all .15s ease; padding: 0;
+  }
+  .check-btn:hover { border-color: var(--accent); }
+  .step.done .check-btn { background: var(--success); border-color: var(--success); color: #fff; }
+  .step.done .step-title { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--border); }
+
+  .step-body { flex: 1; min-width: 0; }
+  .step-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
+  .step-title { font-size: 13px; font-weight: 650; margin: 0; }
+  .tag { font-size: 9.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding: 2px 6px; border-radius: 5px; }
+  .tag.security { background: var(--accent-soft); color: var(--accent); }
+  .tag.privacy { background: var(--privacy-soft); color: var(--privacy); }
+  .tag.risk { background: var(--pro-soft); color: var(--pro); }
+  .time-pill { font-size: 10.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+  .step-why { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; margin: 3px 0 7px; max-width: 54ch; }
+  .step-path {
+    display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    font: 500 10.5px/1.4 ui-monospace, "SF Mono", Consolas, monospace;
+    background: var(--surface-2); border: 1px solid var(--border-soft);
+    padding: 5px 9px; border-radius: 7px; color: var(--text-dim);
+  }
+  .step-path .seg { color: var(--text); }
+  .step-path .arrow { color: var(--text-faint); }
+
+  .step-foot { display: flex; align-items: center; gap: 12px; margin-top: 7px; flex-wrap: wrap; }
+  .shot-btn {
+    font-size: 10.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft);
+    border: none; border-radius: 6px; padding: 4px 9px; cursor: pointer; display: inline-flex; gap: 5px; align-items: center;
+  }
+  .source-note { font-size: 10px; color: var(--text-faint); }
+
+  .step-shot {
+    display: none; margin-top: 10px; max-width: 300px; border: 1px solid var(--border-soft);
+    border-radius: 12px; overflow: hidden; background: var(--surface-2);
+  }
+  .step-shot.visible { display: block; }
+  .step-shot svg { display: block; width: 100%; height: auto; }
+  .step-shot-caption { font-size: 9.5px; color: var(--text-faint); padding: 5px 10px 7px; }
+
+  .callout {
+    margin: 16px 22px 20px; padding: 12px 14px; border-radius: 10px;
+    background: var(--surface-2); border: 1px solid var(--border-soft);
+    font-size: 11.5px; color: var(--text-dim); line-height: 1.55;
+  }
+  .callout b { color: var(--text); }
+
+  footer.legend {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--text-faint); display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  footer.legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 7px; height: 7px; border-radius: 2px; display: inline-block; }
+</style>
+
+<div class="page">
+  <div class="eyebrow">Boceto v2 — perfiles por dispositivo + contenido a escala real</div>
+  <h1 class="page-title">Lucent · pestaña «Guías»</h1>
+  <p class="page-sub">Página completa, no popup. Solo Free por ahora (sin Windows/Linux Pro todavía — primero cerramos bien esta idea con iOS). Prueba: marca pasos, cambia de perfil arriba del checklist, colapsa/expande fases.</p>
+
+  <div class="section-label">Pantalla 1 · Hub de guías</div>
+
+  <div class="hub-grid">
+    <div class="hub-card">
+      <div class="hub-card-top">
+        <div class="hub-icon">🍎</div>
+        <span class="tier-chip">Free</span>
+      </div>
+      <p class="hub-name">iOS <span class="devices-chip" id="hub-devices">· 2 dispositivos</span></p>
+      <p class="hub-desc">Cuenta, cifrado, permisos por app, Safari, mensajería, salud y pagos, modo aislamiento.</p>
+      <div class="hub-progress-row">
+        <div class="hub-bar-track"><div class="hub-bar-fill" id="hub-bar" style="width:0%"></div></div>
+        <span class="hub-progress-num" id="hub-num">0/42</span>
+      </div>
+    </div>
+
+    <div class="hub-card stub">
+      <div class="hub-card-top">
+        <div class="hub-icon privacy">🤖</div>
+        <span class="tier-chip">Free</span>
+      </div>
+      <p class="hub-name">Android</p>
+      <p class="hub-desc">Sin construir todavía — misma estructura que iOS, distintos pasos.</p>
+      <div class="hub-progress-row">
+        <div class="hub-bar-track"><div class="hub-bar-fill" style="width:0%"></div></div>
+        <span class="hub-progress-num">—</span>
+      </div>
+    </div>
+
+    <div class="hub-card stub">
+      <div class="hub-card-top">
+        <div class="hub-icon muted">📡</div>
+        <span class="tier-chip">Free</span>
+      </div>
+      <p class="hub-name">Router / WiFi</p>
+      <p class="hub-desc">Sin construir todavía — WPA3, credenciales, WPS, red de invitados.</p>
+      <div class="hub-progress-row">
+        <div class="hub-bar-track"><div class="hub-bar-fill" style="width:0%"></div></div>
+        <span class="hub-progress-num">—</span>
+      </div>
+    </div>
+
+    <div class="hub-card resources">
+      <div class="hub-card-top">
+        <div class="hub-icon muted">🔗</div>
+      </div>
+      <p class="hub-name">Recursos externos</p>
+      <div class="link-row">
+        <a href="#">↗ Privacy Guides — hardening desktop</a>
+        <a href="#">↗ EFF Surveillance Self-Defense</a>
+        <a href="#">↗ Madaidan's Insecurities</a>
+        <a href="#">↗ Ver las 8 fuentes curadas</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Pantalla 2 · Detalle — 🍎 iOS</div>
+
+  <div class="detail-card">
+    <div class="detail-header">
+      <div class="detail-head-row">
+        <span style="font-size:20px;">🍎</span>
+        <h2 class="detail-title">Bastionar iOS</h2>
+        <button class="expand-toggle" id="expand-toggle">📂 Expandir todo</button>
+      </div>
+
+      <div class="profile-bar" id="profile-bar">
+        <span class="profile-label">Dispositivo</span>
+        <!-- profile pills injected by JS -->
+      </div>
+
+      <div class="progress-row">
+        <div class="progress-track"><div class="progress-fill" id="detail-bar" style="width:0%"></div></div>
+        <span class="progress-text" id="detail-text">0/42</span>
+      </div>
+      <div class="progress-meta" id="progress-meta"></div>
+
+      <p class="detail-note" style="margin-top:14px;">
+        Lucent no puede leer los ajustes de tu iPhone — solo tu navegador. <b>El progreso es lo que tú marcas</b> tras cambiar el ajuste en el móvil, y se guarda por dispositivo: el progreso de "iPhone de Aitor" no se mezcla con el de otro perfil.
+      </p>
+    </div>
+
+    <div class="filters">
+      <button class="filter-chip active" data-filter="all">Todos (42)</button>
+      <button class="filter-chip" data-filter="security">🔒 Seguridad (16)</button>
+      <button class="filter-chip" data-filter="privacy">🕵 Privacidad (28)</button>
+    </div>
+
+    <!-- ===== PHASE 1 ===== -->
+    <details class="phase-details" open>
+      <summary class="phase-summary">
+        <span class="chevron">▶</span>
+        <span class="phase-label">1 · Cuenta y bloqueo <span class="phase-sub">— una vez, ~7 min</span></span>
+        <span class="phase-progress" data-phase-progress="p1">0/5</span>
+      </summary>
+      <div class="phase-steps">
+        <div class="step" data-id="passcode-alnum" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Código alfanumérico en vez de PIN de 4-6 dígitos</p><span class="tag security">Seguridad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Un PIN numérico se fuerza por fuerza bruta en horas con el hardware adecuado; uno alfanumérico tarda años.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Face ID y código</span><span class="arrow">→</span><span class="seg">Cambiar código</span><span class="arrow">→</span><span class="seg">Opciones de código</span><span class="arrow">→</span><span class="seg">Alfanumérico personalizado</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide (iAnonymous3000)</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="stolen-device" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Activar Protección de dispositivo robado</p><span class="tag security">Seguridad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Exige biometría + retraso de 1h para cambios críticos si el iPhone no está en un lugar habitual.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Face ID y código</span><span class="arrow">→</span><span class="seg">Protección de dispositivo robado</span><span class="arrow">→</span><span class="seg">Activar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple Platform Security</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="erase-data" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Borrar datos tras 10 intentos fallidos</p><span class="tag security">Seguridad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Último muro de contención si alguien tiene tu iPhone físico e intenta adivinar el código.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Face ID y código</span><span class="arrow">→</span><span class="seg">Borrar datos</span><span class="arrow">→</span><span class="seg">Activar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="auto-lock" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Bloqueo automático a 30 segundos o menos</p><span class="tag security">Seguridad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Cuanto más tiempo desbloqueado sin usarlo, más ventana para que alguien lo coja de la mesa.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Pantalla y brillo</span><span class="arrow">→</span><span class="seg">Bloqueo automático</span><span class="arrow">→</span><span class="seg">30 segundos</span></div>
+            <div class="step-foot"><span class="source-note">fuente: CIS Mobile Benchmark</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="apple-2fa" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Verificación en dos pasos del Apple ID</p><span class="tag security">Seguridad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Sin esto, una contraseña filtrada en otra web basta para tomar el control de tu Apple ID.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">[tu nombre]</span><span class="arrow">→</span><span class="seg">Contraseña y seguridad</span><span class="arrow">→</span><span class="seg">Verificación en dos pasos</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===== PHASE 2 ===== -->
+    <details class="phase-details">
+      <summary class="phase-summary">
+        <span class="chevron">▶</span>
+        <span class="phase-label">2 · Cifrado y copias <span class="phase-sub">— una vez, ~11 min</span></span>
+        <span class="phase-progress" data-phase-progress="p2">0/4</span>
+      </summary>
+      <div class="phase-steps">
+        <div class="step" data-id="advanced-data-protection" data-cat="security privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Protección de datos avanzada de iCloud</p><span class="tag security">Seguridad</span><span class="tag privacy">Privacidad</span><span class="time-pill">· 3 min</span></div>
+            <p class="step-why">Cifra extremo a extremo casi todas las categorías de iCloud — ni Apple puede leerlas ante una orden judicial.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">[tu nombre]</span><span class="arrow">→</span><span class="seg">iCloud</span><span class="arrow">→</span><span class="seg">Protección de datos avanzada</span><span class="arrow">→</span><span class="seg">Activar</span></div>
+            <div class="step-foot"><button class="shot-btn" data-target="shot-adp">🖼 Ver captura</button><span class="source-note">fuente: Apple · guarda una clave de recuperación antes</span></div>
+            <div class="step-shot" id="shot-adp">
+              <svg viewBox="0 0 300 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Boceto ilustrativo del ajuste iCloud &gt; Protección de datos avanzada activado">
+                <rect width="300" height="130" fill="var(--surface)"/>
+                <rect x="0" y="0" width="300" height="30" fill="var(--surface-2)"/>
+                <text x="14" y="20" font-family="-apple-system,sans-serif" font-size="12" fill="var(--accent)">‹ iCloud</text>
+                <text x="150" y="20" font-family="-apple-system,sans-serif" font-size="11" font-weight="700" fill="var(--text)" text-anchor="middle">Avanzado</text>
+                <line x1="0" y1="30" x2="300" y2="30" stroke="var(--border-soft)"/>
+                <rect x="12" y="46" width="276" height="40" rx="9" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+                <text x="24" y="70" font-family="-apple-system,sans-serif" font-size="11.5" fill="var(--text)">Protección de datos avanzada</text>
+                <rect x="248" y="58" width="30" height="16" rx="8" fill="var(--success)"/>
+                <circle cx="270" cy="66" r="6.5" fill="#fff"/>
+                <text x="12" y="106" font-family="-apple-system,sans-serif" font-size="9.5" fill="var(--text-faint)">Activado · tus datos de iCloud se cifran de extremo a extremo</text>
+              </svg>
+              <div class="step-shot-caption">Boceto ilustrativo — no es una captura real de iOS</div>
+            </div>
+          </div>
+        </div>
+        <div class="step" data-id="recovery-key" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Generar clave de recuperación de cuenta</p><span class="tag security">Seguridad</span><span class="time-pill">· 3 min</span></div>
+            <p class="step-why">Necesaria antes de activar protección avanzada — sin ella, perder el dispositivo puede significar perder los datos para siempre.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">[tu nombre]</span><span class="arrow">→</span><span class="seg">Contraseña y seguridad</span><span class="arrow">→</span><span class="seg">Clave de recuperación de cuenta</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="check-sessions" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar dispositivos con sesión iniciada en tu Apple ID</p><span class="tag security">Seguridad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Cualquier dispositivo antiguo o desconocido en esa lista tiene acceso a tus datos de iCloud ahora mismo.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">[tu nombre]</span><span class="arrow">→</span><span class="seg">(lista de dispositivos, abajo)</span><span class="arrow">→</span><span class="seg">Eliminar los que no reconozcas</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="local-backup" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Cifrar copia de seguridad local (si no usas iCloud)</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 3 min</span></div>
+            <p class="step-why">Sin esto, una copia en tu Mac/PC guarda contraseñas y datos de salud en texto plano.</p>
+            <div class="step-path"><span class="seg">Finder / iTunes</span><span class="arrow">→</span><span class="seg">Copia de seguridad</span><span class="arrow">→</span><span class="seg">Cifrar copia de seguridad local</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===== PHASE 3 ===== -->
+    <details class="phase-details">
+      <summary class="phase-summary">
+        <span class="chevron">▶</span>
+        <span class="phase-label">3 · Privacidad del día a día <span class="phase-sub">— repasar cada pocos meses, ~9 min</span></span>
+        <span class="phase-progress" data-phase-progress="p3">0/6</span>
+      </summary>
+      <div class="phase-steps">
+        <div class="step" data-id="att-off" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Desactivar "Permitir que las apps soliciten seguimiento"</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Corta de raíz el App Tracking Transparency para toda la publicidad cruzada entre apps.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Seguimiento</span><span class="arrow">→</span><span class="seg">Desactivar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="frequent-locations" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Apagar Ubicaciones frecuentes</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">iOS guarda un historial detallado de dónde pasas más tiempo — el dato más íntimo si alguien accede al dispositivo.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Localización</span><span class="arrow">→</span><span class="seg">Servicios del sistema</span><span class="arrow">→</span><span class="seg">Ubicaciones frecuentes</span><span class="arrow">→</span><span class="seg">Desactivar</span></div>
+            <div class="step-foot"><button class="shot-btn" data-target="shot-locations">🖼 Ver captura</button><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+            <div class="step-shot" id="shot-locations">
+              <svg viewBox="0 0 300 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Boceto ilustrativo del ajuste Ubicaciones frecuentes desactivado">
+                <rect width="300" height="130" fill="var(--surface)"/>
+                <rect x="0" y="0" width="300" height="30" fill="var(--surface-2)"/>
+                <text x="14" y="20" font-family="-apple-system,sans-serif" font-size="12" fill="var(--accent)">‹ Servicios del sistema</text>
+                <line x1="0" y1="30" x2="300" y2="30" stroke="var(--border-soft)"/>
+                <rect x="12" y="46" width="276" height="40" rx="9" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+                <text x="24" y="70" font-family="-apple-system,sans-serif" font-size="11.5" fill="var(--text)">Ubicaciones frecuentes</text>
+                <rect x="248" y="58" width="30" height="16" rx="8" fill="var(--border)"/>
+                <circle cx="256" cy="66" r="6.5" fill="var(--surface)"/>
+                <text x="12" y="106" font-family="-apple-system,sans-serif" font-size="9.5" fill="var(--text-faint)">Desactivado · iOS deja de registrar dónde pasas más tiempo</text>
+              </svg>
+              <div class="step-shot-caption">Boceto ilustrativo — no es una captura real de iOS</div>
+            </div>
+          </div>
+        </div>
+        <div class="step" data-id="analytics-off" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Desactivar Análisis y mejoras</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Deja de mandar a Apple datos de uso detallados de tu iPhone.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Análisis y mejoras</span><span class="arrow">→</span><span class="seg">Compartir análisis de iPhone</span><span class="arrow">→</span><span class="seg">Desactivar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="personalized-ads" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Desactivar anuncios personalizados de Apple</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Apple también hace perfilado publicitario propio, no solo apps de terceros.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Publicidad de Apple</span><span class="arrow">→</span><span class="seg">Anuncios personalizados</span><span class="arrow">→</span><span class="seg">Desactivar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="app-privacy-report" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar el Informe de privacidad de apps</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 3 min</span></div>
+            <p class="step-why">Muestra qué apps accedieron de verdad a cámara, micro o contactos en los últimos 7 días.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Informe de privacidad de apps</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="airdrop-contacts" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">AirDrop solo para contactos, no para "todos"</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">"Todos" expone tu iPhone a recibir contenido (o intentos de rastreo) de cualquiera cerca físicamente.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">General</span><span class="arrow">→</span><span class="seg">AirDrop</span><span class="arrow">→</span><span class="seg">Solo contactos</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="siri-search-review" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar qué apps pueden usar Siri y Buscar</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Siri aprende patrones de uso de cada app para sugerir contenido; puedes cortarlo app por app.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Siri y Buscar</span><span class="arrow">→</span><span class="seg">(por cada app)</span><span class="arrow">→</span><span class="seg">Desactivar "Aprender de esta app" / "Mostrar en Buscar"</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="dictation-off" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Desactivar Dictado si no lo usas</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">El dictado envía audio a los servidores de Apple para transcribirlo.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">General</span><span class="arrow">→</span><span class="seg">Teclado</span><span class="arrow">→</span><span class="seg">Activar dictado</span><span class="arrow">→</span><span class="seg">Desactivar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="reset-ad-id" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Restablecer identificador de publicidad</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Igual que borrar cookies de rastreo, pero para el identificador que usan las apps para perfilarte entre ellas.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Publicidad de Apple</span><span class="arrow">→</span><span class="seg">Restablecer identificador de publicidad</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="camera-location-off" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Quitar el acceso a ubicación de la Cámara</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Sin esto, cada foto lleva las coordenadas GPS exactas incrustadas — un riesgo si compartes fotos públicamente.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Localización</span><span class="arrow">→</span><span class="seg">Cámara</span><span class="arrow">→</span><span class="seg">Nunca</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="wifi-limit-ip" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Limitar el seguimiento por IP en cada red Wi-Fi</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Complementa el "ocultar IP" de Safari, pero a nivel de todo el sistema, no solo el navegador.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Wi-Fi</span><span class="arrow">→</span><span class="seg">(i) junto a la red</span><span class="arrow">→</span><span class="seg">Limitar el seguimiento por dirección IP</span><span class="arrow">→</span><span class="seg">Activar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===== PHASE 4 (nueva): Permisos por app y sensores ===== -->
+    <details class="phase-details">
+      <summary class="phase-summary">
+        <span class="chevron">▶</span>
+        <span class="phase-label">4 · Permisos por app y sensores <span class="phase-sub">— repasar tras instalar apps nuevas, ~12 min</span></span>
+        <span class="phase-progress" data-phase-progress="p4">0/5</span>
+      </summary>
+      <div class="phase-steps">
+        <div class="step" data-id="location-precise" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Desactivar ubicación exacta donde no haga falta</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 3 min</span></div>
+            <p class="step-why">Muchas apps (tiempo, apps de compra) funcionan perfectamente con ubicación aproximada, no exacta al metro.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Localización</span><span class="arrow">→</span><span class="seg">(por app)</span><span class="arrow">→</span><span class="seg">Ubicación exacta</span><span class="arrow">→</span><span class="seg">Desactivar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="photos-limited" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Cambiar acceso a Fotos de "Todas" a "Fotos seleccionadas"</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 3 min</span></div>
+            <p class="step-why">Por defecto muchas apps piden acceso a toda tu fototeca cuando solo necesitan subir una imagen puntual.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Fotos</span><span class="arrow">→</span><span class="seg">(por app)</span><span class="arrow">→</span><span class="seg">Fotos seleccionadas</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="local-network" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar qué apps escanean tu red local</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">El acceso a red local revela qué otros dispositivos tienes en casa: smart TV, impresora, cámaras IP.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Red local</span><span class="arrow">→</span><span class="seg">revisar y desactivar las que no lo necesiten</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="bluetooth-access" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar qué apps tienen acceso a Bluetooth</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Bluetooth se usa a veces para triangular tu posición dentro de tiendas físicas mediante balizas (beacons).</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Bluetooth</span><span class="arrow">→</span><span class="seg">revisar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="mic-cam-review" data-cat="security privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar la lista completa de acceso a Cámara y Micrófono</p><span class="tag security">Seguridad</span><span class="tag privacy">Privacidad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">El punto verde/naranja te avisa en el momento del uso, pero no te dice qué apps tienen el permiso concedido de forma permanente.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Cámara</span><span class="arrow">/</span><span class="seg">Micrófono</span><span class="arrow">→</span><span class="seg">revisar cada app</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===== PHASE 5 (antes 4): Navegación y mensajería ===== -->
+    <details class="phase-details">
+      <summary class="phase-summary">
+        <span class="chevron">▶</span>
+        <span class="phase-label">5 · Navegación y mensajería <span class="phase-sub">— una vez, ~10 min</span></span>
+        <span class="phase-progress" data-phase-progress="p5">0/9</span>
+      </summary>
+      <div class="phase-steps">
+        <div class="step" data-id="safari-tracking" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Bloquear rastreo entre sitios en Safari</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Evita que una web reconozca que eres el mismo usuario que visitó otra web distinta.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Safari</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Evitar el rastreo entre sitios web</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="safari-hide-ip" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Ocultar dirección IP de los rastreadores</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Tu IP por sí sola es una huella bastante única para vincular tu actividad entre sitios.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Safari</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Ocultar dirección IP</span><span class="arrow">→</span><span class="seg">De rastreadores</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="safari-clear-history" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Borrar historial y datos de sitios automáticamente</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Reduce cuánto queda expuesto si alguien coge tu iPhone desbloqueado.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Safari</span><span class="arrow">→</span><span class="seg">Borrar historial y datos de sitios web</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="imessage-verification" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Activar Verificación de contacto de seguridad en iMessage</p><span class="tag security">Seguridad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Te avisa si alguien con acceso a la infraestructura de Apple intenta interponerse en tu conversación (ataque man-in-the-middle).</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">[tu nombre]</span><span class="arrow">→</span><span class="seg">Contraseña y seguridad</span><span class="arrow">→</span><span class="seg">Verificación de contacto de seguridad</span><span class="arrow">→</span><span class="seg">Activar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="lockscreen-preview" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Ocultar vista previa de mensajes en pantalla bloqueada</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Cualquiera que vea tu pantalla bloqueada de reojo puede leer el contenido de tus notificaciones si no cambias esto.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Notificaciones</span><span class="arrow">→</span><span class="seg">Mostrar previsualizaciones</span><span class="arrow">→</span><span class="seg">Cuando esté desbloqueado</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="mail-privacy-protection" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Activar Protección de privacidad de Mail</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Bloquea los píxeles de rastreo invisibles que usan los newsletters para saber si (y cuándo) abriste el email.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Mail</span><span class="arrow">→</span><span class="seg">Privacidad</span><span class="arrow">→</span><span class="seg">Proteger actividad de correo</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="safari-block-cookies" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar el bloqueo de cookies de Safari</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Por defecto ya bloquea cookies de terceros; bloquear todas es más agresivo pero puede pedirte iniciar sesión más a menudo en algunas webs.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Safari</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Bloquear todas las cookies</span><span class="arrow">(opcional)</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="safari-preload" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Desactivar precarga del resultado principal</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Con esto activado, Safari empieza a cargar la web antes de que termines de escribir en la barra de búsqueda, revelando tu búsqueda parcial al sitio.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Safari</span><span class="arrow">→</span><span class="seg">Buscar</span><span class="arrow">→</span><span class="seg">Precargar el resultado principal</span><span class="arrow">→</span><span class="seg">Desactivar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="imessage-read-receipts" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Desactivar recibos de lectura en iMessage</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Evita que tus contactos sepan exactamente cuándo leíste un mensaje — menos presión social y menos metadata compartida.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Mensajes</span><span class="arrow">→</span><span class="seg">Enviar confirmaciones de lectura</span><span class="arrow">→</span><span class="seg">Desactivar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===== PHASE 6 (nueva): Salud, pagos y familia ===== -->
+    <details class="phase-details">
+      <summary class="phase-summary">
+        <span class="chevron">▶</span>
+        <span class="phase-label">6 · Salud, pagos y familia <span class="phase-sub">— una vez, ~8 min</span></span>
+        <span class="phase-progress" data-phase-progress="p6">0/4</span>
+      </summary>
+      <div class="phase-steps">
+        <div class="step" data-id="health-access" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Gestionar qué apps leen y escriben datos de Salud</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 3 min</span></div>
+            <p class="step-why">Los datos de salud son de la categoría más sensible que existe; muchas apps piden acceso de escritura que no necesitan.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Salud</span><span class="arrow">→</span><span class="seg">Acceso de apps y dispositivos</span><span class="arrow">→</span><span class="seg">revisar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="screentime-passcode" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Código de Tiempo en pantalla distinto al de desbloqueo</p><span class="tag security">Seguridad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Si usas el mismo código, cualquiera que desbloquee el iPhone puede desactivar tus restricciones sin esfuerzo.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Tiempo en pantalla</span><span class="arrow">→</span><span class="seg">Usar código para Tiempo en pantalla</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="apple-pay-review" data-cat="security">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Confirmar doble clic obligatorio para pagos</p><span class="tag security">Seguridad</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Evita pagos accidentales o forzados con el móvil desbloqueado.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Wallet y Apple Pay</span><span class="arrow">→</span><span class="seg">revisar doble clic y notificaciones</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="family-location" data-cat="privacy">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar quién ve tu ubicación en Family Sharing</p><span class="tag privacy">Privacidad</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Es fácil que quede activado para alguien con quien ya no compartes ubicación a propósito.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">[tu nombre]</span><span class="arrow">→</span><span class="seg">Compartir en familia</span><span class="arrow">→</span><span class="seg">Compartir mi ubicación</span><span class="arrow">→</span><span class="seg">revisar destinatarios</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===== PHASE 7 (antes 5): Nivel avanzado ===== -->
+    <details class="phase-details">
+      <summary class="phase-summary">
+        <span class="chevron">▶</span>
+        <span class="phase-label">7 · Nivel avanzado <span class="phase-sub">— solo si tienes motivos, ~15 min</span></span>
+        <span class="phase-progress" data-phase-progress="p7">0/4</span>
+      </summary>
+      <div class="phase-steps">
+        <div class="step" data-id="lockdown-mode" data-cat="security risk">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Modo Aislamiento (Lockdown Mode)</p><span class="tag security">Seguridad</span><span class="tag risk">Alto riesgo</span><span class="time-pill">· 1 min</span></div>
+            <p class="step-why">Bloquea la mayoría de vectores de spyware mercenario (tipo Pegasus) a costa de romper funciones normales. Para periodistas, activistas o cargos públicos — no para el usuario medio.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">Privacidad y seguridad</span><span class="arrow">→</span><span class="seg">Modo Aislamiento</span><span class="arrow">→</span><span class="seg">Activar</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple · Amnesty International Security Lab</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="hardware-key" data-cat="security risk">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Llave de seguridad física para el Apple ID</p><span class="tag security">Seguridad</span><span class="tag risk">Alto riesgo</span><span class="time-pill">· 10 min</span></div>
+            <p class="step-why">Elimina el phishing de códigos 2FA por completo — hace falta la llave física, no solo un código. Requiere comprar 2 llaves (una de respaldo).</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">[tu nombre]</span><span class="arrow">→</span><span class="seg">Contraseña y seguridad</span><span class="arrow">→</span><span class="seg">Llaves de seguridad</span><span class="arrow">→</span><span class="seg">Añadir llave de seguridad</span></div>
+            <div class="step-foot"><span class="source-note">fuente: Apple</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="mdm-profiles" data-cat="security risk">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Revisar perfiles de configuración instalados</p><span class="tag security">Seguridad</span><span class="tag risk">Alto riesgo</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Un perfil MDM malicioso puede interceptar tráfico o forzar ajustes. Si no reconoces uno, elimínalo.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">General</span><span class="arrow">→</span><span class="seg">VPN y gestión de dispositivos</span><span class="arrow">→</span><span class="seg">revisar y eliminar desconocidos</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+        <div class="step" data-id="vpn-check" data-cat="security risk">
+          <button class="check-btn"></button>
+          <div class="step-body">
+            <div class="step-top"><p class="step-title">Comprobar configuración VPN/proxy no reconocida</p><span class="tag security">Seguridad</span><span class="tag risk">Alto riesgo</span><span class="time-pill">· 2 min</span></div>
+            <p class="step-why">Una VPN o proxy instalado sin que lo sepas puede estar viendo todo tu tráfico.</p>
+            <div class="step-path"><span class="seg">Ajustes</span><span class="arrow">→</span><span class="seg">General</span><span class="arrow">→</span><span class="seg">VPN y gestión de dispositivos</span><span class="arrow">→</span><span class="seg">VPN</span></div>
+            <div class="step-foot"><span class="source-note">fuente: iOS-Hardening-Guide</span></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="callout">
+      <b>Nota de mantenimiento:</b> las rutas de menú de Apple cambian con cada versión mayor de iOS. Esta guía se revisa contra iOS 26; si algo no coincide, es la primera señal de que toca una pasada de actualización.
+    </div>
+  </div>
+
+  <footer class="legend">
+    <span><span class="dot" style="background:var(--accent)"></span> Seguridad</span>
+    <span><span class="dot" style="background:var(--privacy)"></span> Privacidad</span>
+    <span><span class="dot" style="background:var(--pro)"></span> Alto riesgo / requiere criterio</span>
+    <span><span class="dot" style="background:var(--success)"></span> Hecho</span>
+  </footer>
+</div>
+
+<script>
+  const steps = Array.from(document.querySelectorAll('.step'));
+  const total = steps.length;
+  const timeById = {};
+  steps.forEach(s => {
+    const t = s.querySelector('.time-pill').textContent.match(/\d+/);
+    timeById[s.dataset.id] = t ? parseInt(t[0], 10) : 1;
+  });
+
+  let profiles = {
+    aitor: { name: 'iPhone de Aitor', done: new Set(['passcode-alnum', 'stolen-device', 'auto-lock']) },
+    spare: { name: 'iPhone de repuesto', done: new Set() }
+  };
+  let profileOrder = ['aitor', 'spare'];
+  let active = 'aitor';
+  let currentFilter = 'all';
+  let nextProfileNum = 1;
+
+  const profileBar = document.getElementById('profile-bar');
+  const hubBar = document.getElementById('hub-bar');
+  const hubNum = document.getElementById('hub-num');
+  const hubDevices = document.getElementById('hub-devices');
+  const detailBar = document.getElementById('detail-bar');
+  const detailText = document.getElementById('detail-text');
+  const meta = document.getElementById('progress-meta');
+
+  function renderProfiles() {
+    profileBar.querySelectorAll('.profile-pill').forEach(el => el.remove());
+    const addBtn = document.getElementById('profile-add-btn');
+    if (addBtn) addBtn.remove();
+
+    profileOrder.forEach(id => {
+      const btn = document.createElement('button');
+      btn.className = 'profile-pill' + (id === active ? ' active' : '');
+      btn.textContent = '📱 ' + profiles[id].name;
+      btn.addEventListener('click', () => { active = id; renderProfiles(); renderChecklist(); });
+      profileBar.appendChild(btn);
+    });
+
+    const add = document.createElement('button');
+    add.className = 'profile-pill profile-add';
+    add.id = 'profile-add-btn';
+    add.textContent = '+ Nuevo perfil';
+    add.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.className = 'profile-input';
+      input.placeholder = 'Nombre del dispositivo';
+      add.replaceWith(input);
+      input.focus();
+      function commit() {
+        const val = input.value.trim();
+        nextProfileNum++;
+        const id = 'device' + nextProfileNum;
+        profiles[id] = { name: val || ('Dispositivo ' + nextProfileNum), done: new Set() };
+        profileOrder.push(id);
+        active = id;
+        renderProfiles();
+        renderChecklist();
+      }
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { renderProfiles(); } });
+      input.addEventListener('blur', commit);
+    });
+    profileBar.appendChild(add);
+  }
+
+  function renderChecklist() {
+    const doneSet = profiles[active].done;
+    let doneCount = 0;
+    steps.forEach(step => {
+      const isDone = doneSet.has(step.dataset.id);
+      step.classList.toggle('done', isDone);
+      step.querySelector('.check-btn').textContent = isDone ? '✓' : '';
+      if (isDone) doneCount++;
+    });
+
+    document.querySelectorAll('.phase-details').forEach((phase, i) => {
+      const phaseSteps = Array.from(phase.querySelectorAll('.step'));
+      const phaseDone = phaseSteps.filter(s => doneSet.has(s.dataset.id)).length;
+      phase.querySelector('.phase-progress').textContent = phaseDone + '/' + phaseSteps.length;
+    });
+
+    const pct = Math.round((doneCount / total) * 100);
+    hubBar.style.width = pct + '%';
+    hubNum.textContent = doneCount + '/' + total;
+    detailBar.style.width = pct + '%';
+    detailText.textContent = doneCount + '/' + total;
+    hubDevices.textContent = '· ' + profileOrder.length + ' dispositivos';
+
+    const remaining = steps.reduce((sum, s) => sum + (doneSet.has(s.dataset.id) ? 0 : timeById[s.dataset.id]), 0);
+    meta.textContent = (remaining > 0 ? '~' + remaining + ' min restantes' : 'Completado') + ' · perfil activo: ' + profiles[active].name + ' · revisado contra iOS 26';
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    steps.forEach(step => {
+      const cats = (step.dataset.cat || '').split(' ');
+      const visible = currentFilter === 'all' || cats.includes(currentFilter);
+      step.style.display = visible ? 'flex' : 'none';
+    });
+  }
+
+  steps.forEach(step => {
+    step.querySelector('.check-btn').addEventListener('click', () => {
+      const id = step.dataset.id;
+      const doneSet = profiles[active].done;
+      if (doneSet.has(id)) doneSet.delete(id); else doneSet.add(id);
+      renderChecklist();
+    });
+  });
+
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      currentFilter = chip.dataset.filter;
+      applyFilter();
+    });
+  });
+
+  document.querySelectorAll('.shot-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById(btn.dataset.target);
+      const show = !panel.classList.contains('visible');
+      panel.classList.toggle('visible', show);
+      btn.textContent = show ? '🖼 Ocultar captura' : '🖼 Ver captura';
+    });
+  });
+
+  document.getElementById('expand-toggle').addEventListener('click', (e) => {
+    const all = document.querySelectorAll('.phase-details');
+    const anyClosed = Array.from(all).some(d => !d.open);
+    all.forEach(d => { d.open = anyClosed; });
+    e.target.textContent = anyClosed ? '📂 Colapsar todo' : '📂 Expandir todo';
+  });
+
+  renderProfiles();
+  renderChecklist();
+</script>
